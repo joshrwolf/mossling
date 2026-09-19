@@ -46,6 +46,10 @@ run = [
 description = "Exercise Cloud environment boundaries and malformed release archives"
 run = ["swift Tools/Tests/RunCloudHookTests.swift", "python3 Tools/Tests/test_archive.py"]
 
+[tasks."cloud:prepare"]
+description = "Prepare Cloud native actions with domain tests and canonical project validation"
+depends = ["test:core", "project:check"]
+
 [tasks.verify]
 description = "Run all development gates, including UI tests and Release packaging"
 depends = ["test:core", "test:tooling", "project:check", "build", "test:ui", "archive:check"]

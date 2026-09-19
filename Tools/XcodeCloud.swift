@@ -120,7 +120,7 @@ func cloudMain(_ arguments: [String], environment: [String: String]) throws {
     child["MISE_TRUSTED_CONFIG_PATHS"] = root.path
     child["PATH"] = mise.deletingLastPathComponent().path + ":" + (environment["PATH"] ?? "/usr/bin:/bin")
     try run(mise.path, ["install", "--locked"], at: root, environment: child)
-    try run(mise.path, ["run", "--jobs", "1", "test:core", "project:check"], at: root, environment: child)
+    try run(mise.path, ["run", "--jobs", "1", "cloud:prepare"], at: root, environment: child)
 }
 #if !CLOUD_HOOK_TESTS
 do { try cloudMain(CommandLine.arguments, environment: ProcessInfo.processInfo.environment) }
