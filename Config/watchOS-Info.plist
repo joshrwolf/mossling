@@ -25,7 +25,7 @@
 	<key>WKApplication</key>
 	<true/>
 	<key>WKCompanionAppBundleIdentifier</key>
-	<string>$(BUNDLE_ID_PREFIX).mossling</string>
+	<string>$(MOSSLING_PHONE_BUNDLE_IDENTIFIER)</string>
 	<key>WKRunsIndependentlyOfCompanionApp</key>
 	<true/>
 </dict>

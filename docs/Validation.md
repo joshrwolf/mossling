@@ -11,7 +11,7 @@
 | iPhone UI automation | CI GATE | Three tests exercise onboarding and persisted activity/schedule forms; latest result and artifacts are linked from PR #2 |
 | Native Swift source syntax | PASS | Swift frontend parse of phone/watch/shared files; not Apple SDK typechecking |
 | Store concurrency/type integration | PASS with limitation | Independent reviewer typechecked the actual iOS Store branch under Swift6 using inert actor-equivalent adapter stubs; does not validate SDK conformance |
-| Xcode project generation | PASS | Tuist4.208.0 generates both apps and UI test target from typed manifests; generated projects are ignored |
+| Xcode project generation | PASS | Tuist4.208.0 generates both apps and UI test target from typed manifests; generated project snapshots are now tracked for Cloud discovery and checked for drift |
 | Project/plist/asset checks | PASS | Generated source membership, watch embedding, local package, asset references, icon dimensions, plist/XML and shell syntax inspected |
 | Architecture review | COMPLETE | `reviews/architecture-review.md` invariants incorporated |
 | Implementation review | COMPLETE | `reviews/implementation-review.md`; confirmed findings fixed |
@@ -23,7 +23,7 @@ Tests cover civil-time boundaries, DST gap/repeated hour, local-zone identity, v
 
 ## Tuist lifecycle and simulator evidence
 
-[PR #2](https://github.com/joshrwolf/mossling/pull/2) records the current source commit and complete hosted CI outcome. [Run 35471434396](https://github.com/joshrwolf/mossling/actions/runs/35471434396) established successful Tuist generation, 42 tests on both platforms, both simulator builds, and a real unsigned Release archive with a valid embedded Watch bundle. The archive checks platform, resolved identifiers, matching versions, companion relationship, executables, compiled assets and privacy manifests.
+[PR #2](https://github.com/joshrwolf/mossling/pull/2) records the earlier Tuist migration source and complete hosted CI outcome. [Run 35471434396](https://github.com/joshrwolf/mossling/actions/runs/35471434396) established successful Tuist generation, 42 tests on both platforms, both simulator builds, and a real unsigned Release archive with a valid embedded Watch bundle. The archive checks platform, resolved identifiers, matching versions, companion relationship, executables, compiled assets and privacy manifests.
 
 That first simulator run also passed snack creation/editing and persistence across relaunch. Two other assertions exposed test interaction mistakes: the notification label is combined by iOS accessibility, and a row-center tap missed the weekday switch. Captured screenshots, interaction events and accessibility hierarchy established these causes. The follow-up tests target the actual accessibility label/control and require the weekday to change before saving, remain changed after cadence editing, and survive relaunch. The final PR checks remain the authoritative acceptance result; the failing run alone is not counted as a complete UI pass.
 
@@ -62,3 +62,11 @@ Set unique bundle IDs/developer team, validate Release archive/signing, recheck 
 ## Known scope limits
 
 No overnight schedule, sub-hour cadence, arbitrary explicit-time list, automatic activity verification, started-session grace period, cloud backup, or independent watch reminders. Whole-device backup restoration can restore an old authority/revision; JSON progress merge preserves the live identity and avoids that path. Unreleased schema1 requires a proper migration plan before any later shipped schema change.
+
+## Xcode Cloud integration
+
+[PR #3](https://github.com/joshrwolf/mossling/pull/3) records the exact accepted source and hosted gate outcome for the Cloud integration. The gate runs the real checksum-verified Cloud preparation adapter with a fixture team and build 42, confirms clean project regeneration, performs the native unsigned archive and UI tests, and invokes the post-action from an isolated copy of its phase resources. Shared archive validation requires the configured identity, marketing version and build 42, including the embedded Watch relationship.
+
+Local adversarial tests cover 27 rejected/failing Cloud cases and seven archive contract cases. Two independent reviews found loss of drift enforcement after the CI handoff and optional signing files contaminating the generated graph. Both were corrected; see [Cloud review](reviews/tooling-review.md#xcode-cloud-adversarial-review).
+
+Repository integration and hosted macOS simulation do not establish actual Xcode Cloud activation. The account connection, real Apple-hosted workflow, managed signing, distribution and physical-device acceptance remain pending. The initial Cloud workflow explicitly uses Archive preparation None and no distribution post-action.

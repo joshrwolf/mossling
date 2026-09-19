@@ -4,5 +4,9 @@ import ProjectDescription
 let tuist = Tuist(
     xcodeCache: .xcodeCache(upload: false),
     network: .network(proxy: false),
-    project: .tuist(compatibleXcodeVersions: .exact("26.2"))
+    project: .tuist(
+        compatibleXcodeVersions: .exact("26.2"),
+        // This convenience scheme embeds machine-absolute paths and cannot be a portable snapshot.
+        generationOptions: .options(includeGenerateScheme: false)
+    )
 )

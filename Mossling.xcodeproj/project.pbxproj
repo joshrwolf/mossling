@@ -1,0 +1,874 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 55;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		00AF82B24D78C3D573D36E0F /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB2F40EF86672E4D5B010D34 /* NotificationService.swift */; };
+		022BB7323418857461AC7207 /* MosslingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 971DDC1DF94DE50C2906B55A /* MosslingUITests.swift */; };
+		0607FC925D202C5F523535DD /* RhythmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9623259E340A47FB8D996BE2 /* RhythmView.swift */; };
+		3384A528A07678DF66A3A8CA /* MosslingWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EFCC37F6FAC828A7B861562 /* MosslingWatchApp.swift */; };
+		3C670E2207DA584922C14B98 /* WatchConnectivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931F83F371CA0B4206B58937 /* WatchConnectivityService.swift */; };
+		4C49DFDF9787B7B8D8C787FA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F5A22668FEAEB5E5C6E12331 /* Assets.xcassets */; };
+		68BC8218EEEFDC1BEF4AEA54 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = B78FE59A4B7194DE662A785A /* Store.swift */; };
+		6CCB145759346802F943B4A9 /* ActivitiesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11F019F67AA463BD9386335 /* ActivitiesView.swift */; };
+		7036D684FAA1575E42524E40 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB2F40EF86672E4D5B010D34 /* NotificationService.swift */; };
+		78E65A8CBE8FC84DF97B70A2 /* ActivityPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12BCCA0C52BECAB5A25FD649 /* ActivityPresentation.swift */; };
+		8A7B43D17AB67EA7E8D22B12 /* JournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51138135BCC962B2167D9E2A /* JournalView.swift */; };
+		8D5D2F47C2C74AAFC3B54A8F /* MosslingCharacter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6BF72A07804E2F59C11CCB1 /* MosslingCharacter.swift */; };
+		92CD7E71450AC45E78297E79 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C67A9784F94DE1B4403A61E8 /* PrivacyInfo.xcprivacy */; };
+		986B96E08AB76FED76C2E606 /* MosslingCore in Frameworks */ = {isa = PBXBuildFile; productRef = C55404B75E7B668FBA5A983F /* MosslingCore */; };
+		991BEDA3CAFA133EEFBD00D4 /* MosslingCore in Frameworks */ = {isa = PBXBuildFile; productRef = 76D21AA70056166787610F21 /* MosslingCore */; };
+		9AFD693E6C15F0CB07F0ECB3 /* WatchConnectivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931F83F371CA0B4206B58937 /* WatchConnectivityService.swift */; };
+		9FE2E729DFFA6B7ED9A240C4 /* ActivityPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12BCCA0C52BECAB5A25FD649 /* ActivityPresentation.swift */; };
+		A965FD37FD63C9C8BC2137D5 /* MosslingWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = ACEBC599E644A20A7043344A /* MosslingWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B46D58F87B185AAE4AFAD136 /* WatchForestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 220E2B217B0954361A91CF7A /* WatchForestView.swift */; };
+		C42E5D0EB08351CAC133B1AA /* MosslingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43BC7578ACF1A877E10E6151 /* MosslingApp.swift */; };
+		C778537F6BDE9BE0CFA0C482 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = B78FE59A4B7194DE662A785A /* Store.swift */; };
+		CBC98C7C510F6CA0795ABF31 /* SnackSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9FD104D31925B021C72F128 /* SnackSessionView.swift */; };
+		D1FF4DAB983F32B2844CDDA3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F5A22668FEAEB5E5C6E12331 /* Assets.xcassets */; };
+		EA50523DAEA634D6E32B8DC4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C67A9784F94DE1B4403A61E8 /* PrivacyInfo.xcprivacy */; };
+		F0C0109451124AD7FD461A55 /* MosslingCharacter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6BF72A07804E2F59C11CCB1 /* MosslingCharacter.swift */; };
+		FA09562206557BC3D1AED799 /* MosslingRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A01F375DF16171FA1F33DE3 /* MosslingRootView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		56F4F7697A5E896964E6C05F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DCA7CEB3A1719510984876AC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EB321A014DE9A534D669E4C1;
+			remoteInfo = Mossling;
+		};
+		901C0110AB82DF13639D32AB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DCA7CEB3A1719510984876AC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E0655ABE83A99271F6AC5EE6;
+			remoteInfo = MosslingWatch;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0FE7F2C227C930F1A2E3BAC2 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		82696479232F4FCFE1181157 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				A965FD37FD63C9C8BC2137D5 /* MosslingWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D3A953B42AB1151D23BD661E /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D8B231369F5D5C9CDB7810AC /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		12BCCA0C52BECAB5A25FD649 /* ActivityPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityPresentation.swift; sourceTree = "<group>"; };
+		220E2B217B0954361A91CF7A /* WatchForestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchForestView.swift; sourceTree = "<group>"; };
+		279CB4458C9CC67AC7F8DC2F /* MosslingUITests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "MosslingUITests-Info.plist"; sourceTree = "<group>"; };
+		352B64E26432893D072A2A12 /* Tooling.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Tooling.md; sourceTree = "<group>"; };
+		3C5A30B533AD8CA2D638B32F /* iOS-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "iOS-Info.plist"; sourceTree = "<group>"; };
+		3FABA8FB8ACE22068F5ECFDE /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		4086D60DC8E550AD4C238A58 /* platform-constraints.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "platform-constraints.md"; sourceTree = "<group>"; };
+		43BC7578ACF1A877E10E6151 /* MosslingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MosslingApp.swift; sourceTree = "<group>"; };
+		51138135BCC962B2167D9E2A /* JournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalView.swift; sourceTree = "<group>"; };
+		5C248DC1CB4E2E503E73C08B /* Mossling.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Mossling.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		619672E20A0FF13E6D06D56A /* reviews */ = {isa = PBXFileReference; path = reviews; sourceTree = "<group>"; };
+		6671534DB88FC4C0CA8FB5A2 /* MosslingCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = MosslingCore; path = Packages/MosslingCore; sourceTree = "<group>"; };
+		7194B32116A02ED16E8DDC2F /* Local.xcconfig.example */ = {isa = PBXFileReference; path = Local.xcconfig.example; sourceTree = "<group>"; };
+		760A4598ADC291F81C3ADA21 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		7A01F375DF16171FA1F33DE3 /* MosslingRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MosslingRootView.swift; sourceTree = "<group>"; };
+		7AB3F025E1FE089318A2A17B /* Release.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Release.md; sourceTree = "<group>"; };
+		8731C76CD9FB082729A93C7B /* MosslingUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MosslingUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8D095C671FF06FB3183EF85B /* Product.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = Product.json; sourceTree = "<group>"; };
+		8D3CB437DC9C7EC749091A20 /* watchOS-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "watchOS-Info.plist"; sourceTree = "<group>"; };
+		92CDACDF7AAC0ED8DE5A06DA /* Validation.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Validation.md; sourceTree = "<group>"; };
+		931F83F371CA0B4206B58937 /* WatchConnectivityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityService.swift; sourceTree = "<group>"; };
+		9623259E340A47FB8D996BE2 /* RhythmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RhythmView.swift; sourceTree = "<group>"; };
+		971DDC1DF94DE50C2906B55A /* MosslingUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MosslingUITests.swift; sourceTree = "<group>"; };
+		9EFCC37F6FAC828A7B861562 /* MosslingWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MosslingWatchApp.swift; sourceTree = "<group>"; };
+		A11F019F67AA463BD9386335 /* ActivitiesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitiesView.swift; sourceTree = "<group>"; };
+		ACEBC599E644A20A7043344A /* MosslingWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MosslingWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B5518B9C9429FD7796FB0522 /* CoreAPI.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CoreAPI.md; sourceTree = "<group>"; };
+		B78FE59A4B7194DE662A785A /* Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Store.swift; sourceTree = "<group>"; };
+		C67A9784F94DE1B4403A61E8 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		C8A4FF2D9B5D329BD8754E35 /* Architecture.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Architecture.md; sourceTree = "<group>"; };
+		C97A8869AFC58C809DBD7E14 /* PlatformAPI.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PlatformAPI.md; sourceTree = "<group>"; };
+		CB2F40EF86672E4D5B010D34 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		DC915AA258BF4E6D902AE01D /* Art.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Art.md; sourceTree = "<group>"; };
+		E9FD104D31925B021C72F128 /* SnackSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnackSessionView.swift; sourceTree = "<group>"; };
+		F5A22668FEAEB5E5C6E12331 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		F6BF72A07804E2F59C11CCB1 /* MosslingCharacter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MosslingCharacter.swift; sourceTree = "<group>"; };
+		F84B77B5D520E9F4C5E3BEB2 /* SyncAPI.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = SyncAPI.md; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		14A229D8AAD4EE1173B04EE2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				986B96E08AB76FED76C2E606 /* MosslingCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		58DA71245C2B2F17E806A616 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E435D28ADDAF43E561AEB7A3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				991BEDA3CAFA133EEFBD00D4 /* MosslingCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1CE0B2E451E3227B425A9A64 /* InfoPlists */ = {
+			isa = PBXGroup;
+			children = (
+				279CB4458C9CC67AC7F8DC2F /* MosslingUITests-Info.plist */,
+			);
+			path = InfoPlists;
+			sourceTree = "<group>";
+		};
+		212E772E29C77BD6A7A7A7FD = {
+			isa = PBXGroup;
+			children = (
+				9067906157B37241D82A77F6 /* Products */,
+				53FB76EC601757B0FF7D49D3 /* Project */,
+				3B55784AF22BF22325DC1FCD /* Packages */,
+			);
+			sourceTree = "<group>";
+		};
+		2C80466E22D821517A0C7DD6 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				12BCCA0C52BECAB5A25FD649 /* ActivityPresentation.swift */,
+				F6BF72A07804E2F59C11CCB1 /* MosslingCharacter.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		3B55784AF22BF22325DC1FCD /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				6671534DB88FC4C0CA8FB5A2 /* MosslingCore */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		3CE1579357C168A2FACA5D66 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				A11F019F67AA463BD9386335 /* ActivitiesView.swift */,
+				51138135BCC962B2167D9E2A /* JournalView.swift */,
+				43BC7578ACF1A877E10E6151 /* MosslingApp.swift */,
+				7A01F375DF16171FA1F33DE3 /* MosslingRootView.swift */,
+				9623259E340A47FB8D996BE2 /* RhythmView.swift */,
+				E9FD104D31925B021C72F128 /* SnackSessionView.swift */,
+			);
+			path = iOS;
+			sourceTree = "<group>";
+		};
+		53FB76EC601757B0FF7D49D3 /* Project */ = {
+			isa = PBXGroup;
+			children = (
+				CF0B1F36B48DA8B055C08E72 /* Apps */,
+				E5F2649D2BCEB16636756469 /* Config */,
+				5B56333F5F7375B1A457684A /* Derived */,
+				ECF0F6F8F6054B2CA98E6AC7 /* docs */,
+				3FABA8FB8ACE22068F5ECFDE /* README.md */,
+			);
+			name = Project;
+			sourceTree = "<group>";
+		};
+		56A4D2F04477E917AFD8B87C /* Platform */ = {
+			isa = PBXGroup;
+			children = (
+				CB2F40EF86672E4D5B010D34 /* NotificationService.swift */,
+				931F83F371CA0B4206B58937 /* WatchConnectivityService.swift */,
+			);
+			path = Platform;
+			sourceTree = "<group>";
+		};
+		5B56333F5F7375B1A457684A /* Derived */ = {
+			isa = PBXGroup;
+			children = (
+				1CE0B2E451E3227B425A9A64 /* InfoPlists */,
+			);
+			path = Derived;
+			sourceTree = "<group>";
+		};
+		7429D1EC28C89D5032AAA1F0 /* Watch */ = {
+			isa = PBXGroup;
+			children = (
+				9EFCC37F6FAC828A7B861562 /* MosslingWatchApp.swift */,
+				220E2B217B0954361A91CF7A /* WatchForestView.swift */,
+			);
+			path = Watch;
+			sourceTree = "<group>";
+		};
+		8DE92CEF6D1B1BFE82BDFB13 /* UITests */ = {
+			isa = PBXGroup;
+			children = (
+				971DDC1DF94DE50C2906B55A /* MosslingUITests.swift */,
+			);
+			path = UITests;
+			sourceTree = "<group>";
+		};
+		9067906157B37241D82A77F6 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5C248DC1CB4E2E503E73C08B /* Mossling.app */,
+				8731C76CD9FB082729A93C7B /* MosslingUITests.xctest */,
+				ACEBC599E644A20A7043344A /* MosslingWatch.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		9BEABD2D6EBEBFA2EE5B8EEA /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				56A4D2F04477E917AFD8B87C /* Platform */,
+				2C80466E22D821517A0C7DD6 /* UI */,
+				F5A22668FEAEB5E5C6E12331 /* Assets.xcassets */,
+				B78FE59A4B7194DE662A785A /* Store.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		CF0B1F36B48DA8B055C08E72 /* Apps */ = {
+			isa = PBXGroup;
+			children = (
+				3CE1579357C168A2FACA5D66 /* iOS */,
+				9BEABD2D6EBEBFA2EE5B8EEA /* Shared */,
+				8DE92CEF6D1B1BFE82BDFB13 /* UITests */,
+				7429D1EC28C89D5032AAA1F0 /* Watch */,
+			);
+			path = Apps;
+			sourceTree = "<group>";
+		};
+		E5F2649D2BCEB16636756469 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				760A4598ADC291F81C3ADA21 /* Base.xcconfig */,
+				3C5A30B533AD8CA2D638B32F /* iOS-Info.plist */,
+				7194B32116A02ED16E8DDC2F /* Local.xcconfig.example */,
+				C67A9784F94DE1B4403A61E8 /* PrivacyInfo.xcprivacy */,
+				8D095C671FF06FB3183EF85B /* Product.json */,
+				8D3CB437DC9C7EC749091A20 /* watchOS-Info.plist */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		ECF0F6F8F6054B2CA98E6AC7 /* docs */ = {
+			isa = PBXGroup;
+			children = (
+				C8A4FF2D9B5D329BD8754E35 /* Architecture.md */,
+				DC915AA258BF4E6D902AE01D /* Art.md */,
+				B5518B9C9429FD7796FB0522 /* CoreAPI.md */,
+				4086D60DC8E550AD4C238A58 /* platform-constraints.md */,
+				C97A8869AFC58C809DBD7E14 /* PlatformAPI.md */,
+				7AB3F025E1FE089318A2A17B /* Release.md */,
+				619672E20A0FF13E6D06D56A /* reviews */,
+				F84B77B5D520E9F4C5E3BEB2 /* SyncAPI.md */,
+				352B64E26432893D072A2A12 /* Tooling.md */,
+				92CDACDF7AAC0ED8DE5A06DA /* Validation.md */,
+			);
+			path = docs;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		419E6DA306D3D4AE5F638F20 /* MosslingUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CE90A662245F7D8E255A48D8 /* Build configuration list for PBXNativeTarget "MosslingUITests" */;
+			buildPhases = (
+				2387968995288A56C2113E3E /* Sources */,
+				6FF4B69BBE0D573D69CE86DB /* Resources */,
+				58DA71245C2B2F17E806A616 /* Frameworks */,
+				D8B231369F5D5C9CDB7810AC /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				55087955E41031EC7D455163 /* PBXTargetDependency */,
+			);
+			name = MosslingUITests;
+			packageProductDependencies = (
+			);
+			productName = MosslingUITests;
+			productReference = 8731C76CD9FB082729A93C7B /* MosslingUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		E0655ABE83A99271F6AC5EE6 /* MosslingWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 371A39E1F4F6A3D021A6E4CC /* Build configuration list for PBXNativeTarget "MosslingWatch" */;
+			buildPhases = (
+				B9AD0E19E256D7E912C8FB37 /* Sources */,
+				B8EE76A94FEF7D5AF1890F5C /* Resources */,
+				14A229D8AAD4EE1173B04EE2 /* Frameworks */,
+				0FE7F2C227C930F1A2E3BAC2 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MosslingWatch;
+			packageProductDependencies = (
+				C55404B75E7B668FBA5A983F /* MosslingCore */,
+			);
+			productName = MosslingWatch;
+			productReference = ACEBC599E644A20A7043344A /* MosslingWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
+		EB321A014DE9A534D669E4C1 /* Mossling */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 840E67FB791D97873F1322E6 /* Build configuration list for PBXNativeTarget "Mossling" */;
+			buildPhases = (
+				0CE57C0EE00E692548BFAB01 /* Sources */,
+				70527D12D5F00192FCC606F5 /* Resources */,
+				82696479232F4FCFE1181157 /* Embed Watch Content */,
+				E435D28ADDAF43E561AEB7A3 /* Frameworks */,
+				D3A953B42AB1151D23BD661E /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8975DAC43A04E294425B1883 /* PBXTargetDependency */,
+			);
+			name = Mossling;
+			packageProductDependencies = (
+				76D21AA70056166787610F21 /* MosslingCore */,
+			);
+			productName = Mossling;
+			productReference = 5C248DC1CB4E2E503E73C08B /* Mossling.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		DCA7CEB3A1719510984876AC /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				TargetAttributes = {
+					419E6DA306D3D4AE5F638F20 = {
+						TestTargetID = EB321A014DE9A534D669E4C1;
+					};
+				};
+			};
+			buildConfigurationList = 170CBC84A0A1D8CC27296617 /* Build configuration list for PBXProject "Mossling" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 212E772E29C77BD6A7A7A7FD;
+			packageReferences = (
+				BA233C4836BB47AC6C48A075 /* XCLocalSwiftPackageReference "Packages/MosslingCore" */,
+			);
+			productRefGroup = 9067906157B37241D82A77F6 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				EB321A014DE9A534D669E4C1 /* Mossling */,
+				419E6DA306D3D4AE5F638F20 /* MosslingUITests */,
+				E0655ABE83A99271F6AC5EE6 /* MosslingWatch */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		6FF4B69BBE0D573D69CE86DB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		70527D12D5F00192FCC606F5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C49DFDF9787B7B8D8C787FA /* Assets.xcassets in Resources */,
+				92CD7E71450AC45E78297E79 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B8EE76A94FEF7D5AF1890F5C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D1FF4DAB983F32B2844CDDA3 /* Assets.xcassets in Resources */,
+				EA50523DAEA634D6E32B8DC4 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0CE57C0EE00E692548BFAB01 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7036D684FAA1575E42524E40 /* NotificationService.swift in Sources */,
+				9AFD693E6C15F0CB07F0ECB3 /* WatchConnectivityService.swift in Sources */,
+				68BC8218EEEFDC1BEF4AEA54 /* Store.swift in Sources */,
+				78E65A8CBE8FC84DF97B70A2 /* ActivityPresentation.swift in Sources */,
+				8D5D2F47C2C74AAFC3B54A8F /* MosslingCharacter.swift in Sources */,
+				6CCB145759346802F943B4A9 /* ActivitiesView.swift in Sources */,
+				8A7B43D17AB67EA7E8D22B12 /* JournalView.swift in Sources */,
+				C42E5D0EB08351CAC133B1AA /* MosslingApp.swift in Sources */,
+				FA09562206557BC3D1AED799 /* MosslingRootView.swift in Sources */,
+				0607FC925D202C5F523535DD /* RhythmView.swift in Sources */,
+				CBC98C7C510F6CA0795ABF31 /* SnackSessionView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2387968995288A56C2113E3E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				022BB7323418857461AC7207 /* MosslingUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B9AD0E19E256D7E912C8FB37 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				00AF82B24D78C3D573D36E0F /* NotificationService.swift in Sources */,
+				3C670E2207DA584922C14B98 /* WatchConnectivityService.swift in Sources */,
+				C778537F6BDE9BE0CFA0C482 /* Store.swift in Sources */,
+				9FE2E729DFFA6B7ED9A240C4 /* ActivityPresentation.swift in Sources */,
+				F0C0109451124AD7FD461A55 /* MosslingCharacter.swift in Sources */,
+				3384A528A07678DF66A3A8CA /* MosslingWatchApp.swift in Sources */,
+				B46D58F87B185AAE4AFAD136 /* WatchForestView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		55087955E41031EC7D455163 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Mossling;
+			target = EB321A014DE9A534D669E4C1 /* Mossling */;
+			targetProxy = 56F4F7697A5E896964E6C05F /* PBXContainerItemProxy */;
+		};
+		8975DAC43A04E294425B1883 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = MosslingWatch;
+			target = E0655ABE83A99271F6AC5EE6 /* MosslingWatch */;
+			targetProxy = 901C0110AB82DF13639D32AB /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		333CAE1E0AABB4E42DAF054D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = "Config/iOS-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-L$(DT_TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.joshrwolf.mossling;
+				PRODUCT_NAME = Mossling;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = (
+					"$(inherited)",
+					DEBUG,
+				);
+				SWIFT_COMPILATION_MODE = singlefile;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		3B13B1B2268FC0D90BF3F03F /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 760A4598ADC291F81C3ADA21 /* Base.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MARKETING_VERSION = 0.1.0;
+				MOSSLING_PHONE_BUNDLE_IDENTIFIER = com.joshrwolf.mossling;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		64FECF533EF60E17804B9275 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 760A4598ADC291F81C3ADA21 /* Base.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MARKETING_VERSION = 0.1.0;
+				MOSSLING_PHONE_BUNDLE_IDENTIFIER = com.joshrwolf.mossling;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		67C7555ADECB3BF868252DD7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = "Derived/InfoPlists/MosslingUITests-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-L$(DT_TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.joshrwolf.mossling.uitests;
+				PRODUCT_NAME = MosslingUITests;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Mossling;
+			};
+			name = Release;
+		};
+		B63725795B52733608A0DF2F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = "Config/iOS-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-L$(DT_TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.joshrwolf.mossling;
+				PRODUCT_NAME = Mossling;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		E98AC49D83D603A71A775849 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = "Derived/InfoPlists/MosslingUITests-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-L$(DT_TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.joshrwolf.mossling.uitests;
+				PRODUCT_NAME = MosslingUITests;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = (
+					"$(inherited)",
+					DEBUG,
+				);
+				SWIFT_COMPILATION_MODE = singlefile;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Mossling;
+			};
+			name = Debug;
+		};
+		F1519CE7BC584C04AC215E51 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = "Config/watchOS-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-L$(DT_TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.joshrwolf.mossling.watchkitapp;
+				PRODUCT_NAME = MosslingWatch;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = (
+					"$(inherited)",
+					DEBUG,
+				);
+				SWIFT_COMPILATION_MODE = singlefile;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Debug;
+		};
+		F30AF19E3A588A975D9CD1E8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = "Config/watchOS-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-L$(DT_TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.joshrwolf.mossling.watchkitapp;
+				PRODUCT_NAME = MosslingWatch;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		170CBC84A0A1D8CC27296617 /* Build configuration list for PBXProject "Mossling" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				64FECF533EF60E17804B9275 /* Debug */,
+				3B13B1B2268FC0D90BF3F03F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		371A39E1F4F6A3D021A6E4CC /* Build configuration list for PBXNativeTarget "MosslingWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F1519CE7BC584C04AC215E51 /* Debug */,
+				F30AF19E3A588A975D9CD1E8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		840E67FB791D97873F1322E6 /* Build configuration list for PBXNativeTarget "Mossling" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				333CAE1E0AABB4E42DAF054D /* Debug */,
+				B63725795B52733608A0DF2F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CE90A662245F7D8E255A48D8 /* Build configuration list for PBXNativeTarget "MosslingUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E98AC49D83D603A71A775849 /* Debug */,
+				67C7555ADECB3BF868252DD7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		BA233C4836BB47AC6C48A075 /* XCLocalSwiftPackageReference "Packages/MosslingCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/MosslingCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		76D21AA70056166787610F21 /* MosslingCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MosslingCore;
+		};
+		C55404B75E7B668FBA5A983F /* MosslingCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MosslingCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = DCA7CEB3A1719510984876AC /* Project object */;
+}

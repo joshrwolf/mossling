@@ -2,7 +2,7 @@
 
 A private iPhone + Apple Watch app that turns small movement breaks into a growing woodland companion. Working title, not a registered product name.
 
-**Implementation status:** the Tuist-generated iPhone and Watch apps compile with Xcode 26.2 on hosted macOS, and the unsigned Release archive passes phone/Watch packaging checks. CI runs 42 domain tests on Linux and macOS plus three simulator UI acceptance tests with retained screenshots. [PR #2](https://github.com/joshrwolf/mossling/pull/2) tracks the current migration and complete CI result. Paired-device acceptance, signing and TestFlight delivery remain pending. See [Validation](docs/Validation.md).
+**Implementation status:** the Tuist-generated iPhone and Watch apps compile with Xcode 26.2 on hosted macOS, and the unsigned Release archive passes phone/Watch packaging checks. CI runs 42 domain tests on Linux and macOS plus three simulator UI acceptance tests with retained screenshots. [PR #3](https://github.com/joshrwolf/mossling/pull/3) adds Xcode Cloud adapters, shared product identity and adversarially reviewed release checks. [PR #2](https://github.com/joshrwolf/mossling/pull/2) records the earlier Tuist migration and its complete CI result. Paired-device acceptance, signing and TestFlight delivery remain pending. See [Validation](docs/Validation.md).
 
 ## What is implemented
 
@@ -27,19 +27,21 @@ mise run generate
 open Mossling.xcworkspace
 ```
 
-`Project.swift` defines the typed Tuist project graph. Generated Xcode files are disposable and ignored by Git. Choose **Mossling** and an iPhone simulator, or **MosslingWatch** and a paired watch simulator. No Tuist account or paid Apple membership is needed for local generation or simulator checks.
+`Project.swift` defines the typed Tuist project graph. Generated Xcode files are committed snapshots for Xcode Cloud discovery; edit the Tuist manifest and regenerate them. CI rejects drift. Choose **Mossling** and an iPhone simulator, or **MosslingWatch** and a paired watch simulator. No Tuist account or paid Apple membership is needed for local generation or simulator checks.
 
 ```sh
 mise run test:core           # Portable Swift domain tests, Linux or macOS
+mise run project:check       # Verify committed generated files match the manifest
+mise run test:tooling        # Cloud adapters and archive contract tests
 mise run build               # iPhone + Watch simulator builds
 mise run test:ui             # Real forms/persistence in a disposable iPhone simulator
 mise run archive:check       # Unsigned Release packaging and embedded Watch validation
 mise run --jobs 1 verify     # The same complete lifecycle used by GitHub Actions
 ```
 
-[mise.toml](mise.toml) owns tools and task dependencies; [Project.swift](Project.swift) owns targets and schemes. Xcode remains the underlying build engine. [Tooling](docs/Tooling.md) explains these boundaries and [Release preparation](docs/Release.md) records what remains before TestFlight. Nothing automatically deploys.
+[mise.toml](mise.toml) owns tools and task dependencies; [Project.swift](Project.swift) owns targets and schemes. Xcode remains the underlying build engine. [Tooling](docs/Tooling.md) explains these boundaries and [Release preparation](docs/Release.md) contains the exact Xcode Cloud onboarding and no-distribution validation workflow. Cloud hooks and shared release checks are implemented; Apple account activation remains pending. Nothing automatically deploys.
 
-For hardware, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig`, choose a unique bundle prefix, and enter your Apple team. Never commit that local file. TestFlight remains a later setup step after the Apple acceptance pass.
+For hardware, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig`, enter your Apple team. Product identifiers and marketing version live in `Config/Product.json`. Never commit that local file. TestFlight remains a later setup step after the Apple acceptance pass.
 
 ## Try the loop
 
@@ -63,7 +65,7 @@ An expired snack creates no debt and never subtracts progress. A snack must be c
 | `Apps/Shared/Assets.xcassets` | Bundled body layer and phone/watch icons |
 | `Apps/iOS` | Forest, activity editor, rhythm settings, journal, backup, session, onboarding |
 | `Apps/Watch` | Wrist home, activity choice and session |
-| `Project.swift`, `Tuist.swift`, `Config` | Typed project graph, schemes, signing overrides and privacy declarations |
+| `Project.swift`, `Tuist.swift`, `Config` | Typed project graph, product identity, schemes, signing overrides and privacy declarations |
 | `mise.toml`, `mise.lock`, `.github/workflows` | Pinned tools and the shared local/CI task graph |
 | `Apps/UITests`, `Tools` | UI acceptance tests, disposable simulator lifecycle and archive contract checks |
 | `docs/reviews` | Architecture, implementation, and UI review findings and resolution |
