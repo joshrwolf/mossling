@@ -18,25 +18,26 @@ There is no account, backend, analytics SDK, in-app payment, HealthKit requireme
 
 ## Open on a Mac
 
-Install Xcode 26.2 or newer with iOS and watchOS simulator runtimes. The apps support iOS 18+ and watchOS 11+.
+Install Xcode **26.2**, its iOS/watchOS simulator runtimes, and [mise](https://mise.jdx.dev/getting-started.html). The apps support iOS 18+ and watchOS 11+.
 
 ```sh
-cd Mossling
-./scripts/bootstrap.sh
-./scripts/generate.sh
-open Mossling.xcodeproj
+mise trust
+mise install --locked
+mise run generate
+open Mossling.xcworkspace
 ```
 
-The generated project is already included; generation is needed after adding files or editing `project.yml`. Choose **Mossling** and an iPhone simulator. For Watch, choose **MosslingWatch** and a paired watch simulator. Simulator builds do not need a paid developer account.
-
-Run verification:
+`Project.swift` defines the typed Tuist project graph. Generated Xcode files are disposable and ignored by Git. Choose **Mossling** and an iPhone simulator, or **MosslingWatch** and a paired watch simulator. No Tuist account or paid Apple membership is needed for local generation or simulator checks.
 
 ```sh
-./scripts/verify-core.sh
-./scripts/verify-apple.sh
+mise run test:core           # Portable Swift domain tests, Linux or macOS
+mise run build               # iPhone + Watch simulator builds
+mise run test:ui             # Real forms/persistence in a disposable iPhone simulator
+mise run archive:check       # Unsigned Release packaging and embedded Watch validation
+mise run --jobs 1 verify     # The same complete lifecycle used by GitHub Actions
 ```
 
-`verify-apple.sh` builds both simulator targets without signing and runs domain tests on Apple's Foundation. It requires a Mac. [Tooling details](docs/Tooling.md) explain CI, Xcode Cloud, bundle identifiers, and local signing setup. Nothing automatically deploys.
+[mise.toml](mise.toml) owns tools and task dependencies; [Project.swift](Project.swift) owns targets and schemes. Xcode remains the underlying build engine. [Tooling](docs/Tooling.md) explains these boundaries and [Release preparation](docs/Release.md) records what remains before TestFlight. Nothing automatically deploys.
 
 For hardware, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig`, choose a unique bundle prefix, and enter your Apple team. Never commit that local file. TestFlight remains a later setup step after the Apple acceptance pass.
 
@@ -62,8 +63,9 @@ An expired snack creates no debt and never subtracts progress. A snack must be c
 | `Apps/Shared/Assets.xcassets` | Bundled body layer and phone/watch icons |
 | `Apps/iOS` | Forest, activity editor, rhythm settings, journal, backup, session, onboarding |
 | `Apps/Watch` | Wrist home, activity choice and session |
-| `project.yml`, `Config` | Reproducible Xcode targets, signing overrides and privacy declarations |
-| `.github/workflows`, `ci_scripts`, `scripts` | Build/test automation and opt-in Xcode Cloud setup |
+| `Project.swift`, `Tuist.swift`, `Config` | Typed project graph, schemes, signing overrides and privacy declarations |
+| `mise.toml`, `mise.lock`, `.github/workflows` | Pinned tools and the shared local/CI task graph |
+| `Apps/UITests`, `Tools` | UI acceptance tests, disposable simulator lifecycle and archive contract checks |
 | `docs/reviews` | Architecture, implementation, and UI review findings and resolution |
 
 ## Foundation decisions
