@@ -1,9 +1,12 @@
 .DS_Store
 .build/
 .swiftpm/
-.tools/
-.build-artifacts/
 DerivedData/
-xcuserdata/
+.build-artifacts/
+.tools/
 *.xcuserstate
+xcuserdata/
 Config/Local.xcconfig
+*.ipa
+*.xcarchive
+*.xcresult
