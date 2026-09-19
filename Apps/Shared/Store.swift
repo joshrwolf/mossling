@@ -186,7 +186,7 @@ final class MosslingStore {
         guard role == .phone, session == nil, let opportunity = currentOpportunity else { return }
         var next = configuration
         do { try next.skip(opportunity, at: now, calendar: .current) }
-        catch { error = error.localizedDescription; return }
+        catch { self.error = error.localizedDescription; return }
         _ = await saveConfig(next)
     }
 
@@ -195,7 +195,7 @@ final class MosslingStore {
         guard role == .phone else { return }
         var next = configuration
         do { try next.pauseForToday(at: now, calendar: .current) }
-        catch { error = error.localizedDescription; return }
+        catch { self.error = error.localizedDescription; return }
         _ = await saveConfig(next)
     }
 
