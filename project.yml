@@ -1,0 +1,106 @@
+name: Mossling
+options:
+  minimumXcodeGenVersion: 2.46.0
+  xcodeVersion: "26.0"
+  deploymentTarget:
+    iOS: "18.0"
+    watchOS: "11.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+configFiles:
+  Debug: Config/Base.xcconfig
+  Release: Config/Base.xcconfig
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+packages:
+  MosslingCore:
+    path: Packages/MosslingCore
+targets:
+  Mossling:
+    type: application
+    platform: iOS
+    sources:
+      - path: Apps/iOS
+      - path: Apps/Shared
+      - path: Config/PrivacyInfo.xcprivacy
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(BUNDLE_ID_PREFIX).mossling
+        PRODUCT_NAME: Mossling
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    info:
+      path: Config/iOS-Info.plist
+      properties:
+        CFBundleDisplayName: Mossling
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        ITSAppUsesNonExemptEncryption: false
+    dependencies:
+      - package: MosslingCore
+      - target: MosslingWatch
+        embed: true
+        link: false
+        codeSign: false
+  MosslingWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: Apps/Watch
+      - path: Apps/Shared
+      - path: Config/PrivacyInfo.xcprivacy
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(BUNDLE_ID_PREFIX).mossling.watchkitapp
+        PRODUCT_NAME: MosslingWatch
+        TARGETED_DEVICE_FAMILY: "4"
+        SKIP_INSTALL: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    info:
+      path: Config/watchOS-Info.plist
+      properties:
+        CFBundleDisplayName: Mossling
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: $(BUNDLE_ID_PREFIX).mossling
+        WKRunsIndependentlyOfCompanionApp: true
+        ITSAppUsesNonExemptEncryption: false
+    dependencies:
+      - package: MosslingCore
+schemes:
+  Mossling:
+    build:
+      targets:
+        Mossling: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - package: MosslingCore/MosslingCoreTests
+    archive:
+      config: Release
+  MosslingWatch:
+    build:
+      targets:
+        MosslingWatch: all
+    run:
+      config: Debug
+    archive:
+      config: Release
