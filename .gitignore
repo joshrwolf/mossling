@@ -10,3 +10,10 @@ Config/Local.xcconfig
 *.ipa
 *.xcarchive
 *.xcresult
+Mossling.xcodeproj/
+Mossling.xcworkspace/
+Tuist/.build/
+Tuist/Dependencies/
+.mise.local.toml
+mise.local.toml
+Derived/

@@ -1,0 +1,37 @@
+min_version = "2026.9.11"
+
+[tools]
+tuist = { version = "4.208.0", os = ["macos"] }
+
+[tasks.generate]
+description = "Generate the Xcode workspace from the typed Tuist project graph"
+run = "tuist generate --no-open"
+
+[tasks.build]
+description = "Compile the iPhone and Watch simulator applications"
+depends = ["generate"]
+run = [
+  "xcodebuild -project Mossling.xcodeproj -scheme Mossling -configuration Debug -destination 'generic/platform=iOS Simulator' -derivedDataPath .build-artifacts/DerivedData CODE_SIGNING_ALLOWED=NO build",
+  "xcodebuild -project Mossling.xcodeproj -scheme MosslingWatch -configuration Debug -destination 'generic/platform=watchOS Simulator' -derivedDataPath .build-artifacts/WatchDerivedData CODE_SIGNING_ALLOWED=NO build",
+]
+
+[tasks."test:core"]
+description = "Run the portable Swift domain tests (Linux or macOS)"
+run = "swift test --package-path Packages/MosslingCore --parallel"
+
+[tasks."test:ui"]
+description = "Exercise real iPhone forms in a disposable simulator and save screenshots"
+depends = ["generate"]
+run = "swift Tools/RunUITests.swift"
+
+[tasks."archive:check"]
+description = "Build an unsigned Release archive and validate the phone/Watch bundle contract"
+depends = ["generate"]
+run = [
+  "xcodebuild -project Mossling.xcodeproj -scheme Mossling -configuration Release -destination 'generic/platform=iOS' -archivePath .build-artifacts/Mossling.xcarchive -derivedDataPath .build-artifacts/ReleaseDerivedData CODE_SIGNING_ALLOWED=NO archive",
+  "swift Tools/CheckArchive.swift .build-artifacts/Mossling.xcarchive",
+]
+
+[tasks.verify]
+description = "Run all development gates, including UI tests and Release packaging"
+depends = ["test:core", "build", "test:ui", "archive:check"]

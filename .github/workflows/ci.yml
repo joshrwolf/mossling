@@ -17,16 +17,34 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-      - run: ./scripts/verify-core.sh
+      - name: Install the tool downloader in the minimal Swift container
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends curl ca-certificates
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.9.11
+      - run: mise run test:core
   apple:
-    name: iOS and watchOS SDK builds
+    name: Apple builds, UI tests and Release archive
     runs-on: macos-15
-    timeout-minutes: 25
+    timeout-minutes: 35
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-      - run: ./scripts/bootstrap.sh
-      - run: ./scripts/verify-apple.sh
-      - name: Check generated project is current
-        run: git diff --exit-code -- Mossling.xcodeproj Config/iOS-Info.plist Config/watchOS-Info.plist
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.9.11
+      - name: Verify the project lifecycle
+        run: mise run --jobs 1 verify
+      - name: Preserve UI screenshots and test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: apple-test-results
+          path: |
+            .build-artifacts/screenshots
+            .build-artifacts/UI-Tests.xcresult
+          if-no-files-found: ignore
+          retention-days: 7

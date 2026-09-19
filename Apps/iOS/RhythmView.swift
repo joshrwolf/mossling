@@ -126,6 +126,7 @@ struct ScheduleEditor: View {
                             get: { schedule.weekdays.contains(day) },
                             set: { enabled in if enabled { schedule.weekdays.insert(day) } else { schedule.weekdays.remove(day) } }
                         ))
+                        .accessibilityIdentifier("scheduleDay\(day)")
                     }
                 }.disabled(!schedule.enabled)
                 Section {
@@ -136,6 +137,7 @@ struct ScheduleEditor: View {
                         Text("90 minutes").tag(90)
                         Text("120 minutes").tag(120)
                     }
+                    .accessibilityIdentifier("scheduleInterval")
                 } header: {
                     Text("Active hours")
                 } footer: {

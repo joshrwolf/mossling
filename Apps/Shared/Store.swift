@@ -12,7 +12,7 @@ final class MosslingStore {
     private(set) var isReady: Bool
     private(set) var status: String?
     var error: String?
-    private(set) var notificationStatus = "Not requested"
+    private(set) var notificationStatus = "Checking…"
     private(set) var celebrationID = 0
     private(set) var navigationRequest = 0
     let role: DeviceRole
@@ -53,7 +53,19 @@ final class MosslingStore {
         do {
             let folder = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
                                                     appropriateFor: nil, create: true)
-            let repository = FileDocumentRepository(url: folder.appendingPathComponent("Mossling/forest-v1.json"))
+            var documentURL = folder.appendingPathComponent("Mossling/forest-v1.json")
+            #if DEBUG && targetEnvironment(simulator)
+            // UI automation exercises real disk persistence in a separate namespace.
+            // The reset flag can never remove a person's normal forest.
+            if ProcessInfo.processInfo.arguments.contains("--ui-testing") {
+                documentURL = folder.appendingPathComponent("MosslingUITests/forest-v1.json")
+                if ProcessInfo.processInfo.arguments.contains("--ui-testing-reset"),
+                   FileManager.default.fileExists(atPath: documentURL.path) {
+                    try FileManager.default.removeItem(at: documentURL)
+                }
+            }
+            #endif
+            let repository = FileDocumentRepository(url: documentURL)
             let controller = try DocumentController(repository: repository)
             return MosslingStore(role: role, controller: controller)
         } catch {

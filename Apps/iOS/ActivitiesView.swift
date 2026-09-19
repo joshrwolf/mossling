@@ -93,6 +93,7 @@ struct ActivityEditor: View {
                         .accessibilityIdentifier("activityTitle")
                     TextField("A short reminder of what to do", text: $instructions, axis: .vertical)
                         .lineLimit(3...6)
+                        .accessibilityIdentifier("activityInstructions")
                 }
                 Section("Your target") {
                     Picker("Measure by", selection: $kind) {
