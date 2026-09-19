@@ -2,7 +2,7 @@
 
 A private iPhone + Apple Watch app that turns small movement breaks into a growing woodland companion. Working title, not a registered product name.
 
-**Implementation status:** native source, generated Xcode project, bundled artwork, domain tests, and CI configuration are included. The portable Swift suite has been executed. Apple SDK compilation, simulator rendering, and paired-device acceptance have **not** been performed in this Linux workspace. Source is hosted in the private `joshrwolf/mossling` repository. No deployment, signing setup, or TestFlight upload has been made. See [Validation](docs/Validation.md) for the exact evidence and remaining gates.
+**Implementation status:** the native iPhone and Watch targets compile successfully with Xcode 26.2 on GitHub-hosted macOS. All 42 domain tests pass on both Linux and macOS, and generated-project drift checks pass. Source is hosted in the private `joshrwolf/mossling` repository. Simulator rendering and paired-device acceptance remain pending; no signing setup or TestFlight deployment has been made. See [Validation](docs/Validation.md) for evidence and remaining gates.
 
 ## What is implemented
 

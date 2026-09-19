@@ -1,11 +1,13 @@
 # Validation report — 19 September 2026
 
-## Executed in this workspace
+## Executed checks
 
 | Check | Result | Evidence / limits |
 | --- | --- | --- |
-| Swift package compilation | PASS | Official Swift6.2 Linux toolchain, strict Swift6 language mode |
-| Portable tests | PASS | **42 tests across7 suites**, `scripts/verify-core.sh` |
+| Swift package compilation | PASS | Swift6.2 on Linux and Xcode26.2 on hosted macOS, strict Swift6 language mode |
+| Portable tests | PASS | **42 tests across7 suites** on both Linux and macOS, `scripts/verify-core.sh` |
+| Native Apple SDK builds | PASS | Both iOS Simulator and watchOS Simulator schemes compile with Xcode26.2 (17C52), signing disabled |
+| Hosted project drift | PASS | Regeneration leaves project, schemes and generated plists unchanged |
 | Native Swift source syntax | PASS | Swift frontend parse of phone/watch/shared files; not Apple SDK typechecking |
 | Store concurrency/type integration | PASS with limitation | Independent reviewer typechecked the actual iOS Store branch under Swift6 using inert actor-equivalent adapter stubs; does not validate SDK conformance |
 | Xcode project generation | PASS | Unmodified XcodeGen2.46.0 generated both targets, plists and shared schemes |
@@ -18,17 +20,15 @@
 
 Tests cover civil-time boundaries, DST gap/repeated hour, local-zone identity, validated notification capacity, timer restoration, immutable activity snapshots, no future/expired completion, unique rewards, commutative event merge, bounded sync packets, malformed protocol rejection, persist-before-publish, completion/outbox atomicity, durable ACK sequencing, restart recovery, phone authority replacement and retired-authority rejection, and idempotent non-destructive backup recovery.
 
+## Hosted CI evidence
+
+[Verify run 35469879666](https://github.com/joshrwolf/mossling/actions/runs/35469879666) passed both jobs for source commit `1bac23f672f9c31d61085d2196817ec13de56dc7` on 19 September 2026. The Apple job built both simulator schemes, ran all 42 tests against Apple's Foundation, and passed the project drift check. The Linux job independently passed all 42 tests. All 18 committed PNG Git blob hashes match their local source files.
+
+The first hosted build exposed four unsupported titled-section/footer initializers in `RhythmView.swift`. They were corrected with explicit header builders in a follow-up commit. Independent comparison confirmed that content, bindings, accessibility identifiers and behavior were unchanged. The succeeding run above verifies the correction against the real Apple SDKs. Xcode's only warnings were skipped App Intents metadata extraction; no App Intents dependency is used.
+
 ## Remaining Apple gates
 
-This workspace is Linux and has no Xcode or Apple SDKs. The native targets are implemented and source-reviewed, but **not yet Apple-build-verified or proven usable on devices**. Do not describe the result as a tested shipping app.
-
-The next gate can run on a GitHub-hosted macOS runner after the source is pushed to a private repository. The included Actions workflow compiles both simulator targets, runs domain tests on macOS, and verifies generated project drift without signing. It does not require leaving a personal Mac running. Physical hardware and visual acceptance still need a paired iPhone/watch.
-
-### Mac or hosted Mac build gate
-
-- Run `scripts/verify-apple.sh` on Xcode26.2 or validated newer stable Xcode.
-- Resolve any Apple SDK availability, SwiftUI type-inference, delegate-conformance, asset-catalog or embedding diagnostics before installation.
-- Confirm both schemes run on their simulator destinations and the companion installs beside the phone app.
+This workspace is Linux; the Apple build checks ran remotely on GitHub-hosted macOS. The native targets are now **Apple-build-verified**, but have **not yet been visually or behaviorally accepted on simulators or physical devices**. Compilation does not establish notification delivery, paired-device synchronization or visual quality.
 
 ### Simulator and hardware acceptance
 
