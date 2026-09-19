@@ -38,6 +38,7 @@ depends = ["generate"]
 run = [
   "git ls-files --error-unmatch Mossling.xcodeproj/project.pbxproj Mossling.xcworkspace/contents.xcworkspacedata",
   "git diff --exit-code -- Mossling.xcodeproj Mossling.xcworkspace",
+  "git ls-files --others --exclude-standard -- Mossling.xcodeproj Mossling.xcworkspace",
   'test -z "$(git ls-files --others --exclude-standard -- Mossling.xcodeproj Mossling.xcworkspace)"',
 ]
 
