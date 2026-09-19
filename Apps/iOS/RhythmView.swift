@@ -20,7 +20,7 @@ struct RhythmView: View {
                         .foregroundStyle(MossPalette.ink)
                         .listRowBackground(Color.clear)
                 }
-                Section("Your rhythm") {
+                Section {
                     Button { showingSchedule = true } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 5) {
@@ -32,15 +32,19 @@ struct RhythmView: View {
                             Image(systemName: "chevron.right").font(.caption)
                         }.foregroundStyle(MossPalette.ink)
                     }.accessibilityIdentifier("editSchedule")
+                } header: {
+                    Text("Your rhythm")
                 } footer: {
                     Text("Times follow your current local time zone. Skipped breaks never cost you growth.")
                 }
-                Section("Gentle reminders") {
+                Section {
                     LabeledContent("Notifications", value: store.notificationStatus)
                     Button("Enable reminders") { Task { await store.requestNotificationPermission() } }
                     Button("Open notification settings") {
                         if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
                     }
+                } header: {
+                    Text("Gentle reminders")
                 } footer: {
                     Text("Your device’s Focus and notification settings decide when reminders appear. Your app never needs to run in the background for scheduled reminders.")
                 }
@@ -53,9 +57,11 @@ struct RhythmView: View {
                         Button("Save name") { saveName() }
                     }
                 }
-                Section("Your data") {
+                Section {
                     Button { prepareExport() } label: { Label("Export your forest", systemImage: "square.and.arrow.up") }
                     if let status = store.status { Text(status).font(.footnote).foregroundStyle(MossPalette.moss) }
+                } header: {
+                    Text("Your data")
                 } footer: {
                     Text("Your history is saved on your devices. No account, ads, or analytics. The phone manages your schedule and snacks; your watch can record breaks offline and sync when connected.")
                 }
@@ -122,7 +128,7 @@ struct ScheduleEditor: View {
                         ))
                     }
                 }.disabled(!schedule.enabled)
-                Section("Active hours") {
+                Section {
                     DatePicker("First break", selection: minuteBinding(isEnd: false), displayedComponents: .hourAndMinute)
                     DatePicker("Reminders stop", selection: minuteBinding(isEnd: true), displayedComponents: .hourAndMinute)
                     Picker("A break every", selection: $schedule.intervalMinutes) {
@@ -130,6 +136,8 @@ struct ScheduleEditor: View {
                         Text("90 minutes").tag(90)
                         Text("120 minutes").tag(120)
                     }
+                } header: {
+                    Text("Active hours")
                 } footer: {
                     Text("Breaks begin at your first time and stop before the end time. Use midnight as the end to include the rest of the day. Overnight schedules aren’t supported yet. You can schedule up to 56 reminders a week.")
                 }.disabled(!schedule.enabled)
