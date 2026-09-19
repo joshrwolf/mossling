@@ -77,3 +77,24 @@ Before shipping schema2, add migration fixtures and preserve originals on conver
 - HealthKit or rep verification would produce explicit completion evidence; never infer it from a finished timer.
 - Cloud backup is distinct from paired-device transport and must preserve identity/recovery semantics.
 - Screen Time blocking adds entitlement and policy work and is not part of this gentle MVP.
+
+## Product delivery slices (September 2026)
+
+Build these as separate reviewable PRs, preserving ordinary commits within each PR:
+
+1. **Everyday snack loop:** explicit skip, pause through the next local midnight, resume, five-minute finishing grace for sessions started in their original window, schema migration, and real completion/relaunch UI acceptance.
+2. **A forest worth returning to:** keep existing earned stages and decorations; extend milestones over weeks, one persistent companion, reversible Sunlit/Moonlit appearance, milestone-specific celebrations, shared progression definitions.
+3. **A varied activity rotation:** deterministic balanced suggestions shared by phone/watch, preserving immutable session activity snapshots and user choice.
+
+Product defaults: one companion; permanent growth; no debt or decay; self-confirmed activity; gentle reminders. Multiple creatures, automatic sensing, and configurable repeated nudging remain separate future decisions.
+
+### Everyday-loop rules
+
+- Phone settings own temporary routine overrides; Watch applies them after receiving a newer configuration. Offline Watch completion remains valid even if the phone skipped or paused that opportunity. Completion wins for rewards; the immutable ledger still grants one reward per hour key.
+- Skip applies to the current reward key until the next local midnight. Pause uses an absolute deadline computed from the local calendar at the time of the action; travel does not extend it. Resume clears the pause while retaining skips.
+- Neither action cancels a snack already underway. A validated new session may finish before its original expiry plus five minutes; start must still precede original expiry. Legacy sessions keep their original deadline. Timer pause does not extend the deadline.
+- Save schema 2 explicitly migrates schema 1 in memory and writes the new version at the next successful atomic save. Unknown versions and invalid documents are preserved and rejected.
+- Dated local notifications cover up to seven calendar days, with 56 scheduled slots and eight reserved snoozes. Foreground entry, settings changes, and completion replenish the horizon. Pausing today retains tomorrow's already prepared reminders without relying on background execution. Coverage is shown only after successful scheduling; failures stay visible. After travel, reopen the app to replan in the new local timezone.
+- Phone and Watch should be updated together. Existing version-1 Watch builds do not understand temporary routine overrides. No background-only synchronization guarantee is added here.
+
+The finite notification horizon deliberately replaces indefinite weekly repeats: Apple's repeating calendar triggers cannot omit a single occurrence. See [Apple's scheduling model](https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/SchedulingandHandlingLocalNotifications.html). Hardware acceptance must exercise pause while closed, next-day resumption, permission revocation, travel, and offline Watch reconciliation.
