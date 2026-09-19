@@ -2,7 +2,7 @@
 
 A private iPhone + Apple Watch app that turns small movement breaks into a growing woodland companion. Working title, not a registered product name.
 
-**Implementation status:** the native iPhone and Watch targets compile successfully with Xcode 26.2 on GitHub-hosted macOS. All 42 domain tests pass on both Linux and macOS, and generated-project drift checks pass. Source is hosted in the private `joshrwolf/mossling` repository. Simulator rendering and paired-device acceptance remain pending; no signing setup or TestFlight deployment has been made. See [Validation](docs/Validation.md) for evidence and remaining gates.
+**Implementation status:** the Tuist-generated iPhone and Watch apps compile with Xcode 26.2 on hosted macOS, and the unsigned Release archive passes phone/Watch packaging checks. CI runs 42 domain tests on Linux and macOS plus three simulator UI acceptance tests with retained screenshots. [PR #2](https://github.com/joshrwolf/mossling/pull/2) tracks the current migration and complete CI result. Paired-device acceptance, signing and TestFlight delivery remain pending. See [Validation](docs/Validation.md).
 
 ## What is implemented
 

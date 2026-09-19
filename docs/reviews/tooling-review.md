@@ -15,3 +15,7 @@ The migration replaces XcodeGen, committed generated Xcode projects and shell bu
 The reviewer inspected the actual UI hooks, test assertions, Tuist manifests, mise tasks, CI and Swift tools. Hooks are compiled only for Debug simulator builds and delete only isolated test state. UI tests drive normal forms and verify saved state after process relaunch. The runner preserves test failure status, exports result evidence and cleans up its own device. CI runs the task graph sequentially; generation is a shared dependency.
 
 Both tooling helpers independently typechecked under Swift 6.2. The project author compiled the exact Tuist 4.208.0 ProjectDescription sources and typechecked both manifests with warnings-as-errors. Synthetic archive cases exercised success and malformed bundle rejection. Actual Tuist generation, Apple builds, archive packaging and simulator execution are separate hosted CI gates; see the PR and Validation report for their results.
+
+## First hosted UI run follow-up
+
+The actual iOS accessibility hierarchy combines the notification label and value. The test was corrected to query that visible combined label. The recorded Monday tap landed in the switch row center and the pre-save screenshot still showed it enabled; the test now taps the trailing switch control and asserts its off state immediately and after cadence editing before checking persistence across relaunch. Production behavior was unchanged by these two fixes. Hosted Tuist generation, native builds and unsigned Release archive validation passed before this follow-up.

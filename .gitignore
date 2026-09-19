@@ -16,3 +16,4 @@ Tuist/.build/
 Tuist/Dependencies/
 .mise.local.toml
 mise.local.toml
+Derived/

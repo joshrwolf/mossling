@@ -11,7 +11,8 @@ final class MosslingUITests: XCTestCase {
         capture("Forest", app: app)
 
         app.tabBars.buttons["Rhythm"].tap()
-        XCTAssertTrue(app.staticTexts["Not requested"].waitForExistence(timeout: 5))
+        // LabeledContent exposes the label and current value as one AX element.
+        XCTAssertTrue(app.staticTexts["Notifications, Not requested"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.alerts.firstMatch.exists)
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         XCTAssertFalse(springboard.alerts.firstMatch.exists,
@@ -75,11 +76,19 @@ final class MosslingUITests: XCTestCase {
         let monday = app.switches["scheduleDay2"]
         XCTAssertTrue(monday.waitForExistence(timeout: 5))
         XCTAssertEqual(monday.value as? String, "1")
-        monday.tap()
+        // SwiftUI exposes the entire Toggle row as the switch's AX frame.
+        // Tap its trailing control; the center is the noninteractive row gap.
+        monday.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        let mondayTurnedOff = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "value == %@", "0"), object: monday
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [mondayTurnedOff], timeout: 5), .completed,
+                       "Tapping Monday's switch must deselect the day before saving")
         let interval = app.buttons["scheduleInterval"]
         reveal(interval, in: app)
         interval.tap()
         app.buttons["90 minutes"].tap()
+        XCTAssertEqual(monday.value as? String, "0", "Changing the interval must preserve selected days")
         capture("Schedule editor", app: app)
         app.buttons["saveSchedule"].tap()
         XCTAssertTrue(app.staticTexts["Every 90 minutes"].waitForExistence(timeout: 5))
