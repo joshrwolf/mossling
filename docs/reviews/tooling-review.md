@@ -19,3 +19,17 @@ Both tooling helpers independently typechecked under Swift 6.2. The project auth
 ## First hosted UI run follow-up
 
 The actual iOS accessibility hierarchy combines the notification label and value. The test was corrected to query that visible combined label. The recorded Monday tap landed in the switch row center and the pre-save screenshot still showed it enabled; the test now taps the trailing switch control and asserts its off state immediately and after cadence editing before checking persistence across relaunch. Production behavior was unchanged by these two fixes. Hosted Tuist generation, native builds and unsigned Release archive validation passed before this follow-up.
+
+## Xcode Cloud adversarial review
+
+Two independent reviewers examined the current Cloud integration and deliberately challenged build/configuration ownership, phase isolation, failure propagation and release identity. Both independently ran the hook tests (27 rejection/failure cases) and seven archive tests. Neither implemented the reviewed changes.
+
+Confirmed findings and resolutions:
+
+1. Disabling the GitHub Apple job at handoff would remove the only generated-project drift gate. Cloud preparation now runs `project:check` itself.
+2. The `Config/*.xcconfig` additional-file glob would incorporate local/generated signing files into the tracked graph. The manifest now lists only the tracked config inputs explicitly.
+3. Root inspection of the real generated snapshot found absolute runner/tool paths in Tuist's convenience Generate Project scheme. That optional scheme is disabled with `includeGenerateScheme: false`; normal shared app schemes remain.
+
+The reviewers independently confirmed Apple's documented support for phase-resource symbolic links. Generated settings contain no team/build-number overrides above the base xcconfig, identifiers are concrete, Watch embedding is correct, and the phone scheme enables UI tests. The account setup recipe uses Archive Deployment Preparation None and no distribution post-action. The proposed delivery workflow remains a later activation.
+
+The final approval gate is the hosted macOS run linked from [PR #3](https://github.com/joshrwolf/mossling/pull/3): actual pinned Cloud bootstrap, unchanged regenerated snapshot despite Cloud config, all native tests/builds, and successful validation of the real unsigned archive against the configured ID/version and fixture build 42 from detached phase resources. PR results are authoritative; local tests alone are not presented as this gate passing. Actual Apple onboarding, managed signing and distribution require separate account-side acceptance.

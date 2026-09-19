@@ -1,53 +1,62 @@
 # Project and delivery tooling
 
-## Responsibility boundaries
+## Ownership
 
-| Layer | Tool | Source of truth |
-| --- | --- | --- |
-| Targets, resources, dependencies, schemes | Tuist 4.208.0 | `Project.swift`, `Tuist.swift` |
-| Tool versions and task dependencies | mise 2026.9.11 | `mise.toml`, `mise.lock` |
-| Compilation, linking, app packaging | Xcode 26.2 | Generated project and checked-in xcconfig/plists |
-| Portable domain package | Swift Package Manager | `Packages/MosslingCore/Package.swift` |
-| Remote execution and retained evidence | GitHub Actions | `.github/workflows/ci.yml` |
-| Signed TestFlight delivery | Not activated | `Release.md` |
+| Concern | Canonical definition |
+| --- | --- |
+| Targets, resources, dependencies, shared schemes | `Project.swift` / Tuist 4.208.0 |
+| Product identifier and marketing version | `Config/Product.json` |
+| Signing defaults and optional overrides | `Config/Base.xcconfig` |
+| Pinned tools and task dependencies | `mise.toml`, `mise.lock` |
+| Compiler and platform SDK | Xcode 26.2 |
+| Portable domain package | Swift Package Manager |
+| Hosted verification during Cloud setup | GitHub Actions |
+| Managed signing and delivery after account setup | Xcode Cloud |
 
-Tuist replaces XcodeGen and committed generated project files. Its Swift manifest makes the app, Watch embedding, resources and UI test target explicit in one typed graph. mise owns a discoverable lifecycle instead of separate bootstrap/build shell entry points. GitHub Actions invokes that lifecycle; it does not contain a second build implementation.
+Tuist is the project source of truth. Apple requires a continuously present project for Cloud discovery, so `Mossling.xcodeproj` and `Mossling.xcworkspace` are committed generated snapshots. Never edit them by hand: change the manifest/configuration, run `mise run generate`, review and commit the resulting snapshot. `project:check` regenerates and rejects tracked differences or new untracked project files. Both GitHub and Cloud retain this gate.
 
-Tuist does not replace Apple's compiler or sign/distribute TestFlight releases. Its cloud services are optional; this project needs no Tuist account. Fastlane is a possible future release orchestrator, not a prerequisite for this graph. A paid Apple membership is required for TestFlight, not for this CI pipeline.
+This deliberately replaces the earlier ignored-project policy. Apple's project-discovery requirement is more restrictive than a generic CI runner. Keeping a generated snapshot does not create a second manually maintained project definition.
 
-## Local development
+Optional `Local.xcconfig` and generated `Cloud.xcconfig` are ignored and deliberately excluded from Tuist's additional-file list so they cannot change the project graph. The base configuration includes Local then Cloud; Cloud's team/build values win. Tuist defines concrete bundle identifiers and the marketing version, but does not define the build number or team at a higher settings precedence.
 
-Install Xcode 26.2 with iOS/watchOS simulators, select it as the active developer directory, and install mise 2026.9.11 or newer. Run `mise trust`, `mise install --locked`, and `mise run generate`. Open `Mossling.xcworkspace`.
+## Local commands
 
-The manifest pins Xcode 26.2 compatibility to the verified CI baseline. Upgrade the manifest and CI together, then run all gates. Swift comes from Xcode on macOS; Linux CI uses `swift:6.2-noble`. Source uses strict Swift 6 concurrency with minimum iOS 18/watchOS 11.
-
-For local hardware signing, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and supply a unique reverse-DNS bundle prefix and Apple team. This override is ignored. Generated projects/workspaces are also ignored: never hand-edit or commit them. Assets and privacy manifests remain versioned inputs.
-
-## Lifecycle
+Install Xcode 26.2 and its simulator runtimes, then mise 2026.9.11 or newer. Run `mise trust`, `mise install --locked`, `mise run generate`, and open `Mossling.xcworkspace`. No Tuist account is required.
 
 | Command | Result |
 | --- | --- |
-| `mise run generate` | Generate apps and UI test target |
+| `mise run generate` | Generate the canonical Xcode snapshot |
+| `mise run project:check` | Verify committed snapshot matches the manifest |
 | `mise run build` | Unsigned phone/Watch simulator builds |
-| `mise run test:core` | Portable Swift tests on Linux or macOS |
-| `mise run test:ui` | Fresh simulator, real form operations, persistence checks and screenshots |
-| `mise run archive:check` | Unsigned device Release archive and phone/Watch packaging check |
-| `mise run --jobs 1 verify` | All gates, with shared generation through the dependency graph |
+| `mise run test:core` | Portable domain tests |
+| `mise run test:tooling` | Cloud failure/isolation tests and archive contract tests |
+| `mise run test:ui` | Real iPhone forms/persistence in a disposable simulator |
+| `mise run archive:check` | Unsigned device archive and embedded Watch validation |
+| `mise run --jobs 1 verify` | Complete development/CI gate |
 
-Each task declares generation when needed. CI runs sequentially to keep resource usage predictable. Validation is never skipped based on timestamps; Xcode still reuses its normal incremental compiler outputs.
+For hardware signing, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and supply the Apple team. Product IDs are versioned in `Config/Product.json`; they are not per-machine overrides. Change the proposed identifier before registration if unavailable, regenerate, and review. Once distributed, changing it creates a different app identity.
 
-Two small Swift tools implement project-specific checks: `RunUITests.swift` owns disposable simulator creation/cleanup, execution and evidence export; `CheckArchive.swift` checks the produced app bundle relationship. They do not implement dependency resolution or compilation. UI test document/preferences hooks compile only into Debug simulator builds. Release/device builds contain no reset path.
+`project:check` expects a git checkout and committed generated files. During development, generated changes are expected; review and commit them before the full verification gate. Xcode/macOS upgrades are intentional changes to the manifest, GitHub runner and Cloud workflow together.
 
-CI retains screenshots and the Xcode result bundle for seven days, including failed runs. This evidence does not establish real notification delivery, paired Watch connectivity, accessibility acceptance or physical-device power behavior.
+## Cloud integration
 
-## Release boundary
+The two executable shell files under `ci_scripts` are Apple's required entry points. Each delegates immediately to `Tools/XcodeCloud.swift`; they contain no build or signing implementation.
 
-`archive:check` exercises optimized device compilation before enrollment completes. Its archive is unsigned and cannot be installed or submitted. There is no upload task or credential-bearing PR job. See [Release preparation](Release.md).
+Post-clone validates Apple's product/team/build variables, writes the ignored Cloud settings, verifies the pinned mise binary checksum, installs locked Tuist, runs domain tests and checks the generated snapshot. Xcode Cloud then performs native Test/Archive actions itself. It does not invoke the local simulator runner or nest another `xcodebuild` pipeline.
 
-## Primary references
+Post-xcodebuild preserves a failed native action's exit status. For a successful archive it calls the same `CheckArchive.swift` used locally, additionally requiring the exact Cloud bundle identifier, build number and marketing version. Other successful actions do nothing. Build numbering belongs to Xcode Cloud; no repository commits or timestamp incrementer are involved.
 
-- [Tuist 4.208.0](https://github.com/tuist/tuist/releases/tag/4.208.0)
-- [mise tasks](https://mise.jdx.dev/tasks/)
-- [mise tool lockfiles](https://mise.jdx.dev/dev-tools/mise-lock.html)
-- [Fastlane archive orchestration](https://docs.fastlane.tools/actions/build_app/)
-- [Xcode Cloud and TestFlight](https://developer.apple.com/xcode-cloud/)
+Apple copies the `ci_scripts` resources between phases and follows their symbolic links. The links to the Swift adapter, shared archive validator and product configuration intentionally give the post-action everything it needs without relying on the source checkout or post-clone side effects surviving. Keep the links and executable file modes intact.
+
+## Cost and handoff
+
+GitHub's Apple gate stays enabled until real Cloud verification is accepted. After the Cloud PR workflow and required checks are working, set repository variable `MOSSLING_XCODE_CLOUD_ACTIVE=true` to suppress automatic duplicate Mac jobs. Manual GitHub workflow runs retain the Apple job as a diagnostic fallback. Linux domain/tooling checks remain on GitHub.
+
+That variable does not configure Cloud or impose a spending cap. GitHub usage budgets and Apple's included 25-hour plan are separate account settings; they have not been changed by this refactor. See [Release setup](Release.md) for the account-side steps and acceptance criteria.
+
+## References
+
+- [Apple project requirements](https://developer.apple.com/documentation/xcode/setting-up-your-project-to-use-xcode-cloud)
+- [Apple custom scripts and phase resources](https://developer.apple.com/documentation/xcode/writing-custom-build-scripts)
+- [Tuist Cloud integration](https://tuist.dev/en/docs/guides/integrations/continuous-integration)
+- [mise tasks](https://mise.jdx.dev/tasks/) and [lockfiles](https://mise.jdx.dev/dev-tools/mise-lock.html)
