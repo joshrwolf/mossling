@@ -64,7 +64,7 @@ func checkBundle(_ bundle: URL, platform: String) throws -> [String: Any] {
     return info
 }
 
-func checkArchive(_ archive: URL) throws {
+func checkArchive(_ archive: URL, expectations: [String: String]) throws {
     let archiveInfo = try readPlist(archive.appendingPathComponent("Info.plist"))
     let properties = archiveInfo["ApplicationProperties"] as? [String: Any]
     try require(
@@ -96,12 +96,29 @@ func checkArchive(_ archive: URL) throws {
     for key in ["CFBundleShortVersionString", "CFBundleVersion"] {
         try require(phone[key] as? String == watch[key] as? String, "Phone and Watch \(key) values differ")
     }
+    for (flag, key) in [("--expect-bundle-id", "CFBundleIdentifier"),
+                        ("--expect-build-number", "CFBundleVersion"),
+                        ("--expect-version", "CFBundleShortVersionString")] {
+        if let expected = expectations[flag] {
+            try require(phone[key] as? String == expected, "Archive \(key) does not match the expected release value")
+        }
+    }
     print("Archive verified: iPhone and embedded Watch device apps, matching versions, assets and privacy manifests.")
 }
 
 do {
-    try require(CommandLine.arguments.count == 2, "Usage: swift Tools/CheckArchive.swift <path.xcarchive>")
-    try checkArchive(URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true))
+    let arguments = Array(CommandLine.arguments.dropFirst())
+    try require(!arguments.isEmpty && arguments.count % 2 == 1,
+                "Usage: CheckArchive <path.xcarchive> [--expect-bundle-id ID] [--expect-build-number N] [--expect-version V]")
+    let allowed = Set(["--expect-bundle-id", "--expect-build-number", "--expect-version"])
+    var expectations: [String: String] = [:]
+    for index in stride(from: 1, to: arguments.count, by: 2) {
+        let key = arguments[index]
+        try require(allowed.contains(key) && expectations[key] == nil && !arguments[index + 1].isEmpty,
+                    "Unknown, duplicate or empty archive expectation")
+        expectations[key] = arguments[index + 1]
+    }
+    try checkArchive(URL(fileURLWithPath: arguments[0], isDirectory: true), expectations: expectations)
 } catch {
     FileHandle.standardError.write(Data("Archive validation failed: \(error)\n".utf8))
     exit(1)

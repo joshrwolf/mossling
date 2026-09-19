@@ -32,6 +32,19 @@ run = [
   "swift Tools/CheckArchive.swift .build-artifacts/Mossling.xcarchive",
 ]
 
+[tasks."project:check"]
+description = "Reject missing or stale committed Tuist-generated Cloud project snapshots"
+depends = ["generate"]
+run = [
+  "git ls-files --error-unmatch Mossling.xcodeproj/project.pbxproj Mossling.xcworkspace/contents.xcworkspacedata",
+  "git diff --exit-code -- Mossling.xcodeproj Mossling.xcworkspace",
+  'test -z "$(git ls-files --others --exclude-standard -- Mossling.xcodeproj Mossling.xcworkspace)"',
+]
+
+[tasks."test:tooling"]
+description = "Exercise Cloud environment boundaries and malformed release archives"
+run = ["swift Tools/Tests/RunCloudHookTests.swift", "python3 Tools/Tests/test_archive.py"]
+
 [tasks.verify]
 description = "Run all development gates, including UI tests and Release packaging"
-depends = ["test:core", "build", "test:ui", "archive:check"]
+depends = ["test:core", "test:tooling", "project:check", "build", "test:ui", "archive:check"]

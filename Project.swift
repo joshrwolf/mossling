@@ -1,6 +1,18 @@
+import Foundation
 import ProjectDescription
 
-// The manifest is the source of truth. Generated Xcode files are disposable.
+// The manifest is the source of truth. Generated files are tracked only because
+// Xcode Cloud requires a continuously present project; CI rejects generation drift.
+struct ProductConfiguration: Decodable {
+    let bundleIdentifier: String
+    let marketingVersion: String
+}
+let productConfiguration = try JSONDecoder().decode(
+    ProductConfiguration.self,
+    from: Data(contentsOf: URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent().appendingPathComponent("Config/Product.json"))
+)
+let phoneBundleID = productConfiguration.bundleIdentifier
 let project = Project(
     name: "Mossling",
     options: .options(
@@ -15,9 +27,8 @@ let project = Project(
             "SWIFT_VERSION": "6.0",
             "SWIFT_STRICT_CONCURRENCY": "complete",
             "ENABLE_USER_SCRIPT_SANDBOXING": "YES",
-            "MARKETING_VERSION": "0.1.0",
-            "CURRENT_PROJECT_VERSION": "1",
-            "CODE_SIGN_STYLE": "Automatic",
+            "MARKETING_VERSION": .string(productConfiguration.marketingVersion),
+            "MOSSLING_PHONE_BUNDLE_IDENTIFIER": .string(phoneBundleID),
         ],
         configurations: [
             .debug(name: "Debug", xcconfig: "Config/Base.xcconfig"),
@@ -29,7 +40,7 @@ let project = Project(
             name: "Mossling",
             destinations: [.iPhone],
             product: .app,
-            bundleId: "$(BUNDLE_ID_PREFIX).mossling",
+            bundleId: phoneBundleID,
             deploymentTargets: .iOS("18.0"),
             infoPlist: .file(path: "Config/iOS-Info.plist"),
             sources: ["Apps/iOS/**/*.swift", "Apps/Shared/**/*.swift"],
@@ -49,7 +60,7 @@ let project = Project(
             name: "MosslingWatch",
             destinations: [.appleWatch],
             product: .app,
-            bundleId: "$(BUNDLE_ID_PREFIX).mossling.watchkitapp",
+            bundleId: phoneBundleID + ".watchkitapp",
             deploymentTargets: .watchOS("11.0"),
             infoPlist: .file(path: "Config/watchOS-Info.plist"),
             sources: ["Apps/Watch/**/*.swift", "Apps/Shared/**/*.swift"],
@@ -64,7 +75,7 @@ let project = Project(
             name: "MosslingUITests",
             destinations: [.iPhone],
             product: .uiTests,
-            bundleId: "$(BUNDLE_ID_PREFIX).mossling.uitests",
+            bundleId: phoneBundleID + ".uitests",
             deploymentTargets: .iOS("18.0"),
             infoPlist: .default,
             sources: ["Apps/UITests/**/*.swift"],
@@ -93,6 +104,6 @@ let project = Project(
             archiveAction: .archiveAction(configuration: .release)
         ),
     ],
-    additionalFiles: ["Config/*.xcconfig", "README.md", "docs/**"],
+    additionalFiles: ["Config/Base.xcconfig", "Config/Local.xcconfig.example", "Config/Product.json", "README.md", "docs/**"],
     resourceSynthesizers: []
 )

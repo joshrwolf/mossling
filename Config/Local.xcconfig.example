@@ -1,2 +1,2 @@
-BUNDLE_ID_PREFIX = com.yourname
+// Copy to Local.xcconfig for local device signing. Never commit that file.
 DEVELOPMENT_TEAM = YOURTEAMID
