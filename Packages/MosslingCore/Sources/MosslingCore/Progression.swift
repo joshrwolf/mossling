@@ -7,12 +7,26 @@ public struct SnackSession: Codable, Equatable, Sendable, Identifiable {
     public private(set) var accumulatedSeconds: TimeInterval
     public private(set) var runningSince: Date?
     public private(set) var completed: Bool
+    public let startedAt: Date?
 
-    public init(id: UUID = UUID(), opportunity: Opportunity, activity: ActivityDefinition, accumulatedSeconds: TimeInterval = 0, runningSince: Date? = nil, completed: Bool = false) {
+    public init(id: UUID = UUID(), opportunity: Opportunity, activity: ActivityDefinition, accumulatedSeconds: TimeInterval = 0, runningSince: Date? = nil, completed: Bool = false, startedAt: Date? = nil) {
         self.id = id; self.opportunity = opportunity; self.activity = activity
         self.accumulatedSeconds = accumulatedSeconds.isFinite ? max(0, accumulatedSeconds) : 0
-        self.runningSince = completed ? nil : runningSince; self.completed = completed
+        self.runningSince = completed ? nil : runningSince; self.completed = completed; self.startedAt = startedAt
     }
+    public static let completionGrace: TimeInterval = 5 * 60
+
+    /// Only a validated, persisted start receives grace. Legacy sessions keep their deadline.
+    public var completionDeadline: Date {
+        guard let startedAt, opportunity.isActive(at: startedAt) else { return opportunity.expiresAt }
+        return opportunity.expiresAt.addingTimeInterval(Self.completionGrace)
+    }
+
+    public static func start(opportunity: Opportunity, activity: ActivityDefinition, at date: Date) throws -> Self {
+        try SessionStartValidator.validate(opportunity: opportunity, activity: activity, at: date)
+        return Self(opportunity: opportunity, activity: activity, runningSince: date, startedAt: date)
+    }
+
     public func elapsed(at date: Date) -> TimeInterval {
         let safeAccumulated = accumulatedSeconds.isFinite ? max(0, accumulatedSeconds) : 0
         return safeAccumulated + (runningSince.map { max(0, date.timeIntervalSince($0)) } ?? 0)
@@ -30,7 +44,7 @@ public struct SnackSession: Codable, Equatable, Sendable, Identifiable {
 }
 
 public enum CompletionError: Error, LocalizedError, Equatable, Sendable {
-    case alreadyCompleted, notStarted, expired, timerIncomplete, invalidActivity
+    case alreadyCompleted, notStarted, expired, timerIncomplete, invalidActivity, insufficientTime
     public var errorDescription: String? {
         switch self {
         case .alreadyCompleted: "This snack is already complete."
@@ -38,6 +52,19 @@ public enum CompletionError: Error, LocalizedError, Equatable, Sendable {
         case .expired: "That snack window has ended. Your next snack is a fresh start."
         case .timerIncomplete: "Let the activity timer finish before confirming."
         case .invalidActivity: "This activity needs a valid target."
+        case .insufficientTime: "Choose a shorter activity to finish within this snack’s five-minute grace period."
+        }
+    }
+}
+
+public enum SessionStartValidator {
+    public static func validate(opportunity: Opportunity, activity: ActivityDefinition, at date: Date) throws {
+        guard date.timeIntervalSinceReferenceDate.isFinite, date >= opportunity.scheduledAt else { throw CompletionError.notStarted }
+        guard opportunity.isActive(at: date) else { throw CompletionError.expired }
+        guard (try? activity.validate()) != nil else { throw CompletionError.invalidActivity }
+        if activity.targetKind == .duration,
+           date.addingTimeInterval(Double(activity.targetValue)) >= opportunity.expiresAt.addingTimeInterval(SnackSession.completionGrace) {
+            throw CompletionError.insufficientTime
         }
     }
 }
@@ -45,8 +72,9 @@ public enum CompletionError: Error, LocalizedError, Equatable, Sendable {
 public enum CompletionValidator {
     public static func validate(session: SnackSession, completedAt date: Date) throws {
         guard !session.completed else { throw CompletionError.alreadyCompleted }
-        guard date >= session.opportunity.scheduledAt else { throw CompletionError.notStarted }
-        guard date < session.opportunity.expiresAt else { throw CompletionError.expired }
+        guard date.timeIntervalSinceReferenceDate.isFinite, date >= session.opportunity.scheduledAt,
+              session.startedAt.map({ date >= $0 }) ?? true else { throw CompletionError.notStarted }
+        guard date < session.completionDeadline else { throw CompletionError.expired }
         guard (try? session.activity.validate()) != nil else { throw CompletionError.invalidActivity }
         if session.activity.targetKind == .duration, session.elapsed(at: date) < Double(session.activity.targetValue) {
             throw CompletionError.timerIncomplete

@@ -121,3 +121,79 @@ struct ScheduleTests {
         #expect(throws: ConfigurationError.invalidActivity(activity.id)) { try activity.validate() }
     }
 }
+
+@Suite("Temporary routine changes")
+struct DailyRoutineTests {
+    @Test func skipUsesRewardIdentityWithoutChangingBoundariesOrSchedule() throws {
+        let now = utcDate("2026-09-21T09:40:00Z"), calendar = testCalendar()
+        var configuration = AppConfiguration.standard
+        let originalSchedule = configuration.schedule
+        let skipped = try #require(try ScheduleEngine(configuration: configuration).current(at: now, calendar: calendar))
+        try configuration.skip(skipped, at: now, calendar: calendar)
+        #expect(configuration.schedule == originalSchedule)
+        #expect(try ScheduleEngine(configuration: configuration).current(at: now, calendar: calendar) == nil)
+        #expect(try ScheduleEngine(configuration: configuration).next(after: now, calendar: calendar)?.scheduledAt == skipped.expiresAt)
+        #expect(try ScheduleEngine(configuration: configuration).opportunities(on: now, calendar: calendar).first?.expiresAt == skipped.expiresAt)
+        configuration.schedule.startMinute = 570
+        #expect(try ScheduleEngine(configuration: configuration).current(at: now, calendar: calendar) == nil)
+        #expect(try ScheduleEngine(configuration: configuration).current(at: utcDate("2026-09-22T09:40:00Z"), calendar: calendar) != nil)
+    }
+
+    @Test func pauseExpiresAtCapturedLocalMidnightAcrossDSTAndTravel() throws {
+        var configuration = AppConfiguration.standard
+        let calendar = testCalendar("America/Denver")
+        let now = utcDate("2026-11-01T06:30:00Z") // 00:30 before the repeated hour.
+        try configuration.pauseForToday(at: now, calendar: calendar)
+        let midnight = utcDate("2026-11-02T07:00:00Z")
+        #expect(configuration.dailyOverride?.expiresAt == midnight)
+        #expect(configuration.isPaused(at: midnight.addingTimeInterval(-1)))
+        #expect(!configuration.isPaused(at: midnight))
+        // Asking again after travel keeps the original absolute deadline.
+        try configuration.pauseForToday(at: now.addingTimeInterval(3600), calendar: testCalendar("Asia/Tokyo"))
+        #expect(configuration.dailyOverride?.expiresAt == midnight)
+        let restored = try AppDocument.decode(AppDocument(configuration: configuration).encoded())
+        #expect(!restored.configuration.isPaused(at: midnight))
+    }
+
+    @Test func resumePreservesSkipsAndExpiredOverrideGetsFreshDeadline() throws {
+        var configuration = AppConfiguration.standard
+        let calendar = testCalendar(), now = utcDate("2026-09-21T09:10:00Z")
+        let opportunity = try #require(try ScheduleEngine(configuration: configuration).current(at: now, calendar: calendar))
+        try configuration.skip(opportunity, at: now, calendar: calendar)
+        try configuration.pauseForToday(at: now, calendar: calendar)
+        configuration.resumeToday(at: now)
+        #expect(!configuration.isPaused(at: now))
+        #expect(configuration.isSkipped(opportunity, at: now))
+        let tomorrow = utcDate("2026-09-22T09:10:00Z")
+        try configuration.pauseForToday(at: tomorrow, calendar: calendar)
+        #expect(configuration.dailyOverride?.skippedRewardKeys.isEmpty == true)
+        #expect(configuration.dailyOverride?.expiresAt == utcDate("2026-09-23T00:00:00Z"))
+    }
+
+    @Test func reminderPlanResumesTomorrowWithoutAnotherRefresh() throws {
+        var configuration = AppConfiguration.standard
+        let calendar = testCalendar(), now = utcDate("2026-09-21T09:10:00Z")
+        try configuration.pauseForToday(at: now, calendar: calendar)
+        let plan = try ReminderPlan(configuration: configuration, at: now, calendar: calendar)
+        #expect(plan.currentOpportunity == nil)
+        #expect(plan.opportunities.first?.scheduledAt == utcDate("2026-09-22T09:00:00Z"))
+        #expect(plan.coverageEnd == utcDate("2026-09-28T00:00:00Z"))
+        #expect(plan.opportunities.count == 32)
+        #expect(plan.opportunities.allSatisfy { $0.scheduledAt > now && $0.scheduledAt < plan.coverageEnd })
+    }
+
+    @Test func reminderPlanHonorsCapacityCompletedRewardsAndCurrentSnooze() throws {
+        let configuration = AppConfiguration(schedule: .init(weekdays: [1,2,3,4,5,6,7]))
+        let calendar = testCalendar(), before = utcDate("2026-09-21T00:00:00Z")
+        let full = try ReminderPlan(configuration: configuration, at: before, calendar: calendar)
+        #expect(full.opportunities.count == ReminderPlan.maximumReminders)
+        let now = utcDate("2026-09-21T09:10:00Z")
+        let active = try ReminderPlan(configuration: configuration, at: now, calendar: calendar)
+        #expect(active.currentOpportunity?.rewardKey == "2026-09-21-h09")
+        #expect(active.opportunities.first?.rewardKey == "2026-09-21-h10")
+        let completed = try ReminderPlan(configuration: configuration, at: now, calendar: calendar,
+            completedRewardKeys: ["2026-09-21-h09", "2026-09-21-h10"])
+        #expect(completed.currentOpportunity == nil)
+        #expect(completed.opportunities.first?.rewardKey == "2026-09-21-h11")
+    }
+}

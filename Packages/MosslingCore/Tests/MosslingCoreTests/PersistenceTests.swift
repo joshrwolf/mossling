@@ -92,3 +92,41 @@ struct PersistenceTests {
         #expect(try repository.load() == document)
     }
 }
+
+@Suite("Save migrations")
+struct MigrationTests {
+    @Test func schemaOnePreservesStateWithoutInventingGraceOrOverrides() throws {
+        let opportunity = sampleOpportunity(), event = sampleEvent(sampleOpportunity(hour: 10))
+        let session = SnackSession(opportunity: opportunity, activity: opportunity.activity,
+            accumulatedSeconds: 30, runningSince: opportunity.scheduledAt.addingTimeInterval(60))
+        var original = AppDocument(events: [event], session: session, pendingEventIDs: [event.eventID], hasReceivedPhoneConfiguration: true)
+        original.configurationAuthorityID = UUID()
+        original.retiredConfigurationAuthorities = [UUID()]
+        var legacy = try #require(try JSONSerialization.jsonObject(with: original.encoded()) as? [String: Any])
+        legacy["schemaVersion"] = 1
+        var configuration = try #require(legacy["configuration"] as? [String: Any])
+        configuration.removeValue(forKey: "dailyOverride")
+        legacy["configuration"] = configuration
+        var legacySession = try #require(legacy["session"] as? [String: Any])
+        legacySession.removeValue(forKey: "startedAt")
+        legacy["session"] = legacySession
+        let migrated = try AppDocument.decode(JSONSerialization.data(withJSONObject: legacy))
+        original.hasReceivedPhoneConfiguration = false
+        #expect(migrated == original)
+        #expect(migrated.schemaVersion == 2)
+        #expect(migrated.session?.completionDeadline == opportunity.expiresAt)
+        #expect(migrated.configuration.dailyOverride == nil)
+        #expect(try AppDocument.decode(migrated.encoded()) == migrated)
+    }
+
+    @Test func schemaTwoPersistsOverridesAndExplicitStart() throws {
+        let now = utcDate("2026-09-21T09:05:00Z")
+        var document = AppDocument(session: try SnackSession.start(opportunity: sampleOpportunity(), activity: .starters[0], at: now))
+        try document.configuration.skip(sampleOpportunity(), at: now, calendar: testCalendar())
+        try document.configuration.pauseForToday(at: now, calendar: testCalendar())
+        #expect(try AppDocument.decode(document.encoded()) == document)
+        #expect(throws: DocumentError.unsupportedVersion(3)) {
+            try AppDocument.decode(Data("{\"schemaVersion\":3}".utf8))
+        }
+    }
+}

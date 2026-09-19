@@ -103,3 +103,66 @@ struct LedgerTests {
         #expect(guardian.rewardRuleVersion == 1)
     }
 }
+
+@Suite("Started-session grace")
+struct SessionGraceTests {
+    @Test func lateStartHasPersistedFiveMinuteGraceAndExclusiveDeadline() throws {
+        let opportunity = sampleOpportunity()
+        let start = opportunity.expiresAt.addingTimeInterval(-30)
+        let session = try SnackSession.start(opportunity: opportunity, activity: opportunity.activity, at: start)
+        let restored = try AppDocument.decode(AppDocument(session: session).encoded()).session!
+        #expect(restored.startedAt == start)
+        #expect(restored.completionDeadline == opportunity.expiresAt.addingTimeInterval(300))
+        try CompletionValidator.validate(session: restored, completedAt: start.addingTimeInterval(120))
+        #expect(throws: CompletionError.expired) {
+            try CompletionValidator.validate(session: restored, completedAt: restored.completionDeadline)
+        }
+    }
+
+    @Test func futureExpiredAndImpossibleStartsAreRejected() throws {
+        let opportunity = sampleOpportunity()
+        #expect(throws: CompletionError.notStarted) {
+            try SnackSession.start(opportunity: opportunity, activity: opportunity.activity, at: opportunity.scheduledAt.addingTimeInterval(-1))
+        }
+        #expect(throws: CompletionError.expired) {
+            try SnackSession.start(opportunity: opportunity, activity: opportunity.activity, at: opportunity.expiresAt)
+        }
+        var longActivity = opportunity.activity
+        longActivity.targetValue = 600
+        #expect(throws: CompletionError.insufficientTime) {
+            try SnackSession.start(opportunity: opportunity, activity: longActivity, at: opportunity.expiresAt.addingTimeInterval(-60))
+        }
+    }
+
+    @Test func legacyAndInvalidStartsNeverReceiveGrace() throws {
+        let opportunity = sampleOpportunity()
+        var legacy = SnackSession(opportunity: opportunity, activity: opportunity.activity, accumulatedSeconds: 120)
+        legacy.resume(at: opportunity.expiresAt.addingTimeInterval(-10))
+        #expect(legacy.startedAt == nil)
+        #expect(legacy.completionDeadline == opportunity.expiresAt)
+        #expect(throws: CompletionError.expired) {
+            try CompletionValidator.validate(session: legacy, completedAt: opportunity.expiresAt)
+        }
+        let invalid = SnackSession(opportunity: opportunity, activity: opportunity.activity,
+            accumulatedSeconds: 120, startedAt: opportunity.expiresAt)
+        #expect(invalid.completionDeadline == opportunity.expiresAt)
+        #expect(throws: DocumentError.invalidDocument) { try AppDocument(session: invalid).validate() }
+    }
+
+    @Test func pausingAndReopeningCannotExtendGraceOrRewardTwice() throws {
+        let opportunity = sampleOpportunity(), start = opportunity.expiresAt.addingTimeInterval(-60)
+        var session = try SnackSession.start(opportunity: opportunity, activity: opportunity.activity, at: start)
+        session.pause(at: opportunity.expiresAt.addingTimeInterval(60))
+        let deadline = session.completionDeadline
+        session.resume(at: opportunity.expiresAt.addingTimeInterval(120))
+        #expect(session.completionDeadline == deadline)
+        var document = AppDocument(session: session)
+        try document.configuration.pauseForToday(at: start, calendar: testCalendar())
+        try document.configuration.skip(opportunity, at: start, calendar: testCalendar())
+        try DocumentSync.complete(session, at: opportunity.expiresAt.addingTimeInterval(121), in: &document)
+        #expect(CompletionLedger(events: document.events).progress.growth == 10)
+        #expect(throws: CompletionError.alreadyCompleted) {
+            try DocumentSync.complete(session, at: opportunity.expiresAt.addingTimeInterval(122), in: &document)
+        }
+    }
+}

@@ -201,3 +201,58 @@ struct DocumentSyncTests {
         #expect(CompletionLedger(events: afterAcknowledgment.document.events).progress.growth == 10)
     }
 }
+
+@Suite("Phone-owned daily routine sync")
+struct DailyRoutineSyncTests {
+    @Test func upgradedWatchAcceptsEqualRevisionV2AndRejectsOldOrFutureWireVersions() throws {
+        let authority = UUID(), now = utcDate("2026-09-21T09:05:00Z")
+        var oldWatch = AppDocument(configuration: AppConfiguration(revision: 10), hasReceivedPhoneConfiguration: true)
+        oldWatch.configurationAuthorityID = authority
+        var oldJSON = try #require(try JSONSerialization.jsonObject(with: oldWatch.encoded()) as? [String: Any])
+        oldJSON["schemaVersion"] = 1
+        var watch = try AppDocument.decode(JSONSerialization.data(withJSONObject: oldJSON))
+        var phone = AppConfiguration(revision: 10)
+        try phone.pauseForToday(at: now, calendar: testCalendar())
+        let snapshot = ConfigurationSnapshot(configuration: phone, authorityID: authority)
+        try DocumentSync.receive(snapshot, into: &watch)
+        #expect(watch.configuration.isPaused(at: now))
+        #expect(watch.hasReceivedPhoneConfiguration)
+        #expect(watch.retiredConfigurationAuthorities.isEmpty)
+        phone.revision += 1
+        phone.resumeToday(at: now)
+        try DocumentSync.receive(ConfigurationSnapshot(configuration: phone, authorityID: authority), into: &watch)
+        #expect(!watch.configuration.isPaused(at: now))
+        #expect(watch.configuration.revision == 11)
+        var wire = try #require(try JSONSerialization.jsonObject(with: snapshot.encoded()) as? [String: Any])
+        for version in [1, 3] {
+            wire["version"] = version
+            let data = try JSONSerialization.data(withJSONObject: wire)
+            #expect(throws: SyncProtocolError.unsupportedVersion(version)) { try ConfigurationSnapshot.decode(data) }
+        }
+    }
+
+    @Test func overridesRoundTripAndStaleSnapshotCannotUndoPause() throws {
+        let authority = UUID(), now = utcDate("2026-09-21T09:05:00Z")
+        var phone = AppConfiguration.standard
+        let initial = ConfigurationSnapshot(configuration: phone, authorityID: authority)
+        let session = try SnackSession.start(opportunity: sampleOpportunity(), activity: .starters[0], at: now)
+        var watch = AppDocument(session: session)
+        try DocumentSync.receive(initial, into: &watch)
+        try phone.skip(sampleOpportunity(), at: now, calendar: testCalendar())
+        try phone.pauseForToday(at: now, calendar: testCalendar())
+        phone.revision += 1
+        let updated = try ConfigurationSnapshot.decode(ConfigurationSnapshot(configuration: phone, authorityID: authority).encoded())
+        try DocumentSync.receive(updated, into: &watch)
+        try DocumentSync.receive(initial, into: &watch)
+        #expect(watch.configuration == phone)
+        #expect(watch.configuration.isPaused(at: now))
+        #expect(watch.configuration.isSkipped(sampleOpportunity(), at: now))
+        #expect(watch.session == session)
+        #expect(!watch.configuration.isPaused(at: utcDate("2026-09-22T00:00:00Z")))
+        phone.resumeToday(at: now)
+        phone.revision += 1
+        try DocumentSync.receive(ConfigurationSnapshot(configuration: phone, authorityID: authority), into: &watch)
+        #expect(!watch.configuration.isPaused(at: now))
+        #expect(watch.configuration.isSkipped(sampleOpportunity(), at: now))
+    }
+}

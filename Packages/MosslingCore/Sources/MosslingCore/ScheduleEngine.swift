@@ -56,7 +56,9 @@ public struct ScheduleEngine: Sendable {
     }
 
     public func current(at date: Date, calendar: Calendar) throws -> Opportunity? {
-        try opportunities(on: date, calendar: calendar).first { $0.isActive(at: date) }
+        try opportunities(on: date, calendar: calendar).first {
+            $0.isActive(at: date) && !configuration.isSuppressed($0, at: date)
+        }
     }
 
     public func next(after date: Date, calendar suppliedCalendar: Calendar) throws -> Opportunity? {
@@ -65,7 +67,7 @@ public struct ScheduleEngine: Sendable {
         let start = calendar.startOfDay(for: date)
         for offset in 0...7 {
             guard let day = calendar.date(byAdding: .day, value: offset, to: start) else { continue }
-            if let opportunity = try opportunities(on: day, calendar: calendar).first(where: { $0.scheduledAt > date }) { return opportunity }
+            if let opportunity = try opportunities(on: day, calendar: calendar).first(where: { $0.scheduledAt > date && !configuration.isSuppressed($0, at: $0.scheduledAt) }) { return opportunity }
         }
         return nil
     }
@@ -79,5 +81,38 @@ public struct ScheduleEngine: Sendable {
 
     private static func stableHash(_ value: String) -> UInt64 {
         value.utf8.reduce(UInt64(14_695_981_039_346_656_037)) { ($0 ^ UInt64($1)) &* 1_099_511_628_211 }
+    }
+}
+
+/// A bounded, dated plan: temporary skips and pauses can expire while the app is closed.
+/// The platform refreshes this horizon on launch, foreground, and durable routine changes.
+public struct ReminderPlan: Equatable, Sendable {
+    public static let maximumReminders = 56
+    public let opportunities: [Opportunity]
+    public let currentOpportunity: Opportunity?
+    public let coverageEnd: Date
+
+    public init(configuration: AppConfiguration, at date: Date, calendar: Calendar,
+                completedRewardKeys: Set<String> = []) throws {
+        try configuration.validate()
+        let engine = ScheduleEngine(configuration: configuration)
+        let start = calendar.startOfDay(for: date)
+        guard date.timeIntervalSinceReferenceDate.isFinite,
+              let end = calendar.date(byAdding: .day, value: 7, to: start) else {
+            throw ConfigurationError.invalidDailyOverride
+        }
+        var future: [Opportunity] = []
+        for offset in 0..<7 {
+            guard let day = calendar.date(byAdding: .day, value: offset, to: start) else { continue }
+            future += try engine.opportunities(on: day, calendar: calendar).filter {
+                $0.scheduledAt > date && $0.scheduledAt < end
+                    && !configuration.isSuppressed($0, at: $0.scheduledAt)
+                    && !completedRewardKeys.contains($0.rewardKey)
+            }
+        }
+        opportunities = Array(future.prefix(Self.maximumReminders))
+        coverageEnd = future.count > Self.maximumReminders ? future[Self.maximumReminders].scheduledAt : end
+        let current = try engine.current(at: date, calendar: calendar)
+        currentOpportunity = current.flatMap { completedRewardKeys.contains($0.rewardKey) ? nil : $0 }
     }
 }

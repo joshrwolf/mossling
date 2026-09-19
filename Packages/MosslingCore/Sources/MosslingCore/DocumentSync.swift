@@ -5,7 +5,7 @@ public struct ConfigurationSnapshot: Codable, Equatable, Sendable {
     public let configuration: AppConfiguration
     public let authorityID: UUID
     public init(configuration: AppConfiguration, authorityID: UUID) {
-        version = 1; self.configuration = configuration; self.authorityID = authorityID
+        version = 2; self.configuration = configuration; self.authorityID = authorityID
     }
     public func encoded() throws -> Data {
         try configuration.validate()
@@ -18,7 +18,7 @@ public struct ConfigurationSnapshot: Codable, Equatable, Sendable {
     public static func decode(_ data: Data) throws -> Self {
         guard data.count <= SyncPacket.maximumEncodedBytes else { throw SyncProtocolError.payloadTooLarge(data.count) }
         let value = try JSONDecoder().decode(Self.self, from: data)
-        guard value.version == 1 else { throw SyncProtocolError.unsupportedVersion(value.version) }
+        guard value.version == 2 else { throw SyncProtocolError.unsupportedVersion(value.version) }
         try value.configuration.validate()
         return value
     }
@@ -63,7 +63,7 @@ public enum DocumentSync {
         guard !document.retiredConfigurationAuthorities.contains(snapshot.authorityID) else { return }
         if document.configurationAuthorityID == snapshot.authorityID && document.hasReceivedPhoneConfiguration {
             guard snapshot.configuration.revision > document.configuration.revision else { return }
-        } else if let previous = document.configurationAuthorityID {
+        } else if let previous = document.configurationAuthorityID, previous != snapshot.authorityID {
             document.retiredConfigurationAuthorities.append(previous)
         }
         document.configuration = snapshot.configuration

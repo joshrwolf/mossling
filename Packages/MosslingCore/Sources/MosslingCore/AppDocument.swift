@@ -2,7 +2,7 @@ import Foundation
 
 /// A single atomic unit: an earned event and its delivery obligation cannot diverge.
 public struct AppDocument: Codable, Equatable, Sendable {
-    public static let currentSchemaVersion = 1
+    public static let currentSchemaVersion = 2
     public var schemaVersion: Int
     public var deviceID: UUID
     public var configuration: AppConfiguration
@@ -45,6 +45,8 @@ public struct AppDocument: Codable, Equatable, Sendable {
             try session.activity.validate()
             guard session.accumulatedSeconds.isFinite, session.accumulatedSeconds >= 0,
                   session.opportunity.scheduledAt < session.opportunity.expiresAt,
+                  session.runningSince.map({ $0.timeIntervalSinceReferenceDate.isFinite }) ?? true,
+                  session.startedAt.map({ session.opportunity.isActive(at: $0) }) ?? true,
                   !session.completed else { throw DocumentError.invalidDocument }
         }
     }
@@ -63,10 +65,18 @@ public struct AppDocument: Codable, Equatable, Sendable {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .millisecondsSince1970
         let header = try decoder.decode(Header.self, from: data)
-        guard header.schemaVersion == currentSchemaVersion else {
+        guard (1...currentSchemaVersion).contains(header.schemaVersion) else {
             throw DocumentError.unsupportedVersion(header.schemaVersion)
         }
-        let document = try decoder.decode(AppDocument.self, from: data)
+        var document = try decoder.decode(AppDocument.self, from: data)
+        // Schema 1 did not record explicit session starts or temporary routine changes.
+        // Optional fields decode absent; never infer a start from a timer's resume date.
+        if document.schemaVersion == 1 {
+            document.schemaVersion = 2
+            // A watch upgraded from v1 must accept an equal-revision v2 snapshot:
+            // its old decoder could have discarded unknown temporary routine fields.
+            document.hasReceivedPhoneConfiguration = false
+        }
         try document.validate()
         return document
     }
