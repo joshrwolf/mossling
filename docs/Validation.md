@@ -46,7 +46,7 @@ This workspace is Linux; the Apple build checks ran remotely on GitHub-hosted ma
 - Set today's window and start a snack; timer pause/resume survives closing/reopening. Zero alone never grants growth.
 - Complete one opportunity from both devices while disconnected; reconnect and confirm one reward and one journal moment.
 - Offline watch completion survives process termination; reopen/reconnect eventually acknowledges it and clears pending status.
-- Reminder arrives with app closed. Snooze stays before expiry; completion clears one-shot snooze without removing next week's recurring request.
+- Reminder arrives with app closed. Snooze stays before expiry; completion clears pending snoozes; pause retains the next day's dated reminders.
 - Change schedule; confirm obsolete pending reminders are removed and future reminders match the new schedule.
 - Tap a notification from Rhythm, Journal, an activity editor and a session; Forest navigation resolves correctly.
 - Check actual system DST/zone/Focus behavior; domain date tests are not notification delivery tests.
@@ -61,7 +61,7 @@ Set unique bundle IDs/developer team, validate Release archive/signing, recheck 
 
 ## Known scope limits
 
-No overnight schedule, sub-hour cadence, arbitrary explicit-time list, automatic activity verification, started-session grace period, cloud backup, or independent watch reminders. Whole-device backup restoration can restore an old authority/revision; JSON progress merge preserves the live identity and avoids that path. Unreleased schema1 requires a proper migration plan before any later shipped schema change.
+No overnight schedule, sub-hour cadence, arbitrary explicit-time list, automatic activity verification, cloud backup, or independent watch reminders. Whole-device backup restoration can restore an old authority/revision; JSON progress merge preserves the live identity and avoids that path. Schema 2 explicitly migrates schema 1, retaining legacy session deadlines and refreshing the Watch configuration cache.
 
 ## Xcode Cloud integration
 

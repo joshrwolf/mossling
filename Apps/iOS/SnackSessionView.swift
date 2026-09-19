@@ -30,10 +30,10 @@ struct SnackSessionView: View {
                         }
 
                         TimelineView(.periodic(from: .now, by: 1)) { context in
-                            let elapsed = session.elapsed(at: context.date)
+                            let elapsed = session.elapsed(at: store.currentDate)
                             let remaining = max(0, Double(session.activity.targetValue) - elapsed)
                             let isTimed = session.activity.targetKind == .duration
-                            let expired = context.date >= session.opportunity.expiresAt
+                            let expired = store.currentDate >= session.completionDeadline
                             VStack(spacing: 22) {
                                 if isTimed {
                                     Text(timerText(remaining))
@@ -54,7 +54,7 @@ struct SnackSessionView: View {
                                 }
 
                                 if expired {
-                                    Text("This break’s window has ended. Your next break is a fresh start.")
+                                    Text("This break’s finishing time has ended. Your next break is a fresh start.")
                                         .font(.subheadline).multilineTextAlignment(.center)
                                     Button("Return to forest") { store.cancelSession(); dismiss() }
                                         .buttonStyle(MossPrimaryButtonStyle())

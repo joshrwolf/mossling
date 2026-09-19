@@ -102,22 +102,122 @@ final class MosslingUITests: XCTestCase {
         capture("Persisted schedule", app: app)
     }
 
+    func testCompletedSnackEarnsGrowthOnceAndSurvivesRelaunch() {
+        let app = launchFresh()
+        exploreFirst(in: app)
+        let chooseAnother = app.buttons["Choose another"]
+        reveal(chooseAnother, in: app)
+        chooseAnother.tap()
+        app.buttons["Wall push-ups · 8 reps"].tap()
+
+        let complete = app.buttons["completeSnack"]
+        XCTAssertTrue(complete.waitForExistence(timeout: 5))
+        reveal(complete, in: app)
+        XCTAssertTrue(complete.isEnabled)
+        complete.tap()
+
+        let completedState = element("completedSnackState", in: app)
+        XCTAssertTrue(completedState.waitForExistence(timeout: 10))
+        XCTAssertFalse(complete.exists, "Completion must dismiss the movement session")
+        assertGrowth(10, in: app)
+        capture("Completed break and earned growth", app: app)
+
+        relaunch(app)
+        XCTAssertTrue(completedState.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["startSnack"].exists,
+                       "A completed opportunity must not offer another rewarded snack")
+        XCTAssertFalse(app.buttons["resumeSnack"].exists,
+                       "The saved session must not reopen after completion")
+        assertGrowth(10, in: app)
+
+        app.tabBars.buttons["Journal"].tap()
+        XCTAssertTrue(app.staticTexts["1 little moments"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == %@", "Wall push-ups")).count, 1,
+                       "One completion must create exactly one journal moment")
+        capture("One persisted movement moment", app: app)
+    }
+
+    func testSkippedBreakPersistsWithoutSkippingTheNextBreak() {
+        let app = launchFresh()
+        exploreFirst(in: app)
+        let skip = app.buttons["skipSnack"]
+        reveal(skip, in: app)
+        skip.tap()
+
+        let skippedState = element("skippedSnackState", in: app)
+        XCTAssertTrue(skippedState.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["startSnack"].exists)
+        assertGrowth(0, in: app)
+
+        relaunch(app)
+        XCTAssertTrue(skippedState.waitForExistence(timeout: 5),
+                      "Skipping must survive a new process in the same opportunity")
+        XCTAssertFalse(app.buttons["startSnack"].exists)
+        capture("Skipped break after relaunch", app: app)
+
+        // Advance only the clock. The next opportunity comes from the normal
+        // schedule and the saved skip must still apply only to the earlier one.
+        relaunch(app, now: activeWeekday + 60 * 60)
+        let nextSnack = app.buttons["startSnack"]
+        reveal(nextSnack, in: app)
+        XCTAssertTrue(nextSnack.isEnabled)
+        XCTAssertFalse(skippedState.exists)
+        assertGrowth(0, in: app)
+    }
+
+    func testPauseTodayPersistsAndCanBeResumed() {
+        let app = launchFresh()
+        exploreFirst(in: app)
+        let pause = app.buttons["pauseToday"]
+        reveal(pause, in: app)
+        pause.tap()
+
+        let pausedState = element("pausedDayState", in: app)
+        XCTAssertTrue(pausedState.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["startSnack"].exists)
+
+        relaunch(app)
+        XCTAssertTrue(pausedState.waitForExistence(timeout: 5),
+                      "Pausing today must survive process termination")
+        let resume = app.buttons["resumeToday"]
+        reveal(resume, in: app)
+        capture("Paused day after relaunch", app: app)
+        resume.tap()
+
+        let currentSnack = app.buttons["startSnack"]
+        XCTAssertTrue(currentSnack.waitForExistence(timeout: 5))
+        reveal(currentSnack, in: app)
+        XCTAssertTrue(currentSnack.isEnabled)
+        XCTAssertFalse(pausedState.exists)
+        assertGrowth(0, in: app)
+
+        relaunch(app)
+        XCTAssertTrue(currentSnack.waitForExistence(timeout: 5),
+                      "Resuming must persist, rather than reapplying the day pause on launch")
+        XCTAssertFalse(pausedState.exists)
+    }
+
     private func launchFresh() -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
-        app.launchArguments = arguments + ["--ui-testing-reset"]
+        app.launchArguments = arguments(now: activeWeekday) + ["--ui-testing-reset"]
         app.launch()
         XCTAssertTrue(app.buttons["Explore first"].waitForExistence(timeout: 15))
         return app
     }
 
-    private var arguments: [String] {
-        ["--ui-testing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    /// Monday, September 21, 2026 at 10:05 UTC, inside the real default rhythm.
+    /// Clock injection avoids waiting an hour or relying on the CI runner's date.
+    private let activeWeekday: TimeInterval = 1_789_985_100
+
+    private func arguments(now: TimeInterval) -> [String] {
+        ["--ui-testing", "--ui-testing-now", String(now),
+         "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
     }
 
-    private func relaunch(_ app: XCUIApplication) {
+    private func relaunch(_ app: XCUIApplication, now: TimeInterval? = nil) {
         app.terminate()
-        app.launchArguments = arguments
+        app.launchArguments = arguments(now: now ?? activeWeekday)
         app.launch()
         XCTAssertTrue(app.tabBars.buttons["Forest"].waitForExistence(timeout: 15))
     }
@@ -127,6 +227,17 @@ final class MosslingUITests: XCTestCase {
         reveal(button, in: app)
         button.tap()
         XCTAssertTrue(app.tabBars.buttons["Forest"].waitForExistence(timeout: 5))
+    }
+
+    private func element(_ identifier: String, in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    }
+
+    private func assertGrowth(_ expected: Int, in app: XCUIApplication,
+                              file: StaticString = #filePath, line: UInt = #line) {
+        let growth = app.staticTexts["earnedGrowthValue"]
+        reveal(growth, in: app, file: file, line: line)
+        XCTAssertEqual(growth.label, "\(expected) growth", file: file, line: line)
     }
 
     private func reveal(_ element: XCUIElement, in app: XCUIApplication,

@@ -39,6 +39,12 @@ struct RhythmView: View {
                 }
                 Section {
                     LabeledContent("Notifications", value: store.notificationStatus)
+                    if let through = store.notificationCoverageEnd {
+                        Text("Reminders prepared until \(through.formatted(date: .abbreviated, time: .shortened)). Open Mossling regularly to keep them topped up.")
+                            .font(.footnote).accessibilityIdentifier("reminderCoverage")
+                    }
+                    Text("Up to a week of reminders is prepared whenever you open the app. After traveling, open Mossling to use your new local time.")
+                        .font(.footnote)
                     Button("Enable reminders") { Task { await store.requestNotificationPermission() } }
                     Button("Open notification settings") {
                         if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
@@ -47,6 +53,18 @@ struct RhythmView: View {
                     Text("Gentle reminders")
                 } footer: {
                     Text("Your device’s Focus and notification settings decide when reminders appear. Your app never needs to run in the background for scheduled reminders.")
+                }
+                Section("Today") {
+                    if store.isPausedToday {
+                        Text("Resting for today. Your usual rhythm returns tomorrow.")
+                        Button("Resume today") { Task { await store.resumeToday() } }
+                            .accessibilityIdentifier("rhythmResumeToday")
+                    } else {
+                        Button("Pause for today") { Task { await store.pauseToday() } }
+                            .accessibilityIdentifier("rhythmPauseToday")
+                    }
+                    Text("Earned growth stays yours. A snack already underway can still be finished.")
+                        .font(.footnote)
                 }
                 Section("Your forest friend") {
                     TextField("Companion name", text: $companionName)
