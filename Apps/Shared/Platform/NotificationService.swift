@@ -190,8 +190,8 @@ final class NotificationService: NSObject, ReminderService, UNUserNotificationCe
 
     private func makeContent(for opportunity: Opportunity) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
-        content.title = "A little movement, a little growth"
-        content.body = "Your woodland friend is ready for a movement snack."
+        content.title = "Time for a movement snack"
+        content.body = "Complete a snack to grow your forest."
         content.categoryIdentifier = Self.category
         content.threadIdentifier = "mossling.snacks"
         content.sound = .default

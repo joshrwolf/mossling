@@ -49,7 +49,7 @@ public enum CompletionError: Error, LocalizedError, Equatable, Sendable {
         switch self {
         case .alreadyCompleted: "This snack is already complete."
         case .notStarted: "This snack is not available yet."
-        case .expired: "That snack window has ended. Your next snack is a fresh start."
+        case .expired: "This snack has expired."
         case .timerIncomplete: "Let the activity timer finish before confirming."
         case .invalidActivity: "This activity needs a valid target."
         case .insufficientTime: "Choose a shorter activity to finish within this snack’s five-minute grace period."
@@ -156,7 +156,7 @@ public enum CompanionAffinity: String, Codable, CaseIterable, Sendable {
     case sunlit, moonlit
     public var title: String { self == .sunlit ? "Sunlit" : "Moonlit" }
     public var detail: String {
-        self == .sunlit ? "Golden light, warm blossoms, and a sunny clearing." : "Soft moonlight, cool blossoms, and a peaceful clearing."
+        self == .sunlit ? "Golden light, warm blossoms, and a sunny clearing." : "Moonlight, cool blossoms, and a starlit clearing."
     }
 }
 

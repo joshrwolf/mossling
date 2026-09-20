@@ -13,10 +13,6 @@ struct SnackSessionView: View {
             ScrollView {
                 if let session = store.session {
                     VStack(spacing: 26) {
-                        Text("A SMALL PAUSE, JUST FOR YOU")
-                            .font(.caption.weight(.semibold)).tracking(1.3)
-                            .foregroundStyle(MossPalette.moss)
-                            .padding(.top, 20)
                         MosslingCharacter(mood: .curious)
                             .frame(width: 170, height: 160)
                             .accessibilityHidden(true)
@@ -44,18 +40,18 @@ struct SnackSessionView: View {
                                         .accessibilityLabel("\(Int(ceil(remaining))) seconds remaining")
                                     ProgressView(value: min(elapsed / Double(session.activity.targetValue), 1))
                                         .tint(MossPalette.fern).accessibilityHidden(true)
-                                    Text(remaining == 0 ? "All done? Give yourself a little credit." : session.runningSince == nil ? "Paused. Take your time." : "A little movement goes a long way.")
+                                    Text(remaining == 0 ? "Timer finished. Ready to finish your snack?" : session.runningSince == nil ? "Timer paused" : "Timer running")
                                         .font(.subheadline).foregroundStyle(MossPalette.moss)
                                         .multilineTextAlignment(.center)
                                 } else {
                                     Text("\(session.activity.targetValue)")
                                         .font(.system(size: 62, weight: .medium, design: .rounded))
-                                    Text("repetitions, at your own pace")
+                                    Text("repetitions")
                                         .font(.subheadline).foregroundStyle(MossPalette.moss)
                                 }
 
                                 if expired {
-                                    Text("This break’s finishing time has ended. Your next break is a fresh start.")
+                                    Text("This snack has expired.")
                                         .font(.subheadline).multilineTextAlignment(.center)
                                     Button("Return to forest") { store.cancelSession(); dismiss() }
                                         .buttonStyle(MossPrimaryButtonStyle())
@@ -71,7 +67,7 @@ struct SnackSessionView: View {
                                             }
                                         }
                                     } label: {
-                                        Label(finishing ? "Growing…" : "I did it", systemImage: "checkmark")
+                                        Label(finishing ? "Saving…" : "Finish snack", systemImage: "checkmark")
                                     }
                                     .buttonStyle(MossPrimaryButtonStyle())
                                     .disabled(finishing || (isTimed && remaining > 0))
@@ -84,16 +80,16 @@ struct SnackSessionView: View {
                                 }
                             }
                         }
-                        Text("Move in a way that feels comfortable. You can stop or switch activities anytime.")
+                        Text("Move within a comfortable range. Use End to stop this activity.")
                             .font(.footnote).foregroundStyle(MossPalette.moss)
                             .multilineTextAlignment(.center)
                     }.padding(26)
                 } else {
-                    ContentUnavailableView("A little more forest", systemImage: "leaf", description: Text("Your snack has been saved."))
+                    ContentUnavailableView("No snack in progress", systemImage: "leaf")
                 }
             }
             .background(MossPalette.cream).foregroundStyle(MossPalette.ink)
-            .navigationTitle("Your movement break")
+            .navigationTitle("Your snack")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -106,7 +102,7 @@ struct SnackSessionView: View {
             .confirmationDialog("End this snack?", isPresented: $confirmCancel, titleVisibility: .visible) {
                 Button("End snack", role: .destructive) { store.cancelSession(); dismiss() }
                 Button("Keep going", role: .cancel) { }
-            } message: { Text("There’s no penalty. You can choose another activity while this break is available.") }
+            } message: { Text("You can choose another activity while this snack is available.") }
             .onChange(of: store.navigationRequest) { _, _ in dismiss() }
         }
     }
@@ -124,7 +120,7 @@ struct CharacterPlayground: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 26) {
-                    Text("Small spirit. Big feelings.")
+                    Text("Meet your Mossling")
                         .font(.system(.largeTitle, design: .serif, weight: .medium))
                         .multilineTextAlignment(.center)
                     ForestHabitat(mood: mood).frame(height: 320).id(mood)
@@ -143,7 +139,7 @@ struct CharacterPlayground: View {
                             }
                         }
                     }
-                    Text("Cozy while you work. Quiet while you rest. Delighted by your smallest wins.")
+                    Text("Your woodland companion grows with every snack you complete.")
                         .font(.body).multilineTextAlignment(.center).foregroundStyle(MossPalette.moss)
                 }.padding(24)
             }
@@ -161,22 +157,22 @@ struct WelcomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 ForestHabitat().frame(height: 260)
-                Text("Make room for\na little magic.")
+                Text("Movement snacks.\nWoodland magic.")
                     .font(.system(.largeTitle, design: .serif, weight: .medium))
-                Text("A tiny forest spirit. A few moments of movement. A softer rhythm for your day.")
+                Text("Fit short exercises into your day and grow your Mossling, one snack at a time.")
                     .font(.title3).foregroundStyle(MossPalette.moss)
                 VStack(alignment: .leading, spacing: 18) {
-                    Label("Choose the breaks that feel good to you.", systemImage: "figure.flexibility")
-                    Label("Set your own days, hours, and rhythm.", systemImage: "sun.max")
-                    Label("Grow a little forest, one break at a time.", systemImage: "leaf")
+                    Label("Choose your activities.", systemImage: "figure.flexibility")
+                    Label("Set your snack schedule.", systemImage: "sun.max")
+                    Label("Complete snacks to grow your forest.", systemImage: "leaf")
                 }.font(.body)
-                Text("Start with weekday reminders, 9 am–5 pm, every hour. You can change everything in Rhythm. Missed breaks never take growth away.")
+                Text("Start with weekday reminders, 9 am–5 pm, every hour. You can change everything in Rhythm. Missed snacks never take growth away.")
                     .font(.footnote).foregroundStyle(MossPalette.moss)
                 Button {
                     requesting = true
                     Task { await store.requestNotificationPermission(); requesting = false; onFinish() }
                 } label: {
-                    Text(requesting ? "Just a moment…" : "Enable gentle reminders")
+                    Text(requesting ? "Enabling…" : "Enable reminders")
                 }.buttonStyle(MossPrimaryButtonStyle()).disabled(requesting)
                 Button("Explore first") { onFinish() }
                     .frame(maxWidth: .infinity).padding(.bottom, 16)

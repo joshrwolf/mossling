@@ -122,7 +122,7 @@ final class MosslingUITests: XCTestCase {
         assertGrowth(10, in: app)
 
         app.tabBars.buttons["Journal"].tap()
-        XCTAssertTrue(app.staticTexts["1 little moments"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["1 snack completed"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == %@", "Wall push-ups")).count, 1,
                        "One completion must create exactly one journal moment")
         capture("One persisted movement moment", app: app)

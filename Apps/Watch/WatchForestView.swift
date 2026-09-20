@@ -19,7 +19,7 @@ struct WatchForestView: View {
                 if !store.isReady {
                     VStack(spacing: 14) {
                         Image(systemName: "externaldrive.badge.exclamationmark").font(.title)
-                        Text("Your forest is safe").font(.headline)
+                        Text("Couldn’t open saved progress").font(.headline)
                         Text(store.error ?? "Your saved forest could not be opened. No data has been replaced.")
                             .font(.caption)
                         Text("Close and reopen Mossling to try again.").font(.caption)
@@ -31,37 +31,37 @@ struct WatchForestView: View {
                     Text(store.configuration.companionName)
                         .font(.system(.title3, design: .rounded, weight: .semibold))
                     if celebrating {
-                        Text("A little more magic.\n+\(ProgressionCatalog.growthPerSnack) growth")
+                        Text("Snack complete\n+\(ProgressionCatalog.growthPerSnack) growth")
                             .font(.headline).multilineTextAlignment(.center).foregroundStyle(MossPalette.mint)
                         ForEach(store.celebrationMilestones) { milestone in
                             Label(milestone.title, systemImage: milestone.symbolName)
                                 .font(.caption).multilineTextAlignment(.center)
                         }
-                        Button("Lovely") { celebrating = false }
+                        Button("Done") { celebrating = false }
                     } else if let session = store.session {
                         Text(session.activity.title).font(.headline).multilineTextAlignment(.center)
-                        Button("Return to snack") { showingSession = true }
+                        Button("Continue snack") { showingSession = true }
                             .buttonStyle(.borderedProminent)
                     } else if store.isPausedToday {
-                        Text("Resting for today").font(.headline)
-                        Text("Your rhythm returns tomorrow. Resume earlier on your iPhone.")
+                        Text("Paused for today").font(.headline)
+                        Text("Your schedule resumes tomorrow. Resume today on your iPhone.")
                             .font(.caption).multilineTextAlignment(.center)
                     } else if let opportunity = store.currentOpportunity {
                         Text(opportunity.activity.title).font(.headline).multilineTextAlignment(.center)
                         Text(opportunity.activity.targetSummary).font(.caption).foregroundStyle(MossPalette.mint)
-                        Button("Take a break") { begin(opportunity.activity) }
+                        Button("Start snack") { begin(opportunity.activity) }
                             .buttonStyle(.borderedProminent)
                             .accessibilityIdentifier("watchStartSnack")
                         Button("Choose another") { showingActivities = true }.font(.caption)
                     } else {
-                        Text("Room to breathe.").font(.headline)
+                        Text("No snack available now").font(.headline)
                         if let next = store.nextOpportunity {
-                            Text("Next break\n\(next.scheduledAt.formatted(.dateTime.weekday(.abbreviated).hour().minute()))")
+                            Text("Next snack\n\(next.scheduledAt.formatted(.dateTime.weekday(.abbreviated).hour().minute()))")
                                 .font(.caption).multilineTextAlignment(.center).foregroundStyle(MossPalette.mint)
                         }
                     }
                     Divider().padding(.vertical, 4)
-                    Text("\(store.progress.completedSnackCount) breaks · \(store.progress.growth) growth")
+                    Text("\(store.progress.completedSnackCount) \(store.progress.completedSnackCount == 1 ? "snack" : "snacks") · \(store.progress.growth) growth")
                         .font(.caption2).foregroundStyle(MossPalette.mint)
                         .multilineTextAlignment(.center)
                     if let milestone = store.progress.nextMilestone {
@@ -89,13 +89,13 @@ struct WatchForestView: View {
                             Text(activity.targetSummary).font(.caption).foregroundStyle(MossPalette.mint)
                         }
                     }
-                }.navigationTitle("Choose a snack")
+                }.navigationTitle("Choose an activity")
             }
             .onChange(of: store.celebrationID) { _, _ in
                 celebrating = true
                 WKInterfaceDevice.current().play(.success)
             }
-            .alert("A little snag", isPresented: Binding(get: { store.isReady && store.error != nil }, set: { if !$0 { store.clearError() } })) {
+            .alert("Something went wrong", isPresented: Binding(get: { store.isReady && store.error != nil }, set: { if !$0 { store.clearError() } })) {
                 Button("OK") { store.clearError() }
             } message: { Text(store.error ?? "Please try again.") }
             .task {
@@ -136,11 +136,11 @@ struct WatchSnackSessionView: View {
                                 .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
                                 .accessibilityLabel(isTimed ? "\(Int(ceil(remaining))) seconds remaining" : "\(session.activity.targetValue) repetitions")
                             if expired {
-                                Text("This break’s finishing time has ended. The next is a fresh start.")
+                                Text("This snack has expired.")
                                     .font(.caption).multilineTextAlignment(.center)
                                 Button("Back to forest") { store.cancelSession(); dismiss() }
                             } else {
-                                Button(finishing ? "Growing…" : "I did it") {
+                                Button(finishing ? "Saving…" : "Finish snack") {
                                     finishing = true
                                     Task {
                                         let saved = await store.complete()
@@ -163,7 +163,7 @@ struct WatchSnackSessionView: View {
                     }
                 }.padding(.horizontal, 4)
             } else {
-                Text("Your break is saved.").font(.headline)
+                Text("No snack in progress").font(.headline)
                 Button("Back to forest") { dismiss() }
             }
         }

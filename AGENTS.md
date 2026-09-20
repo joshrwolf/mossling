@@ -16,6 +16,7 @@ Native iPhone and Apple Watch apps using Swift 6 strict concurrency, SwiftUI and
 - Keep clocks and calendars explicit in domain logic. Timers must survive suspension and relaunch; animation must never award growth or drive durable state.
 - Phone reminders have a finite horizon replenished on foreground. Preserve explicit permission opt-in, serialized notification mutations and visible scheduling failures. Watch delivery follows system routing.
 - Honor Reduce Motion, scene activity and reduced Watch luminance in presentation.
+- Voice: playful woodland exercise game, with direct instructions and brief celebrations. Call exercise sessions “snacks” and the exercises “activities.” Keep the forest theme; avoid meditation/wellness language, padded reassurance and excessive praise. Retain practical exercise guidance.
 
 ## Workflow
 

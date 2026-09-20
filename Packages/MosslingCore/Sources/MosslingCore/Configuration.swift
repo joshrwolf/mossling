@@ -86,11 +86,11 @@ public struct ActivityDefinition: Codable, Equatable, Sendable, Identifiable {
     }
 
     public static let starters: [Self] = [
-        .init(id: "walk", title: "A little wander", instructions: "Take an easy walk around your space. Choose a comfortable pace.", targetKind: .duration, targetValue: 120),
-        .init(id: "sit-to-stand", title: "Up and down", instructions: "Stand up from a stable chair and sit back down with control. Use support as needed.", targetKind: .repetitions, targetValue: 8),
-        .init(id: "wall-push", title: "Wall push-ups", instructions: "With your hands on a stable wall, gently bend and straighten your arms at a comfortable angle.", targetKind: .repetitions, targetValue: 8),
-        .init(id: "calf-raise", title: "Reach a little taller", instructions: "Hold a stable support, rise onto your toes, then lower gently.", targetKind: .repetitions, targetValue: 10),
-        .init(id: "easy-mobility", title: "Loosen the leaves", instructions: "Move your shoulders and arms gently through a comfortable range. Keep it easy and pain-free.", targetKind: .duration, targetValue: 60)
+        .init(id: "walk", title: "Walk", instructions: "Walk around your space at a comfortable pace.", targetKind: .duration, targetValue: 120),
+        .init(id: "sit-to-stand", title: "Chair stands", instructions: "Stand up from a stable chair and sit back down with control. Use support as needed.", targetKind: .repetitions, targetValue: 8),
+        .init(id: "wall-push", title: "Wall push-ups", instructions: "Place your hands on a stable wall. Bend and straighten your arms with control at a comfortable angle.", targetKind: .repetitions, targetValue: 8),
+        .init(id: "calf-raise", title: "Calf raises", instructions: "Hold a stable support, rise onto your toes, then lower with control.", targetKind: .repetitions, targetValue: 10),
+        .init(id: "easy-mobility", title: "Shoulder mobility", instructions: "Move your shoulders and arms through a comfortable, pain-free range.", targetKind: .duration, targetValue: 60)
     ]
 }
 

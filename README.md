@@ -1,6 +1,6 @@
 # Mossling
 
-Short movement breaks grow a woodland companion. A native iPhone app with an Apple Watch companion, configurable activities and reminders, offline progress, and JSON backup export/import. Listed in App Store Connect as **Mosslinger**.
+Complete movement snacks to grow a woodland companion. A native iPhone app with an Apple Watch companion, configurable activities and reminders, offline progress, and JSON backup export/import. Listed in App Store Connect as **Mosslinger**.
 
 Progress stays on your devices. There are no accounts, backend, analytics or HealthKit integration. The phone owns configuration and reminders; the Watch records breaks offline and syncs when connected. Open the phone app regularly to replenish its reminder schedule. Watch sync is not an off-device backup.
 

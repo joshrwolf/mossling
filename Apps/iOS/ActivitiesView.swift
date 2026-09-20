@@ -11,7 +11,7 @@ struct ActivitiesView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("Each day, your suggestions cycle through enabled snacks before repeating. Choose your favorites or make one your own; you can always swap a suggestion.")
+                    Text("Snacks cycle through your enabled activities each day. Choose another activity whenever a snack is available.")
                         .font(.body).foregroundStyle(MossPalette.moss)
                         .listRowBackground(Color.clear)
                 }
@@ -42,14 +42,14 @@ struct ActivitiesView: View {
                     }.onDelete(perform: delete)
                 }
                 Section {
-                    Button { adding = true } label: { Label("Create a snack", systemImage: "plus.circle") }
+                    Button { adding = true } label: { Label("Create activity", systemImage: "plus.circle") }
                         .accessibilityIdentifier("createActivity")
                 } footer: {
-                    Text("All snacks earn the same growth. Keep at least one enabled. Repetition snacks use your honest confirmation; timed snacks finish when you confirm after the timer.")
+                    Text("Keep at least one activity enabled. Confirm completion after your reps or when the timer finishes.")
                 }
             }
             .scrollContentBackground(.hidden).background(MossPalette.cream)
-            .navigationTitle("Your little breaks")
+            .navigationTitle("Your snacks")
             .toolbar { ToolbarItem(placement: .topBarTrailing) { EditButton() } }
             .sheet(item: $editing) { ActivityEditor(activity: $0) }
             .sheet(isPresented: $adding) { ActivityEditor(activity: nil) }
@@ -88,11 +88,11 @@ struct ActivityEditor: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Make it yours") {
-                    TextField("Name, like a kitchen dance", text: $title)
+                Section("Activity") {
+                    TextField("Activity name", text: $title)
                         .textInputAutocapitalization(.sentences)
                         .accessibilityIdentifier("activityTitle")
-                    TextField("A short reminder of what to do", text: $instructions, axis: .vertical)
+                    TextField("Instructions", text: $instructions, axis: .vertical)
                         .lineLimit(3...6)
                         .accessibilityIdentifier("activityInstructions")
                 }
@@ -121,14 +121,14 @@ struct ActivityEditor: View {
                 Section {
                     Toggle("Include in my rotation", isOn: $enabled)
                 } footer: {
-                    Text("Choose a comfortable amount. More effort doesn’t earn extra growth—showing up is enough.")
+                    Text("Every completed snack earns the same growth, regardless of duration or repetitions.")
                 }
                 if let validationMessage {
                     Section { Text(validationMessage).foregroundStyle(Color.red).font(.subheadline) }
                 }
             }
             .scrollContentBackground(.hidden).background(MossPalette.cream)
-            .navigationTitle(activity == nil ? "Create a snack" : "Edit snack")
+            .navigationTitle(activity == nil ? "Create activity" : "Edit activity")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -143,7 +143,7 @@ struct ActivityEditor: View {
 
     private func save() {
         guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, title.count <= 80 else {
-            validationMessage = "Choose a snack name between 1 and 80 characters."; return
+            validationMessage = "Choose an activity name between 1 and 80 characters."; return
         }
         guard !instructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, instructions.count <= 1000 else {
             validationMessage = "Add a short description, up to 1,000 characters."; return
