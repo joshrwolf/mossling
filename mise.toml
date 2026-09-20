@@ -45,8 +45,8 @@ run = [
 ]
 
 [tasks."test:tooling"]
-description = "Exercise Cloud environment boundaries and malformed release archives"
-run = ["swift Tools/Tests/RunCloudHookTests.swift", "python3 Tools/Tests/test_archive.py"]
+description = "Exercise Cloud boundaries, simulator ownership and malformed release archives"
+run = ["swift Tools/Tests/RunCloudHookTests.swift", "swift Tools/Tests/RunUITestRunnerTests.swift", "python3 Tools/Tests/test_archive.py"]
 
 [tasks."cloud:prepare"]
 description = "Prepare Cloud native actions with domain tests and canonical project validation"

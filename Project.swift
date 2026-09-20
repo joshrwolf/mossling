@@ -89,7 +89,7 @@ let project = Project(
             shared: true,
             buildAction: .buildAction(targets: ["Mossling"]),
             testAction: .targets(
-                ["MosslingUITests"],
+                [.testableTarget(target: "MosslingUITests", parallelization: .enabled)],
                 configuration: .debug,
                 // UI flows validate behavior; no UI coverage report is consumed.
                 // Match the preceding Debug build to reuse its compiled products.

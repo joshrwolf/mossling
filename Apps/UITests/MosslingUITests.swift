@@ -1,9 +1,10 @@
 import XCTest
 
-/// These tests drive the shipped forms and verify changes after a new process
-/// reads the on-disk document. No test-only model setters or seeded UI state.
+/// Each flow is a separate XCTest class so Xcode can schedule isolated simulator workers.
+/// Test methods keep their original actions, assertions and persistence relaunches.
+
 @MainActor
-final class MosslingUITests: XCTestCase {
+final class OnboardingUITests: MosslingUITestCase {
     func testExploreFirstDoesNotRequestNotificationPermission() {
         let app = launchFresh()
         capture("Welcome", app: app)
@@ -23,7 +24,10 @@ final class MosslingUITests: XCTestCase {
         XCTAssertTrue(app.tabBars.buttons["Forest"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["Explore first"].exists, "Welcome dismissal must survive relaunch")
     }
+}
 
+@MainActor
+final class ActivityEditorUITests: MosslingUITestCase {
     func testCreatedAndEditedSnackPersistsAcrossRelaunch() {
         let app = launchFresh()
         exploreFirst(in: app)
@@ -70,7 +74,10 @@ final class MosslingUITests: XCTestCase {
         XCTAssertFalse(original.exists, "Editing must update the existing snack instead of duplicating it")
         capture("Persisted custom snack", app: app)
     }
+}
 
+@MainActor
+final class ScheduleEditorUITests: MosslingUITestCase {
     func testScheduleChangesPersistAcrossRelaunch() {
         let app = launchFresh()
         exploreFirst(in: app)
@@ -105,7 +112,10 @@ final class MosslingUITests: XCTestCase {
         XCTAssertEqual(monday.value as? String, "0", "The saved active days must survive relaunch")
         capture("Persisted schedule", app: app)
     }
+}
 
+@MainActor
+final class CompletionUITests: MosslingUITestCase {
     func testCompletedSnackEarnsGrowthOnceAndSurvivesRelaunch() {
         let app = launchFresh()
         exploreFirst(in: app)
@@ -129,7 +139,10 @@ final class MosslingUITests: XCTestCase {
                        "One completion must create exactly one journal moment")
         capture("One persisted movement moment", app: app)
     }
+}
 
+@MainActor
+final class SkipUITests: MosslingUITestCase {
     func testSkippedBreakPersistsWithoutSkippingTheNextBreak() {
         let app = launchFresh()
         exploreFirst(in: app)
@@ -157,7 +170,10 @@ final class MosslingUITests: XCTestCase {
         XCTAssertFalse(skippedState.exists)
         assertGrowth(0, in: app)
     }
+}
 
+@MainActor
+final class PauseUITests: MosslingUITestCase {
     func testPauseTodayPersistsAndCanBeResumed() {
         let app = launchFresh()
         exploreFirst(in: app)
@@ -189,7 +205,10 @@ final class MosslingUITests: XCTestCase {
                       "Resuming must persist, rather than reapplying the day pause on launch")
         XCTAssertFalse(pausedState.exists)
     }
+}
 
+@MainActor
+final class AffinityUITests: MosslingUITestCase {
     func testEarnedAffinityChoicePersistsAndCanBeChanged() {
         let app = launchFresh()
         exploreFirst(in: app)
@@ -233,8 +252,12 @@ final class MosslingUITests: XCTestCase {
         XCTAssertEqual(moonlit.value as? String, "Not selected")
         capture("Persisted Sunlit affinity", app: app)
     }
+}
 
-    private func launchFresh() -> XCUIApplication {
+/// Helpers only: no inherited test methods that XCTest could discover twice.
+@MainActor
+class MosslingUITestCase: XCTestCase {
+    func launchFresh() -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = arguments(now: activeWeekday) + ["--ui-testing-reset"]
@@ -245,32 +268,32 @@ final class MosslingUITests: XCTestCase {
 
     /// Monday, September 21, 2026 at 10:05 UTC, inside the real default rhythm.
     /// Clock injection avoids waiting an hour or relying on the CI runner's date.
-    private let activeWeekday: TimeInterval = 1_789_985_100
+    let activeWeekday: TimeInterval = 1_789_985_100
 
-    private func arguments(now: TimeInterval) -> [String] {
+    func arguments(now: TimeInterval) -> [String] {
         ["--ui-testing", "--ui-testing-now", String(now),
          "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
     }
 
-    private func relaunch(_ app: XCUIApplication, now: TimeInterval? = nil) {
+    func relaunch(_ app: XCUIApplication, now: TimeInterval? = nil) {
         app.terminate()
         app.launchArguments = arguments(now: now ?? activeWeekday)
         app.launch()
         XCTAssertTrue(app.tabBars.buttons["Forest"].waitForExistence(timeout: 15))
     }
 
-    private func exploreFirst(in app: XCUIApplication) {
+    func exploreFirst(in app: XCUIApplication) {
         let button = app.buttons["Explore first"]
         reveal(button, in: app)
         button.tap()
         XCTAssertTrue(app.tabBars.buttons["Forest"].waitForExistence(timeout: 5))
     }
 
-    private func element(_ identifier: String, in app: XCUIApplication) -> XCUIElement {
+    func element(_ identifier: String, in app: XCUIApplication) -> XCUIElement {
         app.descendants(matching: .any).matching(identifier: identifier).firstMatch
     }
 
-    private func completeRepetitionSnack(in app: XCUIApplication,
+    func completeRepetitionSnack(in app: XCUIApplication,
                                          file: StaticString = #filePath, line: UInt = #line) {
         let chooseAnother = app.buttons["Choose another"]
         reveal(chooseAnother, in: app, file: file, line: line)
@@ -286,14 +309,14 @@ final class MosslingUITests: XCTestCase {
         XCTAssertFalse(complete.exists, "Completion must dismiss the movement session", file: file, line: line)
     }
 
-    private func assertGrowth(_ expected: Int, in app: XCUIApplication,
+    func assertGrowth(_ expected: Int, in app: XCUIApplication,
                               file: StaticString = #filePath, line: UInt = #line) {
         let growth = app.staticTexts["earnedGrowthValue"]
         reveal(growth, in: app, file: file, line: line)
         XCTAssertEqual(growth.label, "\(expected) growth", file: file, line: line)
     }
 
-    private func assertSelectedAffinity(_ button: XCUIElement,
+    func assertSelectedAffinity(_ button: XCUIElement,
                                         file: StaticString = #filePath, line: UInt = #line) {
         let selected = XCTNSPredicateExpectation(
             predicate: NSPredicate(format: "value == %@", "Selected"), object: button
@@ -302,7 +325,7 @@ final class MosslingUITests: XCTestCase {
                        "The saved affinity must be selected", file: file, line: line)
     }
 
-    private func reveal(_ element: XCUIElement, in app: XCUIApplication,
+    func reveal(_ element: XCUIElement, in app: XCUIApplication,
                         file: StaticString = #filePath, line: UInt = #line) {
         // A full swipe can skip a short label, and reopening a screen can leave
         // its scroll position below the target. Use small drags in either
@@ -326,7 +349,7 @@ final class MosslingUITests: XCTestCase {
                       "Could not reveal \(element)", file: file, line: line)
     }
 
-    private func capture(_ name: String, app: XCUIApplication) {
+    func capture(_ name: String, app: XCUIApplication) {
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name
         attachment.lifetime = .keepAlways

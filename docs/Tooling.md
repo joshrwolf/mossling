@@ -96,6 +96,17 @@ Independent review caught concurrent access to the shared simulator build databa
 
 The preserved XCTest session log reports an ignored process-exit event because its launch-session identity did not match the tracked session. The same completion/relaunch path passes later in the affinity flow. This supports a simulator/automation tracking failure; it does not prove a product lifecycle defect, and no retries or weakened assertions are used to hide it.
 
-UI coverage instrumentation also forced recompilation of previously built app/Watch code. The shared scheme now disables that unused report so Debug builds and UI tests can reuse compatible products. All seven UI flows remain mandatory and serial while establishing the Xcode 27 baseline. Release packaging and its Cloud adapter run before UI tests so a simulator failure cannot hide their results; a failed UI test still fails the job.
+UI coverage instrumentation also forced recompilation of previously built app/Watch code. The shared scheme now disables that unused report so Debug builds and UI tests can reuse compatible products. That baseline kept all seven UI flows mandatory and serial. Release packaging and its Cloud adapter run before UI tests so a simulator failure cannot hide their results; a failed UI test still fails the job.
 
 The local/GitHub UI runner disables broad system diagnostic collection with `-collect-test-diagnostics never`. XCTest results and test attachments remain enabled. For a deliberate simulator investigation, run `MOSSLING_UI_DIAGNOSTICS=1 mise run test:ui` to restore on-failure collection; this can add several minutes. Xcode Cloud owns its native diagnostic policy separately. These changes reduce known overhead; they are not a claimed fix for the launch-tracking failure until native CI validates them.
+
+
+### Passing Xcode 27 baseline and parallel experiment
+
+[PR #10's exact-head run](https://github.com/joshrwolf/mossling/actions/runs/35512834895) passed every gate on commit `73cdc96` before merge. The Apple job took 15m34s: simulator builds 52s, Release archive/contract 39s, and the UI phase 12m48s. All seven UI flows passed in 449s (7m29s); the remainder of the UI phase includes simulator startup, test building/installing, runner startup, result export and cleanup. One successful run is not proof that the earlier Xcode process-tracking flake cannot recur.
+
+The next experiment enables two Xcode-managed simulator workers for the single UI test target. Each of the seven existing flows is its own XCTest class; their method bodies, actions, assertions and process relaunches are unchanged. The shared base class contains helpers only, preventing duplicate inherited tests. Each worker has its own simulator sandbox, and every flow resets its isolated test document/preferences before starting. There is no shared server or cross-worker filesystem fixture.
+
+One `xcodebuild` invocation still owns the build database and result bundle. The runner requests exactly two workers; it does not pass multiple destinations, which would repeat the suite. Cleanup targets only the disposable parent and recognized worker clones named for that run's unique parent. It never deletes all simulators or relies on a broad before/after inventory difference.
+
+Keep the experiment in a PR until native CI proves all seven distinct flows execute once, both workers participate, all other gates pass, and elapsed time improves over the serial baseline. Extra simulator startup and contention on the hosted runner can offset parallel execution; do not assume a twofold speedup. Xcode Cloud reads the shared scheme's parallel eligibility but controls its own worker allocation; the local/GitHub two-worker limit belongs to `Tools/RunUITests.swift`.

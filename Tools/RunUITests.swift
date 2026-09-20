@@ -43,6 +43,23 @@ func simulatorTemplate(from inventory: SimulatorInventory) throws -> (runtime: S
     return (template.runtime, template.type)
 }
 
+// Xcode names parallel workers "Clone N of <destination name>". Match the
+// complete UUID-bearing name, never a substring or every newly created device:
+// another test run or a developer's simulator may exist alongside this run.
+func ownedSimulatorIDs(in inventory: SimulatorInventory, parentName: String, parentID: String) -> [String] {
+    let suffix = " of \(parentName)"
+    let clones = inventory.devices.values.flatMap { $0 }.compactMap { device -> String? in
+        guard UUID(uuidString: device.udid) != nil,
+              device.name.hasPrefix("Clone "), device.name.hasSuffix(suffix) else { return nil }
+        let number = device.name.dropFirst("Clone ".count).dropLast(suffix.count)
+        guard !number.isEmpty, number.allSatisfy({ $0 >= "0" && $0 <= "9" }),
+              let index = Int(number), index > 0 else { return nil }
+        return device.udid
+    }
+    // Always delete our parent, even when the inventory no longer lists it.
+    return Array(Set(clones).subtracting([parentID])).sorted() + [parentID]
+}
+
 func run(_ arguments: [String], capture: Bool = false) throws -> (status: Int32, output: Data) {
     let process = Process()
     process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
@@ -67,18 +84,31 @@ func runUITests() throws -> Int32 {
     let inventory = try run(["simctl", "list", "devices", "available", "-j"], capture: true)
     guard inventory.status == 0 else { throw UITestError("simctl could not list available devices") }
     let template = try simulatorTemplate(from: JSONDecoder().decode(SimulatorInventory.self, from: inventory.output))
-    let created = try run(["simctl", "create", "Mossling-UI-Tests-\(UUID().uuidString)", template.type, template.runtime], capture: true)
+    let parentName = "Mossling-UI-Tests-\(UUID().uuidString)"
+    let created = try run(["simctl", "create", parentName, template.type, template.runtime], capture: true)
     let identifier = String(decoding: created.output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
     guard created.status == 0, UUID(uuidString: identifier) != nil else {
         throw UITestError("simctl could not create a disposable test device")
     }
     defer {
-        // Shutdown can fail if Xcode never booted the device; deletion still runs.
-        _ = try? run(["simctl", "shutdown", identifier], capture: true)
+        var ownedIDs = [identifier]
         do {
-            let deletion = try run(["simctl", "delete", identifier], capture: true)
-            if deletion.status != 0 { diagnostic("Could not delete temporary simulator \(identifier)") }
-        } catch { diagnostic("Could not delete temporary simulator \(identifier): \(error)") }
+            let remaining = try run(["simctl", "list", "devices", "-j"], capture: true)
+            guard remaining.status == 0 else { throw UITestError("simctl could not list devices for cleanup") }
+            ownedIDs = ownedSimulatorIDs(
+                in: try JSONDecoder().decode(SimulatorInventory.self, from: remaining.output),
+                parentName: parentName, parentID: identifier
+            )
+        } catch { diagnostic("Could not discover worker simulators for cleanup: \(error)") }
+        diagnostic("Cleaning up \(ownedIDs.count) owned simulator(s): \(ownedIDs.joined(separator: ", "))")
+        for ownedID in ownedIDs {
+            // Workers may already be shut down; still attempt their deletion.
+            _ = try? run(["simctl", "shutdown", ownedID], capture: true)
+            do {
+                let deletion = try run(["simctl", "delete", ownedID], capture: true)
+                if deletion.status != 0 { diagnostic("Could not delete temporary simulator \(ownedID)") }
+            } catch { diagnostic("Could not delete temporary simulator \(ownedID): \(error)") }
+        }
     }
 
     // Finish first-boot services before XCTest starts its app-launch timeout.
@@ -98,7 +128,8 @@ func runUITests() throws -> Int32 {
     let test = try run([
         "xcodebuild", "test", "-project", "Mossling.xcodeproj", "-scheme", "Mossling",
         "-destination", "platform=iOS Simulator,id=\(identifier)",
-        "-only-testing:MosslingUITests", "-parallel-testing-enabled", "NO",
+        "-only-testing:MosslingUITests", "-parallel-testing-enabled", "YES",
+        "-parallel-testing-worker-count", "2",
         // Broad simulator diagnostics have stalled for 600s after a failed suite.
         // Keep XCTest results/attachments, but opt into system diagnostics only
         // when investigating the simulator itself.
@@ -118,6 +149,7 @@ func runUITests() throws -> Int32 {
     return test.status
 }
 
+#if !UI_RUNNER_TESTS
 let exitStatus: Int32
 do {
     exitStatus = try runUITests()
@@ -126,3 +158,5 @@ do {
     exitStatus = 1
 }
 exit(exitStatus)
+
+#endif
