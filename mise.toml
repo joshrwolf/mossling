@@ -26,6 +26,30 @@ description = "Exercise real iPhone forms in a disposable simulator and save scr
 depends = ["generate"]
 run = "swift Tools/RunUITests.swift"
 
+# CI calls the same runner in explicit phases so simulator startup cannot consume
+# the test execution budget. Local test:ui retains the complete ordered flow.
+[tasks."test:ui:build"]
+depends = ["generate"]
+run = "swift Tools/RunUITests.swift build"
+
+[tasks."test:ui:prepare"]
+run = "swift Tools/RunUITests.swift prepare"
+
+[tasks."test:ui:run"]
+run = "swift Tools/RunUITests.swift test"
+
+[tasks."test:ui:cleanup"]
+run = "swift Tools/RunUITests.swift cleanup"
+
+[tasks."diagnose:host"]
+description = "Record macOS runner memory, swap and CPU consumers without process arguments"
+run = [
+  "date -u",
+  "sysctl hw.memsize hw.ncpu vm.swapusage",
+  "vm_stat",
+  "ps -axo pid,pcpu,rss,comm -r",
+]
+
 [tasks."archive:check"]
 description = "Build an unsigned Release archive and validate the phone/Watch bundle contract"
 depends = ["generate"]
@@ -46,7 +70,7 @@ run = [
 
 [tasks."test:tooling"]
 description = "Exercise Cloud environment boundaries and malformed release archives"
-run = ["swift Tools/Tests/RunCloudHookTests.swift", "python3 Tools/Tests/test_archive.py"]
+run = ["swift Tools/Tests/RunCloudHookTests.swift", "swift Tools/Tests/RunUITestRunnerTests.swift", "python3 Tools/Tests/test_archive.py"]
 
 [tasks."cloud:prepare"]
 description = "Prepare Cloud native actions with domain tests and canonical project validation"

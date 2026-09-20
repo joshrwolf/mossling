@@ -10,7 +10,7 @@
 | Pinned tools and task dependencies | `mise.toml`, `mise.lock` |
 | Compiler and platform SDK | Xcode 27.0 |
 | Portable domain package | Swift Package Manager |
-| Hosted verification during Cloud setup | GitHub Actions |
+| Pull request and main verification | GitHub Actions |
 | Managed signing and delivery after account setup | Xcode Cloud |
 
 Tuist is the project source of truth. Apple requires a continuously present project for Cloud discovery, so `Mossling.xcodeproj` and `Mossling.xcworkspace` are committed generated snapshots. Never edit them by hand: change the manifest/configuration, run `mise run generate`, review and commit the resulting snapshot. `project:check` regenerates and rejects tracked differences or new untracked project files. Both GitHub and Cloud retain this gate.
@@ -52,9 +52,9 @@ Apple copies the `ci_scripts` resources between phases and follows their symboli
 
 ## Cost and handoff
 
-GitHub's Apple gate stays enabled until real Cloud verification is accepted. After the Cloud PR workflow and required checks are working, set repository variable `MOSSLING_XCODE_CLOUD_ACTIVE=true` to suppress automatic duplicate Mac jobs. Manual GitHub workflow runs retain the Apple job as a diagnostic fallback. Linux domain/tooling checks remain on GitHub.
+The repository is public. Standard GitHub-hosted runners provide PR/main verification; Xcode Cloud owns managed signing and manually started delivery. The GitHub Apple gate is unconditional: connecting Cloud does not disable native PR coverage. The former `MOSSLING_XCODE_CLOUD_ACTIVE` migration switch has been removed.
 
-That variable does not configure Cloud or impose a spending cap. GitHub usage budgets and Apple's included 25-hour plan are separate account settings; they have not been changed by this refactor. See [Release setup](Release.md) for the account-side steps and acceptance criteria.
+Keep Apple's included Cloud plan and avoid automatic duplicate PR workflows there. Account usage budgets remain separate from repository configuration. See [Release setup](Release.md) for signing/delivery acceptance criteria.
 
 ## References
 
@@ -86,7 +86,7 @@ GitHub now delegates initial domain testing, project generation and drift checks
 
 Simulator builds and UI tests share `.build-artifacts/SimulatorDerivedData`. Xcode still rebuilds when SDK, architecture or coverage settings differ; this is not a promise of zero recompilation. Device Release products stay separate. Build timing summaries and individual workflow step durations support a measured comparison on the next successful run. Phase limits prevent an unlimited wait, but a UI-phase timeout can interrupt attachment export; the workflow still attempts to upload any existing result bundle.
 
-No speedup has been measured for this change yet. The baseline predates Xcode 27, so compare a successful corrected Xcode 27 run before attributing differences to this refactor. Xcode Cloud uses its own native action scheduling and build directories; this GitHub optimization does not directly alter Cloud's native action times. Keep one authoritative native provider after Cloud acceptance rather than paying for duplicate GitHub and Cloud verification.
+No speedup has been measured for this change yet. The baseline predates Xcode 27, so compare a successful corrected Xcode 27 run before attributing differences to this refactor. Xcode Cloud uses its own native action scheduling and build directories; this GitHub optimization does not directly alter Cloud's native action times. GitHub remains the PR verification provider; Cloud release actions validate signed delivery separately.
 
 Independent review caught concurrent access to the shared simulator build database under a parallel local verify invocation. `test:ui.wait_for = ["build"]` now serializes those tasks when both are selected without adding a generic build to standalone UI testing. Snapshot upload runs even after a preparation failure so generation-drift evidence is retained. Both findings were addressed before merging the CI changes.
 
@@ -99,3 +99,14 @@ The preserved XCTest session log reports an ignored process-exit event because i
 UI coverage instrumentation also forced recompilation of previously built app/Watch code. The shared scheme now disables that unused report so Debug builds and UI tests can reuse compatible products. All seven UI flows remain mandatory and serial while establishing the Xcode 27 baseline. Release packaging and its Cloud adapter run before UI tests so a simulator failure cannot hide their results; a failed UI test still fails the job.
 
 The local/GitHub UI runner disables broad system diagnostic collection with `-collect-test-diagnostics never`. XCTest results and test attachments remain enabled. For a deliberate simulator investigation, run `MOSSLING_UI_DIAGNOSTICS=1 mise run test:ui` to restore on-failure collection; this can add several minutes. Xcode Cloud owns its native diagnostic policy separately. These changes reduce known overhead; they are not a claimed fix for the launch-tracking failure until native CI validates them.
+
+
+### Simulator phase isolation
+
+The passing PR #10 run took 15m34s, but the post-merge rerun timed out after six passing UI flows. It spent approximately eight minutes before the first test started: simulator boot, Xcode startup and package/build planning consumed the same 18-minute step budget as test execution. The two-worker experiment in PR #11 performed worse and was closed without merging.
+
+The runner now builds UI products **before** creating/booting its single simulator, then runs `test-without-building`. CI gives build (6 minutes), boot (6 minutes), execution (15 minutes) and cleanup (2 minutes) independent limits. Cleanup runs after failed or interrupted preparation/execution using the runner's persisted device identity. These are failure bounds, not target durations. Local `mise run test:ui` executes the same phases in order and attempts cleanup on failure.
+
+Phase commands are `test:ui:build`, `test:ui:prepare`, `test:ui:run` and `test:ui:cleanup`. Run them in that order when diagnosing locally; they deliberately do not hide missing prerequisites. A stale simulator identity must be cleaned before preparing another device. Every test action and assertion remains unchanged, with serial execution and no retries.
+
+CI preserves phase timings and host memory/swap/process snapshots alongside XCTest attachments. The standard Xcode 27 image has 3 M1 CPUs and 7 GB RAM; resource contention is a hypothesis to evaluate from these snapshots, not a confirmed OS defect. Native acceptance requires repeated complete passes before merge, followed by the main run. GitHub checks do not replace actual signed Cloud/TestFlight acceptance.

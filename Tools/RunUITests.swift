@@ -60,69 +60,197 @@ func diagnostic(_ message: String) {
     FileHandle.standardError.write(Data("\(message)\n".utf8))
 }
 
-func runUITests() throws -> Int32 {
-    guard FileManager.default.fileExists(atPath: "Mossling.xcodeproj/project.pbxproj") else {
-        throw UITestError("Run from the repository root after generating Mossling.xcodeproj.")
-    }
-    let inventory = try run(["simctl", "list", "devices", "available", "-j"], capture: true)
-    guard inventory.status == 0 else { throw UITestError("simctl could not list available devices") }
-    let template = try simulatorTemplate(from: JSONDecoder().decode(SimulatorInventory.self, from: inventory.output))
-    let created = try run(["simctl", "create", "Mossling-UI-Tests-\(UUID().uuidString)", template.type, template.runtime], capture: true)
-    let identifier = String(decoding: created.output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
-    guard created.status == 0, UUID(uuidString: identifier) != nil else {
-        throw UITestError("simctl could not create a disposable test device")
-    }
-    defer {
-        // Shutdown can fail if Xcode never booted the device; deletion still runs.
-        _ = try? run(["simctl", "shutdown", identifier], capture: true)
-        do {
-            let deletion = try run(["simctl", "delete", identifier], capture: true)
-            if deletion.status != 0 { diagnostic("Could not delete temporary simulator \(identifier)") }
-        } catch { diagnostic("Could not delete temporary simulator \(identifier): \(error)") }
+let statePath = ".build-artifacts/UI-Simulator.json"
+let derivedDataPath = ".build-artifacts/SimulatorDerivedData"
+let resultPath = ".build-artifacts/UI-Tests.xcresult"
+let screenshotsPath = ".build-artifacts/screenshots"
+
+struct OwnedSimulator: Codable {
+    let name: String
+    let identifier: String
+
+    func validate() throws {
+        let prefix = "Mossling-UI-Tests-"
+        guard UUID(uuidString: identifier) != nil, name.hasPrefix(prefix),
+              let token = UUID(uuidString: String(name.dropFirst(prefix.count))),
+              name == prefix + token.uuidString else {
+            throw UITestError("Invalid owned simulator state; refusing to use or delete a device")
+        }
     }
 
-    // Finish first-boot services before XCTest starts its app-launch timeout.
-    diagnostic("Booting disposable simulator before UI tests…")
-    let boot = try run(["simctl", "boot", identifier])
-    guard boot.status == 0 else { throw UITestError("Could not boot the test simulator") }
-    let ready = try run(["simctl", "bootstatus", identifier, "-b"])
-    guard ready.status == 0 else { throw UITestError("Test simulator did not finish booting") }
-
-    let resultPath = ".build-artifacts/UI-Tests.xcresult"
-    let screenshotsPath = ".build-artifacts/screenshots"
-    try FileManager.default.createDirectory(atPath: ".build-artifacts", withIntermediateDirectories: true)
-    // These two paths contain only outputs from this helper; discard stale results.
-    for path in [resultPath, screenshotsPath] where FileManager.default.fileExists(atPath: path) {
-        try FileManager.default.removeItem(atPath: path)
+    func exists(in inventory: SimulatorInventory) throws -> Bool {
+        try validate()
+        guard let device = inventory.devices.values.flatMap({ $0 }).first(where: { $0.udid == identifier }) else {
+            return false
+        }
+        guard device.name == name else {
+            throw UITestError("Simulator identity no longer matches owned state; refusing to use or delete it")
+        }
+        return true
     }
-    let test = try run([
-        "xcodebuild", "test", "-project", "Mossling.xcodeproj", "-scheme", "Mossling",
-        "-destination", "platform=iOS Simulator,id=\(identifier)",
-        "-only-testing:MosslingUITests", "-parallel-testing-enabled", "NO",
-        // Broad simulator diagnostics have stalled for 600s after a failed suite.
-        // Keep XCTest results/attachments, but opt into system diagnostics only
-        // when investigating the simulator itself.
-        "-collect-test-diagnostics", ProcessInfo.processInfo.environment["MOSSLING_UI_DIAGNOSTICS"] == "1" ? "on-failure" : "never",
-        "-resultBundlePath", resultPath, "-derivedDataPath", ".build-artifacts/SimulatorDerivedData",
-        "-showBuildTimingSummary", "CODE_SIGNING_ALLOWED=NO"
-    ])
-    if FileManager.default.fileExists(atPath: resultPath) {
-        do {
-            let export = try run([
-                "xcresulttool", "export", "attachments", "--path", resultPath,
-                "--output-path", screenshotsPath
-            ])
-            if export.status != 0 { diagnostic("Attachment export failed; the original xcresult bundle remains available.") }
-        } catch { diagnostic("Attachment export failed: \(error)") }
-    }
-    return test.status
 }
 
+enum UIPhase: String { case build, prepare, test, cleanup }
+
+func commandPlan(_ arguments: [String]) throws -> [UIPhase] {
+    if arguments.isEmpty || arguments == ["all"] { return [.build, .prepare, .test] }
+    guard arguments.count == 1, let phase = UIPhase(rawValue: arguments[0]) else {
+        throw UITestError("Usage: swift Tools/RunUITests.swift [all|build|prepare|test|cleanup]")
+    }
+    return [phase]
+}
+
+// A failed build never boots a simulator. A failed prepare/test still cleans up;
+// cleanup diagnostics must not replace the original test or setup exit status.
+func executePlan(_ plan: [UIPhase], execute: (UIPhase) throws -> Int32) throws -> Int32 {
+    var needsCleanup = false
+    var status: Int32 = 0
+    var phaseError: (any Error)?
+    do {
+        for phase in plan {
+            if plan.count > 1 && phase == .prepare { needsCleanup = true }
+            status = try execute(phase)
+            if status != 0 { break }
+        }
+    } catch { phaseError = error }
+    if needsCleanup {
+        do {
+            let cleanupStatus = try execute(.cleanup)
+            if status == 0 { status = cleanupStatus }
+        } catch {
+            diagnostic("Simulator cleanup failed: \(error)")
+            if status == 0 { status = 1 }
+        }
+    }
+    if let phaseError { throw phaseError }
+    return status
+}
+
+func simulatorInventory() throws -> SimulatorInventory {
+    let result = try run(["simctl", "list", "devices", "-j"], capture: true)
+    guard result.status == 0 else { throw UITestError("simctl could not list devices") }
+    return try JSONDecoder().decode(SimulatorInventory.self, from: result.output)
+}
+
+func loadOwnedSimulator() throws -> OwnedSimulator {
+    let state = try JSONDecoder().decode(OwnedSimulator.self, from: Data(contentsOf: URL(fileURLWithPath: statePath)))
+    try state.validate()
+    return state
+}
+
+func buildArguments() -> [String] {
+    ["xcodebuild", "build-for-testing", "-project", "Mossling.xcodeproj", "-scheme", "Mossling",
+     "-destination", "generic/platform=iOS Simulator", "-only-testing:MosslingUITests",
+     "-derivedDataPath", derivedDataPath, "-showBuildTimingSummary", "CODE_SIGNING_ALLOWED=NO"]
+}
+
+func testArguments(for state: OwnedSimulator, diagnostics: Bool) throws -> [String] {
+    try state.validate()
+    return ["xcodebuild", "test-without-building", "-project", "Mossling.xcodeproj", "-scheme", "Mossling",
+            "-destination", "platform=iOS Simulator,id=\(state.identifier)",
+            "-only-testing:MosslingUITests", "-parallel-testing-enabled", "NO",
+            // Preserve XCTest attachments without the 600-second system diagnostic stall.
+            "-collect-test-diagnostics", diagnostics ? "on-failure" : "never",
+            "-resultBundlePath", resultPath, "-derivedDataPath", derivedDataPath,
+            "-showBuildTimingSummary", "CODE_SIGNING_ALLOWED=NO"]
+}
+
+func runPhase(_ phase: UIPhase) throws -> Int32 {
+    switch phase {
+    case .build:
+        guard FileManager.default.fileExists(atPath: "Mossling.xcodeproj/project.pbxproj") else {
+            throw UITestError("Run from the repository root after generating Mossling.xcodeproj")
+        }
+        return try run(buildArguments()).status
+    case .prepare:
+        guard !FileManager.default.fileExists(atPath: statePath) else {
+            throw UITestError("Owned simulator state already exists; run cleanup before preparing another device")
+        }
+        let template = try simulatorTemplate(from: simulatorInventory())
+        let name = "Mossling-UI-Tests-\(UUID().uuidString)"
+        let created = try run(["simctl", "create", name, template.type, template.runtime], capture: true)
+        let identifier = String(decoding: created.output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard created.status == 0, UUID(uuidString: identifier) != nil else {
+            throw UITestError("simctl could not create a disposable test device")
+        }
+        let state = OwnedSimulator(name: name, identifier: identifier)
+        do {
+            // Persist before boot: a timed-out CI prepare step can still clean up.
+            try FileManager.default.createDirectory(atPath: ".build-artifacts", withIntermediateDirectories: true)
+            try JSONEncoder().encode(state).write(to: URL(fileURLWithPath: statePath), options: .atomic)
+        } catch {
+            // No state was saved; this invocation still knows the created UUID.
+            _ = try? run(["simctl", "delete", identifier])
+            throw error
+        }
+        let boot = try run(["simctl", "boot", identifier])
+        guard boot.status == 0 else { return boot.status }
+        return try run(["simctl", "bootstatus", identifier, "-b"]).status
+    case .test:
+        let state = try loadOwnedSimulator()
+        guard try state.exists(in: simulatorInventory()) else { throw UITestError("Owned simulator no longer exists") }
+        for path in [resultPath, screenshotsPath] where FileManager.default.fileExists(atPath: path) {
+            try FileManager.default.removeItem(atPath: path)
+        }
+        let result = try run(testArguments(for: state,
+            diagnostics: ProcessInfo.processInfo.environment["MOSSLING_UI_DIAGNOSTICS"] == "1"))
+        if FileManager.default.fileExists(atPath: resultPath) {
+            do {
+                let exported = try run(["xcresulttool", "export", "attachments", "--path", resultPath,
+                                        "--output-path", screenshotsPath])
+                if exported.status != 0 { diagnostic("Attachment export failed; xcresult remains available") }
+            } catch { diagnostic("Attachment export failed: \(error)") }
+        }
+        return result.status
+    case .cleanup:
+        guard FileManager.default.fileExists(atPath: statePath) else { return 0 }
+        let state = try loadOwnedSimulator()
+        if try state.exists(in: simulatorInventory()) {
+            diagnostic("Cleaning up owned simulator \(state.identifier)")
+            _ = try? run(["simctl", "shutdown", state.identifier], capture: true)
+            let deleted = try run(["simctl", "delete", state.identifier])
+            guard deleted.status == 0 else { return deleted.status }
+        }
+        try FileManager.default.removeItem(atPath: statePath)
+        return 0
+    }
+}
+
+func timedPhase(_ phase: UIPhase) throws -> Int32 {
+    let start = ProcessInfo.processInfo.systemUptime
+    var status: Int32 = 1
+    defer {
+        let seconds = ProcessInfo.processInfo.systemUptime - start
+        let line = "\(phase.rawValue)\t\(String(format: "%.3f", seconds))\t\(status)\n"
+        diagnostic("UI phase \(phase.rawValue): \(String(format: "%.1f", seconds))s, exit \(status)")
+        do {
+            try FileManager.default.createDirectory(atPath: ".build-artifacts", withIntermediateDirectories: true)
+            let path = ".build-artifacts/UI-Timings.tsv"
+            if !FileManager.default.fileExists(atPath: path) {
+                try Data("phase\tseconds\texit_status\n".utf8).write(to: URL(fileURLWithPath: path))
+            }
+            let handle = try FileHandle(forWritingTo: URL(fileURLWithPath: path))
+            defer { try? handle.close() }
+            try handle.seekToEnd()
+            try handle.write(contentsOf: Data(line.utf8))
+        } catch { diagnostic("Could not record UI phase timing: \(error)") }
+    }
+    status = try runPhase(phase)
+    return status
+}
+
+#if !UI_RUNNER_TESTS
 let exitStatus: Int32
 do {
-    exitStatus = try runUITests()
+    let plan = try commandPlan(Array(CommandLine.arguments.dropFirst()))
+    // Do not let the default command clean up a previous invocation's device.
+    if plan.count > 1 && FileManager.default.fileExists(atPath: statePath) {
+        throw UITestError("Owned simulator state already exists; run cleanup before starting another suite")
+    }
+    exitStatus = try executePlan(plan, execute: timedPhase)
 } catch {
     diagnostic("UI test setup failed: \(error)")
     exitStatus = 1
 }
 exit(exitStatus)
+#endif
