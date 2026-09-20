@@ -105,20 +105,9 @@ final class MosslingUITests: XCTestCase {
     func testCompletedSnackEarnsGrowthOnceAndSurvivesRelaunch() {
         let app = launchFresh()
         exploreFirst(in: app)
-        let chooseAnother = app.buttons["Choose another"]
-        reveal(chooseAnother, in: app)
-        chooseAnother.tap()
-        app.buttons["Wall push-ups · 8 reps"].tap()
-
-        let complete = app.buttons["completeSnack"]
-        XCTAssertTrue(complete.waitForExistence(timeout: 5))
-        reveal(complete, in: app)
-        XCTAssertTrue(complete.isEnabled)
-        complete.tap()
+        completeRepetitionSnack(in: app)
 
         let completedState = element("completedSnackState", in: app)
-        XCTAssertTrue(completedState.waitForExistence(timeout: 10))
-        XCTAssertFalse(complete.exists, "Completion must dismiss the movement session")
         assertGrowth(10, in: app)
         capture("Completed break and earned growth", app: app)
 
@@ -197,6 +186,50 @@ final class MosslingUITests: XCTestCase {
         XCTAssertFalse(pausedState.exists)
     }
 
+    func testEarnedAffinityChoicePersistsAndCanBeChanged() {
+        let app = launchFresh()
+        exploreFirst(in: app)
+        let moonlit = app.buttons["affinityMoonlit"]
+        let sunlit = app.buttons["affinitySunlit"]
+        XCTAssertFalse(moonlit.exists, "Affinity choice must be earned through movement")
+        XCTAssertFalse(sunlit.exists)
+
+        for snack in 0..<3 {
+            if snack > 0 {
+                relaunch(app, now: activeWeekday + TimeInterval(snack * 60 * 60))
+            }
+            completeRepetitionSnack(in: app)
+            if snack < 2 {
+                XCTAssertFalse(moonlit.exists, "Affinity choice must stay locked before the third snack")
+                XCTAssertFalse(sunlit.exists)
+            }
+        }
+
+        assertGrowth(30, in: app)
+        reveal(moonlit, in: app)
+        moonlit.tap()
+        assertSelectedAffinity(moonlit)
+        capture("Earned Moonlit affinity", app: app)
+
+        let thirdSnackTime = activeWeekday + 2 * 60 * 60
+        relaunch(app, now: thirdSnackTime)
+        assertGrowth(30, in: app)
+        reveal(moonlit, in: app)
+        assertSelectedAffinity(moonlit)
+        XCTAssertEqual(sunlit.value as? String, "Not selected")
+        reveal(sunlit, in: app)
+        sunlit.tap()
+        assertSelectedAffinity(sunlit)
+        XCTAssertEqual(moonlit.value as? String, "Not selected")
+
+        relaunch(app, now: thirdSnackTime)
+        assertGrowth(30, in: app)
+        reveal(sunlit, in: app)
+        assertSelectedAffinity(sunlit)
+        XCTAssertEqual(moonlit.value as? String, "Not selected")
+        capture("Persisted Sunlit affinity", app: app)
+    }
+
     private func launchFresh() -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
@@ -233,11 +266,36 @@ final class MosslingUITests: XCTestCase {
         app.descendants(matching: .any).matching(identifier: identifier).firstMatch
     }
 
+    private func completeRepetitionSnack(in app: XCUIApplication,
+                                         file: StaticString = #filePath, line: UInt = #line) {
+        let chooseAnother = app.buttons["Choose another"]
+        reveal(chooseAnother, in: app, file: file, line: line)
+        chooseAnother.tap()
+        app.buttons["Wall push-ups · 8 reps"].tap()
+        let complete = app.buttons["completeSnack"]
+        XCTAssertTrue(complete.waitForExistence(timeout: 5), file: file, line: line)
+        reveal(complete, in: app, file: file, line: line)
+        XCTAssertTrue(complete.isEnabled, file: file, line: line)
+        complete.tap()
+        XCTAssertTrue(element("completedSnackState", in: app).waitForExistence(timeout: 10),
+                      file: file, line: line)
+        XCTAssertFalse(complete.exists, "Completion must dismiss the movement session", file: file, line: line)
+    }
+
     private func assertGrowth(_ expected: Int, in app: XCUIApplication,
                               file: StaticString = #filePath, line: UInt = #line) {
         let growth = app.staticTexts["earnedGrowthValue"]
         reveal(growth, in: app, file: file, line: line)
         XCTAssertEqual(growth.label, "\(expected) growth", file: file, line: line)
+    }
+
+    private func assertSelectedAffinity(_ button: XCUIElement,
+                                        file: StaticString = #filePath, line: UInt = #line) {
+        let selected = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "value == %@", "Selected"), object: button
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 5), .completed,
+                       "The saved affinity must be selected", file: file, line: line)
     }
 
     private func reveal(_ element: XCUIElement, in app: XCUIApplication,
