@@ -2,7 +2,7 @@
 
 ## Current boundary
 
-The repository supplies the Cloud integration, not an already-connected Apple service. [PR #3](https://github.com/joshrwolf/mossling/pull/3) records the reviewed implementation and hosted checks. Apple Developer enrollment approval, the first Xcode Cloud connection, identifier registration, real managed signing and a first Apple-hosted build still need account-side acceptance. No paid plan, App Store Connect upload or TestFlight distribution has been activated by these commits.
+The repository supplies the Cloud integration, not an already-connected Apple service. [PR #3](https://github.com/joshrwolf/mossling/pull/3) records the reviewed implementation and hosted checks. The user is completing Apple account setup. Membership status, the first Xcode Cloud connection, identifier registration, managed signing and a first Apple-hosted build still need account-side acceptance. No paid plan, App Store Connect upload or TestFlight distribution has been activated by these commits.
 
 Cloud owns signing, native Test/Archive actions, monotonically increasing build numbers and eventual delivery. Tuist owns the project graph. mise owns tools and shared preparation/check commands. There is no fastlane dependency, custom uploader or credential store.
 
@@ -18,7 +18,7 @@ Xcode Cloud supplies the build counter; do not reset it below a previously uploa
 
 After membership approval, use a Mac with Xcode 26.2 and sign into the enrolled Apple account:
 
-1. Clone the repository, install mise, run `mise trust`, `mise install --locked`, and `mise run generate`; open `Mossling.xcworkspace`.
+1. Clone the repository and open the committed `Mossling.xcworkspace`. The reviewed generated project is already present; local mise/Tuist installation is not required just to onboard Cloud. Developers changing the project graph should use the generation commands in [Tooling](Tooling.md).
 2. Copy the local signing example to `Config/Local.xcconfig` and enter the enrolled team. Register/confirm the phone and Watch identifiers and the phone's App Store Connect product. Keep automatic signing. Review any proposed identifier change before registration.
 3. In Xcode, select the **Mossling** scheme and configure Xcode Cloud for this product. Authorize access to only the `joshrwolf/mossling` repository using Apple's GitHub connection. No GitHub token or signing private key needs to be committed or pasted into chat.
 4. Edit the suggested workflow to the validation settings below **before starting the first build**. Select the included 25 compute-hour plan; do not buy an upgrade. If Xcode 26.2 is unavailable in Cloud, update the verified toolchain across Tuist/GitHub/Cloud together rather than selecting an untested version silently.
@@ -47,7 +47,7 @@ The post-clone hook runs domain tests and project drift verification; Cloud runs
 Before changing CI ownership, verify:
 
 - The same committed project generates without drift with Cloud settings present.
-- The real Cloud post-clone bootstrap and native Test action pass; all three UI tests run rather than being skipped.
+- The real Cloud post-clone bootstrap and native Test action pass; all seven UI tests run rather than being skipped.
 - Archive preparation None succeeds, and the post-action verifies the actual phone/Watch identifiers, marketing version and Cloud build number.
 - A deliberately failing test/check fails the workflow; no distribution post-action exists.
 
@@ -55,11 +55,58 @@ Then enable Cloud verification for pull requests targeting `main`, with automati
 
 Leaving the variable unset preserves the current Apple gate during onboarding. It is a migration switch, not proof Cloud is configured. If Cloud is disconnected, restore the GitHub gate and required-check policy.
 
-## Later delivery workflow: Mossling TestFlight
+## Delivery workflow: Mossling TestFlight
 
-Create this only when the first distribution is authorized. Use manual starts on a reviewed `main` commit, the same required Test action, and Archive preparation **TestFlight (Internal Testing Only)**. Add an internal TestFlight distribution post-action for the chosen tester group after all required actions pass. Confirm the group's members and App Store Connect roles before sending invitations; this repository does not invite anyone.
+The user has now authorized preparing the first TestFlight release. Apple account setup remains user-operated; no build has yet been uploaded or distributed. Use manual starts on a reviewed `main` commit, the same required Test action, and Archive preparation **TestFlight (Internal Testing Only)**. Add an internal TestFlight distribution post-action for the chosen tester group after all required actions pass. Confirm the group's members and App Store Connect roles before sending invitations; this repository does not invite anyone.
 
 Managed signing must cover the phone and embedded Watch. Keep the archive checks enabled. The first installation requires paired-device acceptance for reminders, offline completions/sync and timer behavior; simulator tests cannot establish those behaviors. External testing or App Store submission is a later decision.
+
+## First release handoff: 0.1.0
+
+Use the reviewed `main` commit containing the daily loop, lasting forest and balanced rotation. Record that full commit SHA and the Cloud-generated build number in the release record; a version string alone does not identify the build.
+
+### Account setup inputs
+
+The account holder signs in directly at [Apple Developer](https://developer.apple.com/account/) and [App Store Connect](https://appstoreconnect.apple.com/). Needed setup information is membership status, access to a Mac and its Xcode version, and whether a Mossling app record already exists. Passwords, verification codes and signing private keys stay with the account holder. The Team ID is entered into the ignored local configuration for onboarding; Cloud supplies it automatically thereafter.
+
+Register these two explicit App IDs, with default capabilities unless a current app requirement calls for more:
+
+- iPhone: `com.joshrwolf.mossling`
+- Embedded Watch app: `com.joshrwolf.mossling.watchkitapp`
+
+The Watch app requires the iPhone app for initial setup and is declared dependent; it continues to support valid offline completions after receiving its first phone configuration. There is no separate Watch extension target. Do not create a second App Store Connect app record for the companion. Create the phone product using platform **iOS**, primary language **English (U.S.)**, bundle ID `com.joshrwolf.mossling` and SKU `mossling-ios`. Try the name **Mossling**; if unavailable, agree on a store-facing alternative before registration rather than changing the code's bundle identity. Xcode's onboarding can create this app record if it does not already exist.
+
+After the first Cloud setup in Xcode, manage workflows and builds in App Store Connect. Grant Apple's GitHub app access only to this repository. Keep the included Cloud plan and manual starts while validating the first delivery.
+
+### TestFlight metadata draft
+
+**Beta description**
+
+Mossling helps you make room for small movement breaks. Choose your activities and daily rhythm, take a short break, and grow a woodland companion and its forest. Your progress stays with you when you skip a break or rest for the day. Includes an Apple Watch companion.
+
+**What to Test**
+
+Set your usual hours and pick a few movement snacks. Complete a break and confirm its growth and Journal entry remain after reopening the app. Try skipping one break, pausing for the day and resuming. After three completed breaks, choose Sunlit or Moonlit and check that your choice persists. If you use an Apple Watch, try completing a break while disconnected and reconnecting: it should appear once on both devices. Please report unexpected reminders, lost progress, duplicate rewards or a timer that behaves incorrectly after locking the screen.
+
+The account holder supplies the feedback email in App Store Connect. No tester invitations are sent by the repository. Internal testers need appropriate App Store Connect access; external testers use a separate distribution path with Apple's beta review. Confirm which path applies before inviting the first tester.
+
+### Device acceptance after the first internal install
+
+These remain **pending** until checked on the actual signed build. Record the build number, device OS versions and result next to each observation.
+
+| Scenario | Expected result |
+| --- | --- |
+| First phone launch | Correct icon, welcome and usable activity/rhythm editors |
+| Notification permission and locked phone | A prepared reminder arrives within the active rhythm; its action opens the intended opportunity |
+| Skip, pause and resume | Skip suppresses that opportunity; pause suppresses today; resume restores remaining opportunities; earned growth stays intact |
+| Reminder coverage | Rhythm shows the prepared horizon; reopening replenishes dated reminders; travel followed by reopening replans local times |
+| Timed snack and screen lock | Remaining time reflects elapsed time; a session cannot earn after its valid completion deadline |
+| Phone/Watch completion overlap | The same hour earns growth only once after synchronization |
+| Disconnected Watch | A valid completion survives relaunch and reconciles on reconnect |
+| Phone customization sync | Schedule, activities, day overrides and earned affinity reach the Watch after reconnecting |
+| Upgrade from an earlier test build | Existing history and progress persist; the upgraded pair exchanges configuration successfully |
+
+If a build fails these checks, stop distributing that build, retain its logs and ship a fix with a higher Cloud build number. Do not reset build numbering or change the bundle identifier to bypass an upload error. Simulator success is evidence for the automated flows, not a substitute for notification delivery or paired-device checks.
 
 ## Cost controls
 
