@@ -160,10 +160,11 @@ struct ForestView: View {
         } else if store.isPausedToday {
             VStack(alignment: .leading, spacing: 12) {
                 Label("Resting for today", systemImage: "moon.zzz").font(.headline)
+                    .accessibilityIdentifier("pausedDayState")
                 Text("Your usual rhythm returns tomorrow. Everything you’ve grown stays yours.")
                 Button("Resume today") { Task { await store.resumeToday() } }
                     .buttonStyle(MossPrimaryButtonStyle()).accessibilityIdentifier("resumeToday")
-            }.mossCard().accessibilityIdentifier("pausedDayState")
+            }.mossCard()
         } else if let opportunity = store.currentOpportunity {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
@@ -237,7 +238,7 @@ struct ForestView: View {
             }
             Text("\(store.progress.completedSnackCount) movement breaks, all yours.")
                 .font(.caption).foregroundStyle(MossPalette.moss)
-        }.mossCard().accessibilityIdentifier("nextMilestoneCard")
+        }.mossCard()
     }
 
     private var affinityCard: some View {
