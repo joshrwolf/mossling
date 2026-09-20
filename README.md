@@ -2,14 +2,14 @@
 
 A private iPhone + Apple Watch app that turns small movement breaks into a growing woodland companion. Working title, not a registered product name.
 
-**Implementation status:** the Tuist-generated iPhone and Watch apps compile with Xcode 26.2 on hosted macOS, and the unsigned Release archive passes phone/Watch packaging checks. CI runs 42 domain tests on Linux and macOS plus three simulator UI acceptance tests with retained screenshots. [PR #3](https://github.com/joshrwolf/mossling/pull/3) adds Xcode Cloud adapters, shared product identity and adversarially reviewed release checks. [PR #2](https://github.com/joshrwolf/mossling/pull/2) records the earlier Tuist migration and its complete CI result. Paired-device acceptance, signing and TestFlight delivery remain pending. See [Validation](docs/Validation.md).
+**Implementation status:** three product slices build on the verified Tuist/Xcode Cloud foundation: [daily snack loop (#4)](https://github.com/joshrwolf/mossling/pull/4), [lasting forest (#5)](https://github.com/joshrwolf/mossling/pull/5), and [balanced rotation (#6)](https://github.com/joshrwolf/mossling/pull/6). The complete domain package has 66 tests and simulator acceptance has seven UI scenarios. Each PR's hosted checks are authoritative for Apple builds, UI results and unsigned Release packaging; see [Validation](docs/Validation.md). Paired-device acceptance, signing and TestFlight delivery remain pending.
 
 ## What is implemented
 
-- A warm forest home with a round fern spirit, breathing/blinking, cozy rest, happy celebration, three visual growth stages, and permanent fern/mushroom/pond unlocks.
-- Configurable weekdays, daytime active window, and 60/90/120-minute cadence. Choose from starter activities or create/edit your own rep- or duration-based activity.
-- Persistent snack sessions with pause/resume and explicit completion. Duration snacks require the timer to finish; repetitions are confirmed by the user.
-- Phone-owned local reminders, permission opt-in, ten-minute snooze within the current snack window, and normal system notification routing to Watch.
+- A warm forest home with a round fern spirit, breathing/blinking, cozy rest, happy celebration, four visual growth stages, six permanent habitat unlocks, milestone celebrations, and reversible Sunlit/Moonlit styling.
+- Configurable weekdays, daytime active window, and 60/90/120-minute cadence. Choose from starter activities or create/edit your own rep- or duration-based activity. Daily suggestions cycle through enabled activities before repeating.
+- Skip a break, pause through local midnight, or resume today. Persistent snack sessions have pause/resume, explicit completion, and five minutes of finishing grace for validated starts. Duration snacks require the timer to finish; repetitions are confirmed by the user.
+- Phone-owned dated reminders prepared up to a week ahead, visible coverage in Rhythm, permission opt-in, ten-minute snooze within the current snack window, and normal system notification routing to Watch. Open regularly to replenish reminders and after travel to replan local times.
 - A watch companion with cached settings, a timer, manual completion, saved offline progress, and bounded synchronization when the paired apps connect.
 - A journal showing earned breaks and growth, JSON backup export, and non-destructive progress merge from a backup.
 - Persist-before-publish transactions, application-level acknowledgments, deduplicated rewards, supported-version checks, strict Swift 6 concurrency, and testable calendar/clock inputs.

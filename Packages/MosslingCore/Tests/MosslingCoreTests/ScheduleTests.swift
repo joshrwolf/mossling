@@ -197,3 +197,83 @@ struct DailyRoutineTests {
         #expect(completed.opportunities.first?.rewardKey == "2026-09-21-h11")
     }
 }
+
+@Suite("Balanced daily activity suggestions")
+struct ActivityRotationTests {
+    @Test(arguments: [60, 90, 120]) func eachCadenceBalancesTheWholeDayWithoutEarlyRepeats(interval: Int) throws {
+        let configuration = AppConfiguration(schedule: .init(weekdays: [2], startMinute: 0, endMinute: 1440, intervalMinutes: interval))
+        let slots = try ScheduleEngine(configuration: configuration).opportunities(
+            on: utcDate("2026-09-21T12:00:00Z"), calendar: testCalendar())
+        let ids = slots.map(\.activity.id)
+        let enabledIDs = Set(configuration.activities.filter(\.isEnabled).map(\.id))
+        let counts = enabledIDs.map { id in ids.filter { $0 == id }.count }
+        #expect(slots.count == 1440 / interval)
+        #expect((counts.max() ?? 0) - (counts.min() ?? 0) <= 1)
+        #expect(zip(ids, ids.dropFirst()).allSatisfy { $0 != $1 })
+        for start in stride(from: 0, to: ids.count, by: enabledIDs.count) {
+            let cycle = Array(ids[start..<min(start + enabledIDs.count, ids.count)])
+            #expect(Set(cycle).count == cycle.count)
+        }
+        #expect(slots.last?.expiresAt == utcDate("2026-09-22T00:00:00Z"))
+    }
+
+    @Test func canonicalOrderSurvivesSerializationRevisionAndDifferentInputOrder() throws {
+        let date = utcDate("2026-09-21T12:00:00Z"), calendar = testCalendar()
+        var configuration = AppConfiguration.standard
+        let original = try ScheduleEngine(configuration: configuration).opportunities(on: date, calendar: calendar)
+        configuration.revision = 100
+        configuration.activities.reverse()
+        let phone = try ScheduleEngine(configuration: configuration).opportunities(on: date, calendar: calendar)
+        let wire = try ConfigurationSnapshot(configuration: configuration, authorityID: UUID()).encoded()
+        let watch = try ConfigurationSnapshot.decode(wire).configuration
+        let watchSlots = try ScheduleEngine(configuration: watch).opportunities(on: date, calendar: calendar)
+        #expect(phone == original)
+        #expect(watchSlots == original)
+    }
+
+    @Test func disabledActivitiesNeverEnterRotationAndSingletonAlwaysWorks() throws {
+        var configuration = AppConfiguration.standard
+        for index in configuration.activities.indices {
+            configuration.activities[index].isEnabled = index < 2
+        }
+        let date = utcDate("2026-09-21T12:00:00Z"), calendar = testCalendar()
+        let two = try ScheduleEngine(configuration: configuration).opportunities(on: date, calendar: calendar)
+        #expect(Set(two.map(\.activity.id)) == Set(configuration.activities.prefix(2).map(\.id)))
+        #expect(zip(two, two.dropFirst()).allSatisfy { $0.activity.id != $1.activity.id })
+        configuration.activities[1].isEnabled = false
+        let one = try ScheduleEngine(configuration: configuration).opportunities(on: date, calendar: calendar)
+        #expect(one.count == 8)
+        #expect(one.allSatisfy { $0.activity.id == configuration.activities[0].id })
+    }
+
+    @Test func DSTMissingAndRepeatedHoursKeepBalancedActualOpportunities() throws {
+        let calendar = testCalendar("America/Denver")
+        let configuration = AppConfiguration(schedule: .init(weekdays: [1], startMinute: 0, endMinute: 480))
+        for date in [utcDate("2026-03-08T12:00:00Z"), utcDate("2026-11-01T12:00:00Z")] {
+            let slots = try ScheduleEngine(configuration: configuration).opportunities(on: date, calendar: calendar)
+            #expect(Set(slots.map(\.id)).count == slots.count)
+            #expect(Set(slots.prefix(configuration.activities.count).map(\.activity.id)).count == configuration.activities.count)
+            #expect(zip(slots, slots.dropFirst()).allSatisfy { $0.activity.id != $1.activity.id })
+            #expect(zip(slots, slots.dropFirst()).allSatisfy { $0.expiresAt == $1.scheduledAt })
+        }
+        let spring = try ScheduleEngine(configuration: configuration).opportunities(on: utcDate("2026-03-08T12:00:00Z"), calendar: calendar)
+        #expect(spring.count == 7)
+        #expect(!spring.contains { $0.minuteOfDay == 120 })
+        let autumn = try ScheduleEngine(configuration: configuration).opportunities(on: utcDate("2026-11-01T12:00:00Z"), calendar: calendar)
+        #expect(autumn.count == 8)
+        #expect(autumn.filter { $0.minuteOfDay == 60 }.count == 1)
+    }
+
+    @Test func existingSessionSnapshotSurvivesActivityListChanges() throws {
+        let date = utcDate("2026-09-21T09:05:00Z"), calendar = testCalendar()
+        var configuration = AppConfiguration.standard
+        let opportunity = try #require(try ScheduleEngine(configuration: configuration).current(at: date, calendar: calendar))
+        let session = try SnackSession.start(opportunity: opportunity, activity: opportunity.activity, at: date)
+        configuration.activities.removeAll { $0.id == opportunity.activity.id }
+        _ = try ScheduleEngine(configuration: configuration).current(at: date, calendar: calendar)
+        let restored = try AppDocument.decode(AppDocument(configuration: configuration, session: session).encoded())
+        #expect(restored.session?.activity == opportunity.activity)
+        #expect(restored.session?.opportunity == opportunity)
+        #expect(restored.session?.completionDeadline == session.completionDeadline)
+    }
+}
