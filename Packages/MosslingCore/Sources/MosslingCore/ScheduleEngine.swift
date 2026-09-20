@@ -45,12 +45,16 @@ public struct ScheduleEngine: Sendable {
         }
         let activities = configuration.activities.filter(\.isEnabled).sorted { $0.id < $1.id }
         guard !activities.isEmpty else { return [] }
+        // Rotate through the canonical enabled list. A stable daily offset adds variety
+        // while keeping phone/watch suggestions identical without completion history.
+        // The guarantee is per day's scheduled suggestions, not manual substitutions.
+        let dailyOffset = Int(Self.stableHash(dayKey) % UInt64(activities.count))
         return slots.enumerated().compactMap { index, slot in
             let expiresAt = index + 1 < slots.count ? min(slots[index + 1].date, end) : end
             guard slot.date < expiresAt else { return nil }
             let id = "\(dayKey)-m\(String(format: "%04d", slot.minute))"
             let rewardKey = "\(dayKey)-h\(String(format: "%02d", slot.minute / 60))"
-            let activityIndex = Int(Self.stableHash(id) % UInt64(activities.count))
+            let activityIndex = (dailyOffset + index) % activities.count
             return Opportunity(id: id, rewardKey: rewardKey, scheduledAt: slot.date, expiresAt: expiresAt, activity: activities[activityIndex], dayKey: dayKey, minuteOfDay: slot.minute)
         }
     }
