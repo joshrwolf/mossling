@@ -122,3 +122,9 @@ GitHub exercises the actual post-clone adapter with a clearly fictitious team an
 - [Cloud numbering](https://developer.apple.com/documentation/xcode/setting-the-next-build-number-for-xcode-cloud-builds)
 - [TestFlight distribution](https://developer.apple.com/documentation/xcode/distributing-your-xcode-cloud-builds-through-testflight)
 - [Included compute allowance](https://developer.apple.com/xcode-cloud/)
+
+## Diagnosing a Cloud script failure
+
+App Store Connect's issue summary can show only `ci_post_clone.sh exited with code 1`. That summary does not identify the failed command. On the Mac, open Xcode's Report navigator (**View → Navigators → Reports**, ⌘9), select the Cloud build, expand its failed action and inspect **Logs**; **Artifacts** provides downloadable logs. Apple documents this in [Resolving common configuration and build issues](https://developer.apple.com/documentation/xcode/resolving-common-configuration-and-build-issues).
+
+Our adapter logs an authored phase label, tool name, elapsed duration and exit status. It does not print command arguments or environment values. Preserve the full output before the final exit line when reporting a failure; a successful GitHub fixture run cannot establish Apple's real identity/network/signing environment. [Issue #13](https://github.com/joshrwolf/mossling/issues/13) tracks the current Apple-hosted post-clone failure until its actual log identifies the cause.

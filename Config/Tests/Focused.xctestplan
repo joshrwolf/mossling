@@ -1,0 +1,27 @@
+{
+  "configurations": [
+    {
+      "id": "38E9B56E-E426-46C9-99E6-8409EA072752",
+      "name": "Default",
+      "options": {}
+    }
+  ],
+  "defaultOptions": {
+    "codeCoverage": false
+  },
+  "testTargets": [
+    {
+      "parallelizable": false,
+      "target": {
+        "containerPath": "container:Mossling.xcodeproj",
+        "identifier": "419E6DA306D3D4AE5F638F20",
+        "name": "MosslingUITests"
+      },
+      "selectedTests": [
+        "MosslingUITests/testCreatedAndEditedSnackPersistsAcrossRelaunch()",
+        "MosslingUITests/testEarnedAffinityChoicePersistsAndCanBeChanged()"
+      ]
+    }
+  ],
+  "version": 1
+}

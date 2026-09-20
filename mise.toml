@@ -19,27 +19,47 @@ run = [
 description = "Run the portable Swift domain tests (Linux or macOS)"
 run = "swift test --package-path Packages/MosslingCore --parallel"
 
+[tasks."tools:ui"]
+description = "Compile the simulator helper before any device boots"
+sources = ["Tools/RunUITests.swift", "mise.toml"]
+outputs = [".build-artifacts/tools/ui-tests"]
+run = [
+  "mkdir -p .build-artifacts/tools",
+  "swiftc -swift-version 6 -warnings-as-errors Tools/RunUITests.swift -o .build-artifacts/tools/ui-tests",
+]
+
 [tasks."test:ui"]
 # Both tasks share Xcode's build database; serialize when selected together.
 wait_for = ["build"]
 description = "Exercise real iPhone forms in a disposable simulator and save screenshots"
-depends = ["generate"]
-run = "swift Tools/RunUITests.swift"
+depends = ["generate", "tools:ui"]
+run = [".build-artifacts/tools/ui-tests", "mise run test:ui:verify"]
 
 # CI calls the same runner in explicit phases so simulator startup cannot consume
 # the test execution budget. Local test:ui retains the complete ordered flow.
 [tasks."test:ui:build"]
-depends = ["generate"]
-run = "swift Tools/RunUITests.swift build"
+wait_for = ["build"]
+depends = ["generate", "tools:ui"]
+run = ".build-artifacts/tools/ui-tests build"
 
 [tasks."test:ui:prepare"]
-run = "swift Tools/RunUITests.swift prepare"
+depends = ["tools:ui"]
+run = ".build-artifacts/tools/ui-tests prepare"
 
 [tasks."test:ui:run"]
-run = "swift Tools/RunUITests.swift test"
+depends = ["tools:ui"]
+run = [".build-artifacts/tools/ui-tests test", "mise run test:ui:verify"]
 
 [tasks."test:ui:cleanup"]
-run = "swift Tools/RunUITests.swift cleanup"
+depends = ["tools:ui"]
+run = ".build-artifacts/tools/ui-tests cleanup"
+
+[tasks."test:ui:verify"]
+description = "Reject empty, skipped or incomplete native test-plan results"
+run = [
+  "xcrun xcresulttool get test-results summary --path .build-artifacts/UI-Tests.xcresult > .build-artifacts/UI-Summary.json",
+  'python3 Tools/Tests/test_ui_plans.py --result-summary .build-artifacts/UI-Summary.json --plan "${MOSSLING_UI_TEST_PLAN:-All}"',
+]
 
 [tasks."diagnose:host"]
 description = "Record macOS runner memory, swap and CPU consumers without process arguments"
@@ -70,7 +90,7 @@ run = [
 
 [tasks."test:tooling"]
 description = "Exercise Cloud environment boundaries and malformed release archives"
-run = ["swift Tools/Tests/RunCloudHookTests.swift", "swift Tools/Tests/RunUITestRunnerTests.swift", "python3 Tools/Tests/test_archive.py"]
+run = ["swift Tools/Tests/RunCloudHookTests.swift", "swift Tools/Tests/RunUITestRunnerTests.swift", "python3 Tools/Tests/test_archive.py", "python3 Tools/Tests/test_ui_plans.py"]
 
 [tasks."cloud:prepare"]
 description = "Prepare Cloud native actions with domain tests and canonical project validation"

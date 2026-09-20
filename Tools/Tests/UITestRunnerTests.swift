@@ -56,6 +56,14 @@ func testUITestRunner() throws {
     try rejects("Invalid identifier accepted") { try OwnedSimulator(name: state.name, identifier: "all").validate() }
     let roundTrip = try JSONDecoder().decode(OwnedSimulator.self, from: JSONEncoder().encode(state))
     try check(roundTrip.name == state.name && roundTrip.identifier == state.identifier, "Persisted ownership changed")
+    try check(try selectedTestPlan([:]) == .all, "Local testing must include the full plan")
+    try rejects("Unknown test plan accepted") { _ = try selectedTestPlan(["MOSSLING_UI_TEST_PLAN": "missing"]) }
+    for plan in UITestPlan.allCases {
+        try check(try selectedTestPlan(["MOSSLING_UI_TEST_PLAN": plan.rawValue]) == plan, "Valid plan rejected")
+        let build = buildArguments(plan: plan)
+        let test = try testArguments(for: state, diagnostics: false, plan: plan)
+        try check(build.contains(plan.rawValue) && test.contains(plan.rawValue), "Build and execution plans must match")
+    }
     let build = buildArguments()
     let test = try testArguments(for: state, diagnostics: false)
     try check(build[1] == "build-for-testing" && test[1] == "test-without-building", "Test phase must never recompile")
