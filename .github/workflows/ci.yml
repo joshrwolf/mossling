@@ -96,7 +96,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        plan: [Focused, Remainder]
+        plan: [Focused, Persistence, Remainder]
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
       MOSSLING_UI_TEST_PLAN: ${{ matrix.plan }}
@@ -124,6 +124,11 @@ jobs:
         timeout-minutes: 1
         continue-on-error: true
         run: mise run diagnose:host | tee .build-artifacts/ui-host-failure.txt
+      - name: Capture application lifecycle intervals
+        if: always() && steps.ui_prepare.outcome == 'success'
+        timeout-minutes: 1
+        continue-on-error: true
+        run: mise run diagnose:ui
       - name: Remove the disposable UI simulator
         if: always() && (steps.ui_prepare.outcome == 'success' || steps.ui_prepare.outcome == 'failure' || steps.ui_prepare.outcome == 'cancelled')
         timeout-minutes: 2
@@ -139,6 +144,7 @@ jobs:
             .build-artifacts/UI-Tests.xcresult
             .build-artifacts/UI-Summary.json
             .build-artifacts/ui-host-*.txt
+            .build-artifacts/ui-lifecycle.log
           if-no-files-found: ignore
           retention-days: 7
   verify:
@@ -148,7 +154,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 1
     steps:
-      - name: Require domain, packaging and both UI plans
+      - name: Require domain, packaging and all UI plans
         run: |
           test "${{ needs.core.result }}" = success
           test "${{ needs.apple.result }}" = success

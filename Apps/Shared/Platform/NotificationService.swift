@@ -79,6 +79,8 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
     }
 
     func authorizationStatus() async -> Authorization {
+        let interval = AppDiagnostics.begin("notificationSettingsRequest")
+        defer { AppDiagnostics.end(interval) }
         let settings = await center.notificationSettings()
         switch settings.authorizationStatus {
         case .notDetermined: return .notDetermined

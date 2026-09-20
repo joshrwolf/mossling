@@ -54,6 +54,13 @@ run = [".build-artifacts/tools/ui-tests test", "mise run test:ui:verify"]
 depends = ["tools:ui"]
 run = ".build-artifacts/tools/ui-tests cleanup"
 
+[tasks."test:ui:focus"]
+description = "Rebuild and run one UI method, retaining the owned simulator for fast iteration"
+depends = ["generate", "tools:ui"]
+wait_for = ["build", "test:ui", "test:ui:build", "test:ui:run"]
+usage = 'arg "<test>" help="MosslingUITests/Suite/testMethod (one method, no parentheses)"'
+run = '.build-artifacts/tools/ui-tests focus "${usage_test?}"'
+
 [tasks."test:ui:verify"]
 description = "Reject empty, skipped or incomplete native test-plan results"
 run = [
@@ -69,6 +76,11 @@ run = [
   "vm_stat",
   "ps -axo pid,pcpu,rss,comm -r",
 ]
+
+[tasks."diagnose:ui"]
+description = "Save Debug app lifecycle intervals from the owned simulator before cleanup"
+depends = ["tools:ui"]
+run = ".build-artifacts/tools/ui-tests diagnose > .build-artifacts/ui-lifecycle.log"
 
 [tasks."archive:check"]
 description = "Build an unsigned Release archive and validate the phone/Watch bundle contract"

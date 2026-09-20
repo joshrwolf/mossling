@@ -1,7 +1,7 @@
 {
   "configurations": [
     {
-      "id": "013A081F-FC37-48A5-A138-C305941211B3",
+      "id": "8D3FE39C-FB86-4060-9FD0-056B28333A2E",
       "name": "Default",
       "options": {}
     }
@@ -18,8 +18,7 @@
         "identifier": "419E6DA306D3D4AE5F638F20",
         "name": "MosslingUITests"
       },
-      "skippedTests": [
-        "MosslingUITests/testEarnedAffinityChoicePersistsAndCanBeChanged()",
+      "selectedTests": [
         "MosslingUITests/testCompletedSnackEarnsGrowthOnceAndSurvivesRelaunch()",
         "MosslingUITests/testCreatedAndEditedSnackPersistsAcrossRelaunch()"
       ]

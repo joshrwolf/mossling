@@ -11,6 +11,7 @@
 		022BB7323418857461AC7207 /* MosslingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 971DDC1DF94DE50C2906B55A /* MosslingUITests.swift */; };
 		0607FC925D202C5F523535DD /* RhythmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9623259E340A47FB8D996BE2 /* RhythmView.swift */; };
 		3384A528A07678DF66A3A8CA /* MosslingWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EFCC37F6FAC828A7B861562 /* MosslingWatchApp.swift */; };
+		39F5E2093ED4F2DFC7A5AED0 /* AppDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276697847B1A96A453C119E9 /* AppDiagnostics.swift */; };
 		3C670E2207DA584922C14B98 /* WatchConnectivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931F83F371CA0B4206B58937 /* WatchConnectivityService.swift */; };
 		4C49DFDF9787B7B8D8C787FA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F5A22668FEAEB5E5C6E12331 /* Assets.xcassets */; };
 		68BC8218EEEFDC1BEF4AEA54 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = B78FE59A4B7194DE662A785A /* Store.swift */; };
@@ -23,6 +24,7 @@
 		986B96E08AB76FED76C2E606 /* MosslingCore in Frameworks */ = {isa = PBXBuildFile; productRef = C55404B75E7B668FBA5A983F /* MosslingCore */; };
 		991BEDA3CAFA133EEFBD00D4 /* MosslingCore in Frameworks */ = {isa = PBXBuildFile; productRef = 76D21AA70056166787610F21 /* MosslingCore */; };
 		9AFD693E6C15F0CB07F0ECB3 /* WatchConnectivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931F83F371CA0B4206B58937 /* WatchConnectivityService.swift */; };
+		9CF3AD261C17BF37C4A866F8 /* AppDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276697847B1A96A453C119E9 /* AppDiagnostics.swift */; };
 		9FE2E729DFFA6B7ED9A240C4 /* ActivityPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12BCCA0C52BECAB5A25FD649 /* ActivityPresentation.swift */; };
 		A965FD37FD63C9C8BC2137D5 /* MosslingWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = ACEBC599E644A20A7043344A /* MosslingWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B46D58F87B185AAE4AFAD136 /* WatchForestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 220E2B217B0954361A91CF7A /* WatchForestView.swift */; };
@@ -99,6 +101,7 @@
 /* Begin PBXFileReference section */
 		12BCCA0C52BECAB5A25FD649 /* ActivityPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityPresentation.swift; sourceTree = "<group>"; };
 		220E2B217B0954361A91CF7A /* WatchForestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchForestView.swift; sourceTree = "<group>"; };
+		276697847B1A96A453C119E9 /* AppDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDiagnostics.swift; sourceTree = "<group>"; };
 		279CB4458C9CC67AC7F8DC2F /* MosslingUITests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "MosslingUITests-Info.plist"; sourceTree = "<group>"; };
 		352B64E26432893D072A2A12 /* Tooling.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Tooling.md; sourceTree = "<group>"; };
 		3C5A30B533AD8CA2D638B32F /* iOS-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "iOS-Info.plist"; sourceTree = "<group>"; };
@@ -271,6 +274,7 @@
 			children = (
 				56A4D2F04477E917AFD8B87C /* Platform */,
 				2C80466E22D821517A0C7DD6 /* UI */,
+				276697847B1A96A453C119E9 /* AppDiagnostics.swift */,
 				F5A22668FEAEB5E5C6E12331 /* Assets.xcassets */,
 				B78FE59A4B7194DE662A785A /* Store.swift */,
 			);
@@ -455,6 +459,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				39F5E2093ED4F2DFC7A5AED0 /* AppDiagnostics.swift in Sources */,
 				7036D684FAA1575E42524E40 /* NotificationService.swift in Sources */,
 				9AFD693E6C15F0CB07F0ECB3 /* WatchConnectivityService.swift in Sources */,
 				68BC8218EEEFDC1BEF4AEA54 /* Store.swift in Sources */,
@@ -481,6 +486,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9CF3AD261C17BF37C4A866F8 /* AppDiagnostics.swift in Sources */,
 				00AF82B24D78C3D573D36E0F /* NotificationService.swift in Sources */,
 				3C670E2207DA584922C14B98 /* WatchConnectivityService.swift in Sources */,
 				C778537F6BDE9BE0CFA0C482 /* Store.swift in Sources */,
