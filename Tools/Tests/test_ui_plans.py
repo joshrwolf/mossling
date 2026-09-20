@@ -11,6 +11,11 @@ ROOT = Path(__file__).resolve().parents[2]
 FOCUSED = {
     "MosslingUITests/testEarnedAffinityChoicePersistsAndCanBeChanged()",
 }
+PERSISTENCE = {
+    "MosslingUITests/testCompletedSnackEarnsGrowthOnceAndSurvivesRelaunch()",
+    "MosslingUITests/testCreatedAndEditedSnackPersistsAcrossRelaunch()",
+}
+PLAN_NAMES = ("All", "Focused", "Persistence", "Remainder")
 
 
 def discover_tests():
@@ -58,7 +63,7 @@ class UITestPlanTests(unittest.TestCase):
     def setUpClass(cls):
         cls.plans = {
             name: json.loads((ROOT / f"Config/Tests/{name}.xctestplan").read_text())
-            for name in ("All", "Focused", "Remainder")
+            for name in PLAN_NAMES
         }
 
     def test_target_identity_and_execution_options(self):
@@ -85,21 +90,25 @@ class UITestPlanTests(unittest.TestCase):
                 })
 
     def test_exact_complement_without_extra_filters(self):
-        all_tests, focused, remainder = [self.plans[n]["testTargets"][0] for n in ("All", "Focused", "Remainder")]
+        all_tests, focused, persistence, remainder = [self.plans[n]["testTargets"][0] for n in PLAN_NAMES]
         self.assertEqual(set(all_tests), {"target", "parallelizable"})
         self.assertEqual(set(focused), {"target", "parallelizable", "selectedTests"})
+        self.assertEqual(set(persistence), {"target", "parallelizable", "selectedTests"})
         self.assertEqual(set(remainder), {"target", "parallelizable", "skippedTests"})
         self.assertEqual(set(focused["selectedTests"]), FOCUSED)
         self.assertEqual(len(focused["selectedTests"]), len(FOCUSED))
-        self.assertEqual(set(remainder["skippedTests"]), FOCUSED)
-        self.assertEqual(len(remainder["skippedTests"]), len(FOCUSED))
+        self.assertEqual(set(persistence["selectedTests"]), PERSISTENCE)
+        self.assertEqual(len(persistence["selectedTests"]), len(PERSISTENCE))
+        self.assertEqual(set(remainder["skippedTests"]), FOCUSED | PERSISTENCE)
+        self.assertEqual(len(remainder["skippedTests"]), len(FOCUSED | PERSISTENCE))
         current = discover_tests()
         self.assertGreaterEqual(len(current), 7, "Existing acceptance flows must remain")
-        self.assertLessEqual(FOCUSED, current, "A renamed focused test would silently drop coverage")
+        self.assertLessEqual(FOCUSED | PERSISTENCE, current, "A renamed selected test would silently drop coverage")
         for universe in (current, current | {"MosslingUITests/testFutureFlow()", "NewFeatureTests/testFutureSuite()"}):
             self.assertEqual(selected(all_tests, universe), universe)
-            self.assertFalse(selected(focused, universe) & selected(remainder, universe))
-            self.assertEqual(selected(focused, universe) | selected(remainder, universe), universe)
+            partitions = [selected(target, universe) for target in (focused, persistence, remainder)]
+            self.assertEqual(set.union(*partitions), universe)
+            self.assertEqual(sum(map(len, partitions)), len(universe), "No flow may run twice")
 
     def test_native_result_gate_rejects_missing_failed_skipped_and_zero_tests(self):
         passing = {"totalTestCount": 2, "passedTests": 2, "failedTests": 0,
@@ -128,15 +137,27 @@ class UITestPlanTests(unittest.TestCase):
         action = re.search(r"testAction:\s*\.testPlans\(\s*\[(.*?)\],", manifest, re.S)
         self.assertIsNotNone(action)
         self.assertEqual(re.findall(r'\.path\("([^"]+)"\)', action[1]), [
-            "Config/Tests/All.xctestplan", "Config/Tests/Focused.xctestplan", "Config/Tests/Remainder.xctestplan",
+            f"Config/Tests/{name}.xctestplan" for name in PLAN_NAMES
         ])
+
+    def test_ci_runs_every_partition_and_requires_its_result(self):
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text()
+        ui_job = re.search(r"^  ui:\n(.*?)(?=^  \w+:|\Z)", workflow, re.M | re.S)
+        self.assertIsNotNone(ui_job)
+        matrix = re.search(r"^        plan: \[([^\]]+)\]$", ui_job[1], re.M)
+        self.assertIsNotNone(matrix)
+        self.assertEqual([name.strip() for name in matrix[1].split(",")], list(PLAN_NAMES[1:]))
+        verify_job = re.search(r"^  verify:\n(.*)", workflow, re.M | re.S)
+        self.assertIsNotNone(verify_job)
+        self.assertRegex(verify_job[1], r"needs: \[[^\]]*\bui\b[^\]]*\]")
+        self.assertIn('test "${{ needs.ui.result }}" = success', verify_job[1])
 
 
 if __name__ == "__main__":
     if "--result-summary" in sys.argv:
         parser = argparse.ArgumentParser(description="Require native UI results to cover the selected test plan")
         parser.add_argument("--result-summary", type=Path, required=True)
-        parser.add_argument("--plan", choices=("All", "Focused", "Remainder"), required=True)
+        parser.add_argument("--plan", choices=PLAN_NAMES, required=True)
         args = parser.parse_args()
         try:
             validate_result_file(args.result_summary, args.plan)

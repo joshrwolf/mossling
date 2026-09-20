@@ -138,11 +138,11 @@ func loadOwnedSimulator() throws -> OwnedSimulator {
     return state
 }
 
-enum UITestPlan: String, CaseIterable { case all = "All", focused = "Focused", remainder = "Remainder" }
+enum UITestPlan: String, CaseIterable { case all = "All", focused = "Focused", persistence = "Persistence", remainder = "Remainder" }
 
 func selectedTestPlan(_ environment: [String: String]) throws -> UITestPlan {
     guard let plan = UITestPlan(rawValue: environment["MOSSLING_UI_TEST_PLAN"] ?? "All") else {
-        throw UITestError("MOSSLING_UI_TEST_PLAN must be All, Focused or Remainder")
+        throw UITestError("MOSSLING_UI_TEST_PLAN must be All, Focused, Persistence or Remainder")
     }
     return plan
 }

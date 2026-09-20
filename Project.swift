@@ -93,6 +93,7 @@ let project = Project(
             testAction: .testPlans(
                 [.path("Config/Tests/All.xctestplan"),
                  .path("Config/Tests/Focused.xctestplan"),
+                 .path("Config/Tests/Persistence.xctestplan"),
                  .path("Config/Tests/Remainder.xctestplan")],
                 configuration: .debug
             ),

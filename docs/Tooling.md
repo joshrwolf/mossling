@@ -75,10 +75,11 @@ GitHub verifies every PR and main commit. Xcode Cloud owns Apple-hosted signing 
 | Domain (Linux) | Portable domain tests and tooling contracts |
 | Apple builds/archive | Real Cloud preparation adapter, Apple Foundation domain tests, both generic simulator schemes, Release archive and detached archive adapter, generated-project drift |
 | iPhone UI / Focused | The longest affinity flow on its own standard VM |
+| iPhone UI / Persistence | Completion and activity editing on a separate standard VM |
 | iPhone UI / Remainder | Every other UI test on a separate standard VM |
 | Verify all required checks | Fail if any required job or UI partition failed, was cancelled, or was skipped |
 
-`Config/Tests/*.xctestplan` owns test selection, coverage and serial target execution. Focused selects the longest affinity flow; Remainder skips exactly that test, so new tests automatically join Remainder. Tooling checks protect the complementary selection. Each native result must report exactly the selected test count, all passed, with no skipped or expected-failure results; empty or incomplete runs fail the gate. Each VM runs one simulator; this avoids the resource contention observed with two simulator workers on one 7 GB host. Both partitions remain mandatory, with no retries or quarantined tests.
+`Config/Tests/*.xctestplan` owns test selection, coverage and serial target execution. Focused selects the affinity flow; Persistence selects completion and activity editing; Remainder excludes exactly those three tests, so new tests automatically join Remainder. Tooling checks protect the complementary selection. Each native result must report exactly the selected test count, all passed, with no skipped or expected-failure results; empty or incomplete runs fail the gate. Each VM runs one simulator; this avoids the resource contention observed with two simulator workers on one 7 GB host. All three partitions remain mandatory, with no retries or quarantined tests.
 
 Each UI job generates once and builds its own products before booting. Compilation is short relative to real UI automation, so no cross-machine product relocation or custom shard scheduler is needed. The simulator helper is compiled before boot and reused for preparation, test execution and cleanup. Its fresh-device ownership checks also protect local developer simulators and isolate notification permission state. Replacing it with Tuist's existing-device selection would lose that isolation.
 
@@ -86,10 +87,12 @@ Mise owns task dependencies and pinned tools. The pinned Tuist test command norm
 
 ## Running and diagnosing UI tests
 
-`mise run test:ui` builds and runs **All** by default, then cleans up its disposable simulator. Select one native plan with `MOSSLING_UI_TEST_PLAN=Focused mise run test:ui` or `Remainder`. The shared local `verify` graph waits for generic simulator builds before UI execution because those tasks share DerivedData.
+`mise run test:ui` builds and runs **All** by default, then cleans up its disposable simulator. Select one native plan with `MOSSLING_UI_TEST_PLAN=Focused mise run test:ui` or `Persistence` / `Remainder`. The shared local `verify` graph waits for generic simulator builds before UI execution because those tasks share DerivedData.
 
 For phase-level diagnosis, run `test:ui:build`, `test:ui:prepare`, `test:ui:run`, then `test:ui:cleanup`. Run cleanup after interrupted preparation/testing before starting a new session. An existing simulator state is never silently overwritten. These tasks reuse the compiled helper; `tools:ui` rebuilds it when its source/configuration changes.
 
 GitHub exposes phase durations directly in named steps. Routine host snapshots and duplicate custom timing files are removed from the critical path. A failed simulator run attempts a bounded resource snapshot, and every run retains XCTest results and screenshots for seven days. The helper disables the broad system diagnostic collection that previously stalled for 600 seconds; opt in locally with `MOSSLING_UI_DIAGNOSTICS=1` when investigating deliberately.
 
 The accepted serial baseline passed three native runs: **16m52s**, **14m52s**, and **14m14s** on main, with all seven UI flows passing. [PR #12](https://github.com/joshrwolf/mossling/pull/12) contains the evidence. Native-plan parallelism must be measured against that baseline; [issue #8](https://github.com/joshrwolf/mossling/issues/8) records performance evidence and follow-up work. GitHub checks establish unsigned build/test/package behavior; actual Apple Cloud and paired-device acceptance remain separate.
+
+The first two-plan PR passed in 13m26s, but its post-merge Remainder job exceeded the existing 15-minute execution budget. It spent 347 seconds before the first test, then passed completion (227s), editing (156s), onboarding (53s) and pause (71s) before timing out during schedule testing. Delays also affected shell metadata, mise and simulator inventory before XCTest launched; this is not evidence of an app-only hang or memory exhaustion. Three native partitions isolate the expensive persistence flows while preserving the timeout, assertions and seven-flow result gate. This improves headroom; it does not establish a fix for variable hosted-runner startup. See issue #8 for measured acceptance runs.

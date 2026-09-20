@@ -35,7 +35,7 @@ final class MosslingUITests: XCTestCase {
         XCTAssertTrue(title.waitForExistence(timeout: 5))
         title.tap()
         title.typeText("Kitchen wiggle")
-        let instructions = app.descendants(matching: .any).matching(identifier: "activityInstructions").firstMatch
+        let instructions = app.textFields["activityInstructions"]
         instructions.tap()
         instructions.typeText("Move gently to a favorite song.")
         app.buttons["saveActivity"].tap()
@@ -52,7 +52,7 @@ final class MosslingUITests: XCTestCase {
         reveal(original, in: app)
         original.tap()
         XCTAssertEqual(app.textFields["activityTitle"].value as? String, "Kitchen wiggle")
-        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "activityInstructions").firstMatch.value as? String,
+        XCTAssertEqual(app.textFields["activityInstructions"].value as? String,
                        "Move gently to a favorite song.")
         app.buttons["30 sec"].tap()
         capture("Editing a custom snack", app: app)
