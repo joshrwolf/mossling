@@ -1,4 +1,9 @@
 import Foundation
+#if canImport(Darwin)
+import Darwin
+#else
+import Glibc
+#endif
 
 // UI tests exercise real local adapters, so always give them a disposable device.
 struct SimulatorInventory: Decodable {
@@ -7,6 +12,7 @@ struct SimulatorInventory: Decodable {
         let udid: String
         let isAvailable: Bool
         let deviceTypeIdentifier: String?
+        var state: String? = nil
     }
     let devices: [String: [Device]]
 }
@@ -88,14 +94,23 @@ struct OwnedSimulator: Codable {
         }
         return true
     }
+
+    func reusableDevice(in inventory: SimulatorInventory) throws -> SimulatorInventory.Device {
+        guard try exists(in: inventory),
+              let device = inventory.devices.values.flatMap({ $0 }).first(where: { $0.udid == identifier }),
+              device.isAvailable, device.state == "Booted" || device.state == "Shutdown" else {
+            throw UITestError("Owned simulator is missing, unavailable or transitioning; run test:ui:cleanup before retrying")
+        }
+        return device
+    }
 }
 
-enum UIPhase: String { case build, prepare, test, cleanup }
+enum UIPhase: String { case build, prepare, test, diagnose, cleanup }
 
 func commandPlan(_ arguments: [String]) throws -> [UIPhase] {
     if arguments.isEmpty || arguments == ["all"] { return [.build, .prepare, .test] }
     guard arguments.count == 1, let phase = UIPhase(rawValue: arguments[0]) else {
-        throw UITestError("Usage: swift Tools/RunUITests.swift [all|build|prepare|test|cleanup]")
+        throw UITestError("Usage: ui-tests [all|build|prepare|test|diagnose|cleanup] or focus Target/Suite/testMethod")
     }
     return [phase]
 }
@@ -153,15 +168,84 @@ func buildArguments(plan: UITestPlan = .all) -> [String] {
      "-derivedDataPath", derivedDataPath, "-showBuildTimingSummary", "CODE_SIGNING_ALLOWED=NO"]
 }
 
-func testArguments(for state: OwnedSimulator, diagnostics: Bool, plan: UITestPlan = .all) throws -> [String] {
+func testArguments(for state: OwnedSimulator, diagnostics: Bool, plan: UITestPlan = .all,
+                   resultBundle: String = resultPath) throws -> [String] {
     try state.validate()
     return ["xcodebuild", "test-without-building", "-project", "Mossling.xcodeproj", "-scheme", "Mossling",
             "-destination", "platform=iOS Simulator,id=\(state.identifier)",
             "-testPlan", plan.rawValue, "-parallel-testing-enabled", "NO",
             // Preserve XCTest attachments without the 600-second system diagnostic stall.
             "-collect-test-diagnostics", diagnostics ? "on-failure" : "never",
-            "-resultBundlePath", resultPath, "-derivedDataPath", derivedDataPath,
+            "-resultBundlePath", resultBundle, "-derivedDataPath", derivedDataPath,
             "-showBuildTimingSummary", "CODE_SIGNING_ALLOWED=NO"]
+}
+
+/// A developer selection is deliberately separate from the mandatory CI plans.
+/// Requiring a method (not a suite) also lets the native result reject typos that
+/// xcodebuild otherwise treats as a successful zero-test run.
+func focusedTestIdentifier(_ arguments: [String]) throws -> String {
+    guard arguments.count == 2, arguments[0] == "focus",
+          arguments[1].range(of: #"\AMosslingUITests/[A-Za-z_][A-Za-z_0-9]*/test[A-Za-z_0-9]+\z"#,
+                             options: .regularExpression) != nil else {
+        throw UITestError("Usage: ui-tests focus MosslingUITests/Suite/testMethod")
+    }
+    return arguments[1]
+}
+
+func runFocusedTest(_ arguments: [String]) throws -> Int32 {
+    let identifier = try focusedTestIdentifier(arguments)
+    // Always rebuild after an edit. Xcode's incremental build is cheap; running
+    // stale products would give misleading feedback. Environment plan selection
+    // cannot silently filter the explicitly requested developer test.
+    let build = try run(buildArguments(plan: .all))
+    guard build.status == 0 else { return build.status }
+    if !FileManager.default.fileExists(atPath: statePath) {
+        do {
+            let prepared = try runPhase(.prepare)
+            guard prepared == 0 else {
+                _ = try? runPhase(.cleanup)
+                return prepared
+            }
+        } catch {
+            _ = try? runPhase(.cleanup)
+            throw error
+        }
+    }
+    let state = try loadOwnedSimulator()
+    let device = try state.reusableDevice(in: simulatorInventory())
+    if device.state == "Shutdown" {
+        let boot = try run(["simctl", "boot", state.identifier])
+        guard boot.status == 0 else { return boot.status }
+    }
+    let ready = try run(["simctl", "bootstatus", state.identifier, "-b"])
+    guard ready.status == 0 else { return ready.status }
+    let focusedPath = ".build-artifacts/Focused-\(UUID().uuidString).xcresult"
+    var test = try testArguments(for: state,
+        diagnostics: ProcessInfo.processInfo.environment["MOSSLING_UI_DIAGNOSTICS"] == "1",
+        resultBundle: focusedPath)
+    test.append("-only-testing:\(identifier)")
+    diagnostic("Focused result: \(focusedPath). Simulator retained; finish with mise run test:ui:cleanup.")
+    let result = try run(test)
+    guard result.status == 0 else { return result.status }
+    let summary = try run(["xcresulttool", "get", "test-results", "summary", "--path", focusedPath], capture: true)
+    guard summary.status == 0 else { return summary.status }
+    let summaryPath = focusedPath + ".json"
+    try summary.output.write(to: URL(fileURLWithPath: summaryPath), options: .atomic)
+    return try run(["python3", "Tools/Tests/test_ui_plans.py", "--result-summary", summaryPath,
+                    "--test", identifier]).status
+}
+
+// Kernel-managed locks are released even after interruption. Never unlink this
+// file: another process may already be waiting on the same inode.
+func acquireRunnerLock(directory: URL = URL(fileURLWithPath: ".build-artifacts")) throws -> FileHandle {
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let descriptor = open(directory.appendingPathComponent("ui-runner.lock").path, O_CREAT | O_RDWR, 0o600)
+    guard descriptor >= 0 else { throw UITestError("Cannot open UI runner lock") }
+    let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
+    guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else {
+        throw UITestError("Another UI helper is running; wait before building, testing or cleaning up its simulator")
+    }
+    return handle
 }
 
 func runPhase(_ phase: UIPhase) throws -> Int32 {
@@ -223,18 +307,31 @@ func runPhase(_ phase: UIPhase) throws -> Int32 {
         }
         try FileManager.default.removeItem(atPath: statePath)
         return 0
+    case .diagnose:
+        let state = try loadOwnedSimulator()
+        guard try state.exists(in: simulatorInventory()) else { throw UITestError("Owned simulator no longer exists") }
+        return try run(["simctl", "spawn", state.identifier, "log", "show", "--last", "20m",
+                        "--style", "compact", "--predicate",
+                        "subsystem == 'com.joshrwolf.mossling' AND category == 'Lifecycle'"]).status
     }
 }
 
 #if !UI_RUNNER_TESTS
 let exitStatus: Int32
+let runnerLock: FileHandle
 do {
-    let plan = try commandPlan(Array(CommandLine.arguments.dropFirst()))
-    // Do not let the default command clean up a previous invocation's device.
-    if plan.count > 1 && FileManager.default.fileExists(atPath: statePath) {
-        throw UITestError("Owned simulator state already exists; run cleanup before starting another suite")
+    let arguments = Array(CommandLine.arguments.dropFirst())
+    runnerLock = try acquireRunnerLock()
+    if arguments.first == "focus" {
+        exitStatus = try runFocusedTest(arguments)
+    } else {
+        let plan = try commandPlan(arguments)
+        // Do not let the default command clean up a previous invocation's device.
+        if plan.count > 1 && FileManager.default.fileExists(atPath: statePath) {
+            throw UITestError("Owned simulator state already exists; run cleanup before starting another suite")
+        }
+        exitStatus = try executePlan(plan, execute: runPhase)
     }
-    exitStatus = try executePlan(plan, execute: runPhase)
 } catch {
     diagnostic("UI test setup failed: \(error)")
     exitStatus = 1

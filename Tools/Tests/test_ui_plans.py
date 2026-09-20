@@ -6,6 +6,7 @@ import re
 import unittest
 import sys
 import uuid
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 FOCUSED = {
@@ -56,6 +57,14 @@ def validate_result_file(path, plan_name):
     expected = len(selected(plan["testTargets"][0], discover_tests()))
     validate_result_summary(json.loads(path.read_text()), expected)
     print(f"{plan_name}: all {expected} expected UI tests passed; none skipped")
+
+
+def validate_focused_result_file(path, identifier):
+    prefix = "MosslingUITests/"
+    if not identifier.startswith(prefix) or identifier[len(prefix):] + "()" not in discover_tests():
+        raise ValueError(f"Unknown UI test method: {identifier}")
+    validate_result_summary(json.loads(path.read_text()), 1)
+    print(f"{identifier}: passed; no skipped tests (focused development run, not full acceptance)")
 
 
 class UITestPlanTests(unittest.TestCase):
@@ -140,6 +149,21 @@ class UITestPlanTests(unittest.TestCase):
             f"Config/Tests/{name}.xctestplan" for name in PLAN_NAMES
         ])
 
+    def test_focused_result_requires_a_real_method_and_one_complete_pass(self):
+        identifier = "MosslingUITests/" + sorted(discover_tests())[0].removesuffix("()")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "summary.json"
+            passing = {"totalTestCount": 1, "passedTests": 1, "failedTests": 0,
+                       "skippedTests": 0, "expectedFailures": 0}
+            path.write_text(json.dumps(passing))
+            validate_focused_result_file(path, identifier)
+            for invalid in (identifier + "Typo", "MosslingUITests/MosslingUITests", identifier + "/extra"):
+                with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                    validate_focused_result_file(path, invalid)
+            path.write_text(json.dumps(dict(passing, totalTestCount=0, passedTests=0)))
+            with self.assertRaises(ValueError):
+                validate_focused_result_file(path, identifier)
+
     def test_ci_runs_every_partition_and_requires_its_result(self):
         workflow = (ROOT / ".github/workflows/ci.yml").read_text()
         ui_job = re.search(r"^  ui:\n(.*?)(?=^  \w+:|\Z)", workflow, re.M | re.S)
@@ -157,10 +181,15 @@ if __name__ == "__main__":
     if "--result-summary" in sys.argv:
         parser = argparse.ArgumentParser(description="Require native UI results to cover the selected test plan")
         parser.add_argument("--result-summary", type=Path, required=True)
-        parser.add_argument("--plan", choices=PLAN_NAMES, required=True)
+        selection = parser.add_mutually_exclusive_group(required=True)
+        selection.add_argument("--plan", choices=PLAN_NAMES)
+        selection.add_argument("--test", help="One target/suite/method for a focused development run")
         args = parser.parse_args()
         try:
-            validate_result_file(args.result_summary, args.plan)
+            if args.test:
+                validate_focused_result_file(args.result_summary, args.test)
+            else:
+                validate_result_file(args.result_summary, args.plan)
         except (OSError, ValueError, KeyError) as error:
             parser.exit(1, f"UI result validation failed: {error}\n")
     else:

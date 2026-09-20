@@ -73,6 +73,40 @@ func testUITestRunner() throws {
     try rejects("Invalid identifier reached xcodebuild") {
         _ = try testArguments(for: .init(name: state.name, identifier: "all"), diagnostics: false)
     }
+    let method = "MosslingUITests/MosslingUITests/testCompletedSnackEarnsGrowthOnceAndSurvivesRelaunch"
+    try check(try focusedTestIdentifier(["focus", method]) == method, "A focused method must be accepted")
+    for invalid in ["MosslingUITests", "MosslingUITests/MosslingUITests", method + "()", method + "\n",
+                    method + "/extra", "-skip-testing:" + method, "Other/Tests/testA", "MosslingUITests/Tests/notATest"] {
+        try rejects("Invalid focused selection accepted: \(invalid)") { _ = try focusedTestIdentifier(["focus", invalid]) }
+    }
+    try rejects("Extra focused option accepted") { _ = try focusedTestIdentifier(["focus", method, "-skip-testing"]) }
+    let focused = try testArguments(for: state, diagnostics: false, resultBundle: "unique.xcresult")
+    try check(focused.contains("All") && focused.contains("unique.xcresult") && !focused.contains(resultPath),
+              "Focused results must not overwrite the full-suite result")
+    for status in ["Shutdown", "Booted"] {
+        let available = SimulatorInventory.Device(name: state.name, udid: state.identifier,
+            isAvailable: true, deviceTypeIdentifier: nil, state: status)
+        try check(try state.reusableDevice(in: .init(devices: ["runtime": [available]])).state == status,
+                  "Available owned simulator rejected")
+    }
+    for status in [nil, "Booting", "Shutting Down"] as [String?] {
+        let transitioning = SimulatorInventory.Device(name: state.name, udid: state.identifier,
+            isAvailable: true, deviceTypeIdentifier: nil, state: status)
+        try rejects("Transitioning simulator accepted") {
+            _ = try state.reusableDevice(in: .init(devices: ["runtime": [transitioning]]))
+        }
+    }
+    let unavailable = SimulatorInventory.Device(name: state.name, udid: state.identifier,
+        isAvailable: false, deviceTypeIdentifier: nil, state: "Shutdown")
+    try rejects("Unavailable simulator accepted") { _ = try state.reusableDevice(in: .init(devices: ["runtime": [unavailable]])) }
+    let lockDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: lockDirectory) }
+    let held = try acquireRunnerLock(directory: lockDirectory)
+    try rejects("Overlapping helper acquired the device lock") { _ = try acquireRunnerLock(directory: lockDirectory) }
+    try held.close()
+    let released = try acquireRunnerLock(directory: lockDirectory)
+    try released.close()
+    assertions += 1
     print("UI runner: \(assertions) ordering, ownership and argument checks passed")
 }
 

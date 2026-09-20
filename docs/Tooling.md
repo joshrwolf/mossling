@@ -38,6 +38,28 @@ Install Xcode 27.0 and its simulator runtimes, then mise 2026.9.11 or newer. Run
 
 For hardware signing, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and supply the Apple team. Product IDs are versioned in `Config/Product.json`; they are not per-machine overrides. Change the proposed identifier before registration if unavailable, regenerate, and review. Once distributed, changing it creates a different app identity.
 
+### Fast local iteration
+
+Use `mise run test:core` for domain changes and `mise run --skip-deps build` for warm native compilation after generation. Generate again when adding/removing source files or changing the project graph/configuration. A fresh clone needs generation before UI compilation because the UI target's derived Info.plist is intentionally ignored. The task dependencies handle that setup automatically.
+
+`mise run test:ui:focus MosslingUITests/MosslingUITests/testCompletedSnackEarnsGrowthOnceAndSurvivesRelaunch` rebuilds the All plan incrementally, then runs exactly that method with Xcode's native filter. It creates one owned simulator on first use and reuses it thereafter, including after test failures. Every invocation saves a unique `Focused-<UUID>.xcresult` and native summary. Missing, failed, skipped, expected-failure and zero-test results fail the command. `MOSSLING_UI_TEST_PLAN` cannot override this explicit method selection.
+
+Finish with `mise run test:ui:cleanup`. This removes only the validated owned simulator; a missing, renamed or unavailable device is never silently replaced. Warm reuse retains system notification authorization even though tests reset their isolated app document/preferences. Cleanup and a new session provide a fresh permission state. A focused pass does not replace `mise run test:ui`, which runs and validates the complete selected plan on a fresh device and refuses to reuse an existing session.
+
+The helper rejects overlapping invocations with a process lock, released by the kernel even on interruption. Run builds and simulator commands serially: generation and helper compilation happen before that lock, and separate `mise run build` or `xcodebuild` invocations are outside it. Mise ordering protects shared DerivedData within one task graph. Xcode's Test navigator is also available for interactive selected-test execution.
+
+Local baseline on an M4 Pro/48 GiB machine with Xcode 27: 66 domain tests **12.53s cold / 1.29s warm**, phone plus embedded Watch build **12.55s / 1.91s**, all seven UI scenarios **252.32s / 243.75s**, and focused completion **29.75s** using prebuilt products. Fresh simulator setup took **17–22s**. Cold refers to new project build directories; warm is an unchanged repeat. Native UI behavior and 20 launches dominate the full local suite. These measurements do not establish hosted-runner performance or the cost of every source edit.
+
+Xcode can retain stale generated scheme state across updates/regeneration. If it repeatedly rewrites the Watch scheme, fully quit Xcode before generation and the drift check, then reopen the workspace. Do not commit incidental editor XML rewrites. Local `xcuserdata` and Cloud discovery metadata are ignored; the canonical generated project/workspace remains tracked for Cloud discovery.
+
+### Diagnosing readiness and idle waits
+
+Debug builds emit correlated `Lifecycle` log intervals and native Instruments signposts for bootstrap, connectivity calls, notification status requests, queue wait versus operation execution, durable commits, completion and the request to dismiss the completion view. Release builds compile these hooks to no-ops. Logs contain operation names/timings, not save contents or sync payloads.
+
+After the focused command finishes and before ending its session, `mise run diagnose:ui` saves the last 20 minutes of those records to `.build-artifacts/ui-lifecycle.log`. This helper shares the session lock; use Instruments or direct process sampling to inspect a still-running test. Open the preserved result bundle in Xcode to correlate XCTest's tap/idle timestamps. Use Instruments Time Profiler, Swift Concurrency and SwiftUI traces, or app/test-runner process samples, when a long stall reproduces. A delayed `notificationSettingsRequest` differs from a main-actor stall or XCTest waiting after the app requested dismissal.
+
+GitHub captures the same log before cleanup in a separately bounded, optional diagnostic step. Diagnostic failure cannot replace the native test result. PR #15's earlier onboarding failure showed `Notifications, Checking…`; local fresh/warm runs did not reproduce it. Do not extend waits, disable animations, or change service semantics without evidence from the reproducing run.
+
 `project:check` expects a git checkout and committed generated files. During development, generated changes are expected; review and commit them before the full verification gate. Xcode/macOS upgrades are intentional changes to the manifest, GitHub runner and Cloud workflow together.
 
 ## Cloud integration

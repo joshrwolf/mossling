@@ -98,6 +98,8 @@ final class MosslingStore {
     }
 
     func bootstrap() async {
+        let interval = AppDiagnostics.begin("bootstrap")
+        defer { AppDiagnostics.end(interval) }
         guard isReady, !isPreview else { return }
         refresh()
         if !bootstrapped {
@@ -124,6 +126,8 @@ final class MosslingStore {
 
     @discardableResult
     private func commit(_ mutation: (inout AppDocument) throws -> Void) -> Bool {
+        let interval = AppDiagnostics.begin("documentCommit")
+        defer { AppDiagnostics.end(interval) }
         guard let controller else { error = "Your forest is unavailable. Reopen the app after resolving the save error."; return false }
         do {
             try controller.transact(mutation)
@@ -222,6 +226,8 @@ final class MosslingStore {
 
     @discardableResult
     func complete() async -> Bool {
+        let interval = AppDiagnostics.begin("completion")
+        defer { AppDiagnostics.end(interval) }
         guard let session else { return false }
         let date = clock()
         let alreadyUnlocked = Set(progress.unlockedMilestones.map(\.id))
@@ -288,6 +294,8 @@ final class MosslingStore {
 
     // MARK: Durable, bounded synchronization
     private func synchronize(includeInventory: Bool) {
+        let interval = AppDiagnostics.begin("synchronize")
+        defer { AppDiagnostics.end(interval) }
         guard isReady, connection.state == .ready else { updateSyncStatus(); return }
         do {
             if role == .phone { try connection.sendSnapshot(ConfigurationSnapshot(configuration: configuration, authorityID: document.deviceID).encoded()) }
@@ -364,8 +372,12 @@ final class MosslingStore {
     // durable success. The store retains the tail; each task retains its predecessor.
     private func enqueueNotificationOperation(_ operation: @escaping @MainActor () async throws -> Void) -> Task<Bool, Never> {
         let previous = notificationTask
+        let queued = AppDiagnostics.begin("notificationQueueWait")
         let task = Task { @MainActor [weak self] in
             _ = await previous?.value
+            AppDiagnostics.end(queued)
+            let interval = AppDiagnostics.begin("notificationOperation")
+            defer { AppDiagnostics.end(interval) }
             do { try await operation(); return true }
             catch { self?.error = "Reminder update failed. Reopen the app to retry. \(error.localizedDescription)"; return false }
         }
@@ -394,6 +406,8 @@ final class MosslingStore {
     }
 
     private func updateNotificationStatus() async {
+        let interval = AppDiagnostics.begin("notificationStatusRefresh")
+        defer { AppDiagnostics.end(interval) }
         switch await notifications.authorizationStatus() {
         case .notDetermined: notificationStatus = "Not requested"
         case .denied: notificationStatus = "Disabled in Settings"
@@ -402,6 +416,7 @@ final class MosslingStore {
         case .ephemeral: notificationStatus = "Temporary permission"
         case .unknown: notificationStatus = "Unknown"
         }
+        AppDiagnostics.event("notificationStatusPublished")
     }
 
     private func handleNotification(_ action: NotificationService.Action) async {

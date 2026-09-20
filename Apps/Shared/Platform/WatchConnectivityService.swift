@@ -44,6 +44,8 @@ final class WatchConnectivityService: NSObject, WCSessionDelegate {
     }
 
     func activate() {
+        let interval = AppDiagnostics.begin("connectivityActivation")
+        defer { AppDiagnostics.end(interval) }
         guard let session else { state = .unsupported; return }
         session.delegate = self
         if session.activationState == .activated {
@@ -57,6 +59,8 @@ final class WatchConnectivityService: NSObject, WCSessionDelegate {
     }
 
     func sendSnapshot(_ data: Data) throws {
+        let interval = AppDiagnostics.begin("connectivitySnapshot")
+        defer { AppDiagnostics.end(interval) }
         #if os(iOS)
         let activeSession = try validatedSession(for: data)
         try activeSession.updateApplicationContext([Self.payloadKey: data])
@@ -66,6 +70,8 @@ final class WatchConnectivityService: NSObject, WCSessionDelegate {
     }
 
     func sendEvents(_ data: Data) throws {
+        let interval = AppDiagnostics.begin("connectivityEvents")
+        defer { AppDiagnostics.end(interval) }
         let activeSession = try validatedSession(for: data)
         guard !activeSession.outstandingUserInfoTransfers.contains(where: {
             ($0.userInfo[Self.payloadKey] as? Data) == data

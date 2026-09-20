@@ -1,8 +1,8 @@
 # Mossling
 
-A private iPhone + Apple Watch app that turns small movement breaks into a growing woodland companion. Working title, not a registered product name.
+A native iPhone + Apple Watch app that turns small movement breaks into a growing woodland companion. Listed in App Store Connect as **Mosslinger**.
 
-**Implementation status:** three product slices build on the verified Tuist/Xcode Cloud foundation: [daily snack loop (#4)](https://github.com/joshrwolf/mossling/pull/4), [lasting forest (#5)](https://github.com/joshrwolf/mossling/pull/5), and [balanced rotation (#6)](https://github.com/joshrwolf/mossling/pull/6). The complete domain package has 66 tests and simulator acceptance has seven UI scenarios. Each PR's hosted checks are authoritative for Apple builds, UI results and unsigned Release packaging; see [Validation](docs/Validation.md). Paired-device acceptance, signing and TestFlight delivery remain pending.
+**Implementation status:** three product slices build on the verified Tuist/Xcode Cloud foundation: [daily snack loop (#4)](https://github.com/joshrwolf/mossling/pull/4), [lasting forest (#5)](https://github.com/joshrwolf/mossling/pull/5), and [balanced rotation (#6)](https://github.com/joshrwolf/mossling/pull/6). The domain package has 66 tests and simulator acceptance has seven UI scenarios. Native builds and tests run locally with Xcode 27; GitHub verifies PRs and main. Xcode Cloud archives successfully, and the account owner confirmed TestFlight availability on 20 September 2026 under **Mosslinger**. Physical-device acceptance remains separate; see [Validation](docs/Validation.md) and [Release](docs/Release.md).
 
 ## What is implemented
 
@@ -39,9 +39,20 @@ mise run archive:check       # Unsigned Release packaging and embedded Watch val
 mise run --jobs 1 verify     # The same complete lifecycle used by GitHub Actions
 ```
 
-[mise.toml](mise.toml) owns tools and task dependencies; [Project.swift](Project.swift) owns targets and schemes. Xcode remains the underlying build engine. [Tooling](docs/Tooling.md) explains these boundaries and [Release preparation](docs/Release.md) contains the exact Xcode Cloud onboarding and no-distribution validation workflow. Cloud hooks and shared release checks are implemented; Apple account activation remains pending. Nothing automatically deploys.
+[mise.toml](mise.toml) owns tools and task dependencies; [Project.swift](Project.swift) owns targets and schemes. Xcode remains the underlying build engine. [Tooling](docs/Tooling.md) describes the fast local loop and [Release](docs/Release.md) documents the separate Cloud signing/delivery contract. Local commands and GitHub verification do not distribute builds.
 
-For hardware, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig`, enter your Apple team. Product identifiers and marketing version live in `Config/Product.json`. Never commit that local file. TestFlight remains a later setup step after the Apple acceptance pass.
+For hardware, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig`, enter your Apple team. Product identifiers and marketing version live in `Config/Product.json`. Never commit the local signing override. Preserve the registered bundle IDs and the working Cloud release workflow.
+
+For a UI edit, run one real scenario with incremental builds and a reusable owned simulator:
+
+```sh
+mise run test:ui:focus MosslingUITests/MosslingUITests/testCompletedSnackEarnsGrowthOnceAndSurvivesRelaunch
+mise run diagnose:ui          # Optional lifecycle timings before cleanup
+mise run test:ui:cleanup      # End the session; required before fresh full acceptance
+mise run test:ui              # All seven scenarios, no skipped tests
+```
+
+Every focused invocation rebuilds changed code and preserves its own `.xcresult`. Use the full suite for acceptance; a focused pass is development feedback. System notification permission survives warm reuse, so clean up the session before testing a genuinely fresh installation.
 
 ## Try the loop
 

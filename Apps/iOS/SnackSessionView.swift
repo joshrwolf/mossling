@@ -64,7 +64,10 @@ struct SnackSessionView: View {
                                         Task {
                                             let completed = await store.complete()
                                             finishing = false
-                                            if completed { dismiss() }
+                                            if completed {
+                                                AppDiagnostics.event("completionViewDismiss")
+                                                dismiss()
+                                            }
                                         }
                                     } label: {
                                         Label(finishing ? "Growing…" : "I did it", systemImage: "checkmark")

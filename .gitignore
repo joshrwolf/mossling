@@ -6,6 +6,8 @@ DerivedData/
 .tools/
 *.xcuserstate
 xcuserdata/
+# Xcode's local Cloud discovery metadata; remote workflows live in App Store Connect.
+Mossling.xcodeproj/xcshareddata/xcodecloud/
 Config/Local.xcconfig
 *.ipa
 *.xcarchive

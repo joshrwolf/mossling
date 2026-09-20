@@ -2,7 +2,7 @@
 
 ## Current boundary
 
-Apple account connection and native Archive acceptance are complete: Xcode Cloud build 4 passed on main commit `420260be5c898e49adeb1dbc3ac5ceade0717030`. [PR #14](https://github.com/joshrwolf/mossling/pull/14) and [issue #13](https://github.com/joshrwolf/mossling/issues/13) record the bootstrap/signing correction and actual Cloud result. TestFlight upload, tester delivery and physical-device acceptance remain unverified. A successful archive alone does not establish distribution.
+Apple account connection and native Archive acceptance are complete: Xcode Cloud build 4 passed on main commit `420260be5c898e49adeb1dbc3ac5ceade0717030`. [PR #14](https://github.com/joshrwolf/mossling/pull/14) and [issue #13](https://github.com/joshrwolf/mossling/issues/13) record the bootstrap/signing correction and actual Cloud result. The account owner confirmed that the app is visible in TestFlight on 20 September 2026. Preserve the working Cloud workflow and build counter. Tester installation and physical-device acceptance remain distinct checks; archive success alone is not proof of either.
 
 Cloud owns signing, native Test/Archive actions, monotonically increasing build numbers and eventual delivery. Tuist owns the project graph. mise owns tools and shared preparation/check commands. There is no fastlane dependency, custom uploader or credential store.
 
@@ -15,6 +15,8 @@ The adapter validates `CI_BUNDLE_ID` and `CI_BUILD_NUMBER`, rejecting a product 
 Xcode Cloud supplies the build counter; do not reset it below a previously uploaded build. When migrating from another publisher, set Cloud's next build number above the previous maximum in App Store Connect. No build-number commits are created.
 
 ## One-time account connection
+
+This setup is already complete for Mosslinger. The steps below are retained for recovery/reference, not instructions to replace the current working release workflow.
 
 Use a Mac with Xcode to complete initial onboarding and sign into the enrolled Apple account. Cloud and project generation target Xcode 27.0. An older local Xcode can open the committed workspace for onboarding; use 27.0 for local generation and validation:
 
