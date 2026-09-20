@@ -300,9 +300,23 @@ final class MosslingUITests: XCTestCase {
 
     private func reveal(_ element: XCUIElement, in app: XCUIApplication,
                         file: StaticString = #filePath, line: UInt = #line) {
-        for _ in 0..<6 {
+        // A full swipe can skip a short label, and reopening a screen can leave
+        // its scroll position below the target. Use small drags in either
+        // direction, checking the current accessibility frame after each one.
+        for attempt in 0..<20 {
             if element.exists && element.isHittable { return }
-            app.swipeUp()
+            let target = element.exists ? element.frame : .zero
+            let hasPosition = !target.isEmpty && !target.isNull && !target.isInfinite
+            let scrollTowardEarlierContent = hasPosition
+                ? target.midY < app.frame.midY
+                : attempt >= 7
+            // When an offscreen element has no frame, search forward first,
+            // then back across the initial position. All scrolling is bounded.
+            let startY: CGFloat = scrollTowardEarlierContent ? 0.38 : 0.62
+            let endY: CGFloat = scrollTowardEarlierContent ? 0.62 : 0.38
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: startY))
+            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: endY))
+            start.press(forDuration: 0.05, thenDragTo: end)
         }
         XCTAssertTrue(element.exists && element.isHittable,
                       "Could not reveal \(element)", file: file, line: line)
