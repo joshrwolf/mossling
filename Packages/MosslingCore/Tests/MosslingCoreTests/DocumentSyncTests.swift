@@ -122,9 +122,45 @@ struct DocumentSyncTests {
         try controller.transact { try DocumentSync.receive(ConfigurationSnapshot(configuration: phone, authorityID: authorityID), into: &$0) }
         #expect(controller.document.configuration.revision == 2)
         #expect(controller.document.configuration.companionName == "Clover")
-        phone.revision = 2; phone.companionName = "Same revision"
+        // Equal revision is a replay of the authoritative content: the phone must
+        // increment revision before changing its name or any other setting.
+        phone.revision = 2; phone.companionName = "Clover"
+        let beforeReplay = controller.document
         try controller.transact { try DocumentSync.receive(ConfigurationSnapshot(configuration: phone, authorityID: authorityID), into: &$0) }
-        #expect(controller.document.configuration.companionName == "Clover")
+        #expect(controller.document == beforeReplay)
+    }
+
+    @Test @MainActor func equalRevisionRefreshRepairsFieldsDiscardedByOlderWatchDecoder() throws {
+        let repository = TransactionRepository(), authorityID = UUID()
+        let phone = AppConfiguration(revision: 12, companionName: "Clover", companionAffinity: .moonlit)
+        let event = sampleEvent()
+        var savedWatch = AppDocument(configuration: phone, events: [event],
+            pendingEventIDs: [event.eventID], hasReceivedPhoneConfiguration: true)
+        savedWatch.configurationAuthorityID = authorityID
+        // An older Watch understood the same wire/save versions but dropped the
+        // then-unknown optional affinity field when persisting its own cache.
+        var cachedJSON = try #require(try JSONSerialization.jsonObject(with: savedWatch.encoded()) as? [String: Any])
+        var cachedConfiguration = try #require(cachedJSON["configuration"] as? [String: Any])
+        cachedConfiguration.removeValue(forKey: "companionAffinity")
+        cachedJSON["configuration"] = cachedConfiguration
+        repository.saved = try AppDocument.decode(JSONSerialization.data(withJSONObject: cachedJSON))
+        let controller = try DocumentController(repository: repository)
+        #expect(controller.document.configuration.companionAffinity == nil)
+        let snapshot = try ConfigurationSnapshot.decode(ConfigurationSnapshot(configuration: phone, authorityID: authorityID).encoded())
+        try controller.transact { try DocumentSync.receive(snapshot, into: &$0) }
+        #expect(controller.document == savedWatch)
+        #expect(repository.saved == savedWatch)
+        try controller.transact { try DocumentSync.receive(snapshot, into: &$0) }
+        #expect(controller.document == savedWatch)
+        var olderPhone = phone
+        olderPhone.revision -= 1
+        olderPhone.companionAffinity = nil
+        try controller.transact {
+            try DocumentSync.receive(ConfigurationSnapshot(configuration: olderPhone, authorityID: authorityID), into: &$0)
+        }
+        #expect(controller.document == savedWatch)
+        let relaunched = try DocumentController(repository: repository)
+        #expect(relaunched.document == savedWatch)
     }
 
     @Test @MainActor func phoneReinstallAcceptsNewAuthorityAndRejectsDelayedRetiredAuthority() throws {
