@@ -2,13 +2,13 @@
 
 ## Current boundary
 
-The repository supplies the Cloud integration, not an already-connected Apple service. [PR #3](https://github.com/joshrwolf/mossling/pull/3) records the reviewed implementation and hosted checks. The user is completing Apple account setup. Membership status, the first Xcode Cloud connection, identifier registration, managed signing and a first Apple-hosted build still need account-side acceptance. No paid plan, App Store Connect upload or TestFlight distribution has been activated by these commits.
+Apple account connection and native Archive acceptance are complete: Xcode Cloud build 4 passed on main commit `420260be5c898e49adeb1dbc3ac5ceade0717030`. [PR #14](https://github.com/joshrwolf/mossling/pull/14) and [issue #13](https://github.com/joshrwolf/mossling/issues/13) record the bootstrap/signing correction and actual Cloud result. TestFlight upload, tester delivery and physical-device acceptance remain unverified. A successful archive alone does not establish distribution.
 
 Cloud owns signing, native Test/Archive actions, monotonically increasing build numbers and eventual delivery. Tuist owns the project graph. mise owns tools and shared preparation/check commands. There is no fastlane dependency, custom uploader or credential store.
 
 ## Product identity
 
-`Config/Product.json` is the source for `com.joshrwolf.mossling` and marketing version `0.1.0`. Tuist derives `com.joshrwolf.mossling.watchkitapp` and `com.joshrwolf.mossling.uitests`; the Watch companion setting references the phone identity. These are proposed identifiers until Apple registration succeeds. If unavailable, change Product.json and regenerate before the first release; do not work around the check with a different Cloud product.
+`Config/Product.json` is the source for `com.joshrwolf.mossling` and marketing version `0.1.0`. Tuist derives `com.joshrwolf.mossling.watchkitapp` and `com.joshrwolf.mossling.uitests`; the Watch companion setting references the phone identity. The registered App Store Connect product is Mosslinger, app ID `6814046299`. Preserve these identifiers; changing the phone bundle identifier would create a different app identity.
 
 The adapter validates `CI_BUNDLE_ID` and `CI_BUILD_NUMBER`, rejecting a product mismatch or invalid build number. It generates ignored `Config/Cloud.xcconfig` containing only the build number. Native Xcode Cloud actions own the signing team and automatic signing; the adapter does not interpret or copy `CI_TEAM_ID` service metadata into build settings. The phone and Watch must agree, and the archive validator also checks the exact expected release identity, version and number.
 
@@ -55,7 +55,18 @@ Keep PR/main verification on GitHub now that the repository is public. Use Cloud
 
 ## Delivery workflow: Mossling TestFlight
 
-The user has now authorized preparing the first TestFlight release. Apple account setup remains user-operated; no build has yet been uploaded or distributed. Use manual starts on a reviewed `main` commit, the same required Test action, and Archive preparation **TestFlight (Internal Testing Only)**. Add an internal TestFlight distribution post-action for the chosen tester group after all required actions pass. Confirm the group's members and App Store Connect roles before sending invitations; this repository does not invite anyone.
+The user has now authorized preparing the first TestFlight release. Apple account setup remains user-operated; upload and distribution have not yet been confirmed. Use manual starts on a reviewed `main` commit, the same required Test action, and Archive preparation **TestFlight (Internal Testing Only)**. Add an internal TestFlight distribution post-action for the chosen tester group after all required actions pass. Confirm the group's members and App Store Connect roles before sending invitations; this repository does not invite anyone.
+
+### Configure the internal tester group
+
+1. Open [Mosslinger in App Store Connect](https://appstoreconnect.apple.com/apps/6814046299/testflight/ios) and select **TestFlight**.
+2. Use **+ beside Internal Testing** to create a group, for example **Family**. A group can exist before the first build. Use **Invite Testers** to select yourself; internal testers must be App Store Connect users with app access.
+3. In Xcode's Cloud workflow editor, select **Archive – iOS** and set Distribution Preparation to **TestFlight (Internal Testing Only)**.
+4. Add **TestFlight Internal Testing – iOS** under **Post-Actions**. Select **Archive – iOS** as the artifact. Click the small **+ directly below Groups** and select the group created in App Store Connect. If it is missing, reopen the editor to refresh the chooser.
+5. Save the workflow and start a new build from the reviewed `main` revision. Changing the workflow does not retroactively upload the earlier validation archive.
+6. Check the new build under the app's **TestFlight** tab after Apple's processing. Confirm it is assigned to the group; if necessary, use the group's **Add Builds** action. Only an available build and successful TestFlight installation establish delivery.
+
+The group's automatic-distribution checkbox is separate from the Cloud workflow's distribution post-action. Keep account invitations user-operated. For another family member to be an internal tester, first grant the appropriate App Store Connect access; external testing is a different workflow.
 
 Managed signing must cover the phone and embedded Watch. Keep the archive checks enabled. The first installation requires paired-device acceptance for reminders, offline completions/sync and timer behavior; simulator tests cannot establish those behaviors. External testing or App Store submission is a later decision.
 
@@ -120,6 +131,7 @@ GitHub exercises the actual post-clone adapter with fixture product metadata and
 - [Workflow actions and deployment preparation](https://developer.apple.com/documentation/xcode/configuring-your-xcode-cloud-workflow-s-actions)
 - [Cloud environment](https://developer.apple.com/documentation/xcode/environment-variable-reference)
 - [Cloud numbering](https://developer.apple.com/documentation/xcode/setting-the-next-build-number-for-xcode-cloud-builds)
+- [Creating internal groups](https://developer.apple.com/help/app-store-connect/test-a-beta-version/add-internal-testers)
 - [TestFlight distribution](https://developer.apple.com/documentation/xcode/distributing-your-xcode-cloud-builds-through-testflight)
 - [Included compute allowance](https://developer.apple.com/xcode-cloud/)
 
@@ -127,4 +139,4 @@ GitHub exercises the actual post-clone adapter with fixture product metadata and
 
 App Store Connect's issue summary can show only `ci_post_clone.sh exited with code 1`. That summary does not identify the failed command. On the Mac, open Xcode's Report navigator (**View → Navigators → Reports**, ⌘9), select the Cloud build, expand its failed action and inspect **Logs**; **Artifacts** provides downloadable logs. Apple documents this in [Resolving common configuration and build issues](https://developer.apple.com/documentation/xcode/resolving-common-configuration-and-build-issues).
 
-Our adapter logs an authored phase label, tool name, elapsed duration and exit status. It does not print command arguments or environment values. Preserve the full output before the final exit line when reporting a failure; a successful GitHub fixture run cannot establish Apple's real identity/network/signing environment. [Issue #13](https://github.com/joshrwolf/mossling/issues/13) tracks the current Apple-hosted post-clone failure until its actual log identifies the cause.
+Our adapter logs an authored phase label, tool name, elapsed duration and exit status. It does not print command arguments or environment values. Preserve the full output before the final exit line when reporting a failure; a successful GitHub fixture run cannot establish Apple's real identity/network/signing environment. [Issue #13](https://github.com/joshrwolf/mossling/issues/13) records the resolved failure: the adapter rejected `CI_TEAM_ID` before bootstrap. The fix leaves signing-team selection to the native Cloud action, which subsequently passed in build 4.

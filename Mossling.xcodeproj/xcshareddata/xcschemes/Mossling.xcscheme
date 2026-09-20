@@ -37,6 +37,9 @@
             reference = "container:Config/Tests/Focused.xctestplan">
          </TestPlanReference>
          <TestPlanReference
+            reference = "container:Config/Tests/Persistence.xctestplan">
+         </TestPlanReference>
+         <TestPlanReference
             reference = "container:Config/Tests/Remainder.xctestplan">
          </TestPlanReference>
       </TestPlans>
