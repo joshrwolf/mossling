@@ -27,6 +27,6 @@
 	<key>WKCompanionAppBundleIdentifier</key>
 	<string>$(MOSSLING_PHONE_BUNDLE_IDENTIFIER)</string>
 	<key>WKRunsIndependentlyOfCompanionApp</key>
-	<true/>
+	<false/>
 </dict>
 </plist>
