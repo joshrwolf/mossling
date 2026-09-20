@@ -99,8 +99,8 @@ func runUITests() throws -> Int32 {
         "xcodebuild", "test", "-project", "Mossling.xcodeproj", "-scheme", "Mossling",
         "-destination", "platform=iOS Simulator,id=\(identifier)",
         "-only-testing:MosslingUITests", "-parallel-testing-enabled", "NO",
-        "-resultBundlePath", resultPath, "-derivedDataPath", ".build-artifacts/UITestsDerivedData",
-        "CODE_SIGNING_ALLOWED=NO"
+        "-resultBundlePath", resultPath, "-derivedDataPath", ".build-artifacts/SimulatorDerivedData",
+        "-showBuildTimingSummary", "CODE_SIGNING_ALLOWED=NO"
     ])
     if FileManager.default.fileExists(atPath: resultPath) {
         do {

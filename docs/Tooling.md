@@ -62,3 +62,30 @@ That variable does not configure Cloud or impose a spending cap. GitHub usage bu
 - [Apple custom scripts and phase resources](https://developer.apple.com/documentation/xcode/writing-custom-build-scripts)
 - [Tuist Cloud integration](https://tuist.dev/en/docs/guides/integrations/continuous-integration)
 - [mise tasks](https://mise.jdx.dev/tasks/) and [lockfiles](https://mise.jdx.dev/dev-tools/mise-lock.html)
+
+
+## CI performance baseline and phase ownership
+
+The successful Xcode 26.2 [run 35483991606](https://github.com/joshrwolf/mossling/actions/runs/35483991606) took about 18m13s on its Apple runner:
+
+| Phase | Approximate elapsed |
+| --- | --- |
+| Preparation, generation and tooling | 2m07s |
+| UI build/install/simulator startup before the test suite | 4m10s |
+| Seven UI flows | 7m34s |
+| UI result export and cleanup | 18s |
+| Device Release archive and contract check | 1m41s |
+| Generic phone and Watch simulator builds | 2m14s |
+| Final Cloud adapter, upload and cleanup | 9s |
+
+These boundaries use job timestamps and XCTest's embedded suite start timestamp because streamed log lines were buffered. The first UI test alone took 113s, including roughly 68s before app-idle readiness. The affinity flow took another 113s and deliberately performs three real completions plus persistence relaunches. The portable domain test run, including its cold Swift build, took about 28s inside preparation.
+
+The failed Xcode 27 [run 35485349209](https://github.com/joshrwolf/mossling/actions/runs/35485349209) additionally waited 600s for simulator diagnostics after its tests finished. Its 714s test suite and diagnostic timeout are failure overhead, not ordinary compilation time.
+
+GitHub now delegates initial domain testing, project generation and drift checks to the real Cloud post-clone adapter. Later named phases call the same mise tasks with `--skip-deps` only after that adapter succeeds; the final drift check still runs. Local `mise run --jobs 1 verify` keeps its full dependency graph. Both generic simulator schemes remain mandatory (including their additional simulator architectures), along with all seven UI flows and the device Release archive.
+
+Simulator builds and UI tests share `.build-artifacts/SimulatorDerivedData`. Xcode still rebuilds when SDK, architecture or coverage settings differ; this is not a promise of zero recompilation. Device Release products stay separate. Build timing summaries and individual workflow step durations support a measured comparison on the next successful run. Phase limits prevent an unlimited wait, but a UI-phase timeout can interrupt attachment export; the workflow still attempts to upload any existing result bundle.
+
+No speedup has been measured for this change yet. The baseline predates Xcode 27, so compare a successful corrected Xcode 27 run before attributing differences to this refactor. Xcode Cloud uses its own native action scheduling and build directories; this GitHub optimization does not directly alter Cloud's native action times. Keep one authoritative native provider after Cloud acceptance rather than paying for duplicate GitHub and Cloud verification.
+
+Independent review caught concurrent access to the shared simulator build database under a parallel local verify invocation. `test:ui.wait_for = ["build"]` now serializes those tasks when both are selected without adding a generic build to standalone UI testing. Snapshot upload runs even after a preparation failure so generation-drift evidence is retained. Both findings were addressed before merging the CI changes.

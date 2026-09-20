@@ -42,20 +42,8 @@ jobs:
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           version: 2026.9.11
-      - name: Generate the canonical Cloud project snapshot
-        run: mise run generate
-      - name: Preserve the generated snapshot for review and bootstrap
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: generated-project
-          include-hidden-files: true
-          path: |
-            Mossling.xcodeproj
-            Mossling.xcworkspace
-          retention-days: 7
-      - name: Reject generated project drift
-        run: mise run project:check
       - name: Exercise the real Cloud preparation adapter with fixture identity
+        timeout-minutes: 5
         env:
           CI: "TRUE"
           CI_XCODE_CLOUD: "TRUE"
@@ -63,8 +51,34 @@ jobs:
           CI_TEAM_ID: ABCDE12345
           CI_BUILD_NUMBER: "42"
         run: CI_PRIMARY_REPOSITORY_PATH="$GITHUB_WORKSPACE" ./ci_scripts/ci_post_clone.sh
-      - name: Verify the project lifecycle
-        run: mise run --jobs 1 verify
+      - name: Preserve the generated snapshot for review and bootstrap
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: generated-project
+          if-no-files-found: ignore
+          include-hidden-files: true
+          path: |
+            Mossling.xcodeproj
+            Mossling.xcworkspace
+          retention-days: 7
+      # The real post-clone adapter above already ran domain tests, generation
+      # and drift validation. Reuse that prepared checkout; do not regenerate it
+      # for every phase. Keep each expensive phase visible and bounded.
+      - name: Test release tooling
+        timeout-minutes: 3
+        run: mise run test:tooling
+      - name: Build both simulator schemes
+        timeout-minutes: 6
+        run: mise run --skip-deps build
+      - name: Run all seven iPhone UI flows
+        timeout-minutes: 18
+        run: mise run --skip-deps test:ui
+      - name: Build and validate the Release archive
+        timeout-minutes: 6
+        run: mise run --skip-deps archive:check
+      - name: Confirm the generated project stayed clean
+        run: mise run --skip-deps project:check
       - name: Exercise the detached Cloud archive adapter against the real archive
         env:
           CI: "TRUE"
