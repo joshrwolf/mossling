@@ -10,7 +10,7 @@ Cloud owns signing, native Test/Archive actions, monotonically increasing build 
 
 `Config/Product.json` is the source for `com.joshrwolf.mossling` and marketing version `0.1.0`. Tuist derives `com.joshrwolf.mossling.watchkitapp` and `com.joshrwolf.mossling.uitests`; the Watch companion setting references the phone identity. These are proposed identifiers until Apple registration succeeds. If unavailable, change Product.json and regenerate before the first release; do not work around the check with a different Cloud product.
 
-Cloud provides `CI_BUNDLE_ID`, `CI_TEAM_ID` and `CI_BUILD_NUMBER`. The adapter rejects a product mismatch, unresolved or malformed identity, and invalid build numbers. It generates ignored `Config/Cloud.xcconfig` with the team/build number only. The phone and Watch must agree, and the archive validator also checks the exact expected release identity, version and number.
+The adapter validates `CI_BUNDLE_ID` and `CI_BUILD_NUMBER`, rejecting a product mismatch or invalid build number. It generates ignored `Config/Cloud.xcconfig` containing only the build number. Native Xcode Cloud actions own the signing team and automatic signing; the adapter does not interpret or copy `CI_TEAM_ID` service metadata into build settings. The phone and Watch must agree, and the archive validator also checks the exact expected release identity, version and number.
 
 Xcode Cloud supplies the build counter; do not reset it below a previously uploaded build. When migrating from another publisher, set Cloud's next build number above the previous maximum in App Store Connect. No build-number commits are created.
 
@@ -35,7 +35,7 @@ Use a Mac with Xcode to complete initial onboarding and sign into the enrolled A
 | Test action | iOS, scheme settings, one available iPhone simulator, Required To Pass |
 | Archive action | iOS, Release scheme configuration, Deployment Preparation **None** |
 | Distribution post-actions | None |
-| Custom environment | None required; Apple supplies identity, team and build variables |
+| Custom environment | None required; Apple supplies product/build variables and manages signing |
 | Clean builds | Off initially; enable only to diagnose a cache problem |
 
 Apple explicitly defines Archive preparation **None** as ineligible for TestFlight and App Store distribution. Use this setting for validation. Do not substitute “TestFlight and App Store” and assume omitting a post-action prevents upload. Test builds the app already, so an extra Build action is unnecessary. The phone target builds its embedded Watch dependency.
@@ -65,7 +65,7 @@ Use the reviewed `main` commit containing the daily loop, lasting forest and bal
 
 ### Account setup inputs
 
-The account holder signs in directly at [Apple Developer](https://developer.apple.com/account/) and [App Store Connect](https://appstoreconnect.apple.com/). Needed setup information is membership status, access to a Mac and its Xcode version, and whether a Mossling app record already exists. Passwords, verification codes and signing private keys stay with the account holder. The Team ID is entered into the ignored local configuration for onboarding; Cloud supplies it automatically thereafter.
+The account holder signs in directly at [Apple Developer](https://developer.apple.com/account/) and [App Store Connect](https://appstoreconnect.apple.com/). Needed setup information is membership status, access to a Mac and its Xcode version, and whether a Mossling app record already exists. Passwords, verification codes and signing private keys stay with the account holder. The Team ID is entered into the ignored local configuration for onboarding; Cloud selects the signing team in its native action thereafter.
 
 Register these two explicit App IDs, with default capabilities unless a current app requirement calls for more:
 
@@ -112,7 +112,7 @@ Stay on Apple's included 25 compute-hour/month allowance. Start releases manuall
 
 ## Evidence and limits
 
-GitHub exercises the actual post-clone adapter with a clearly fictitious team and build 42, runs unsigned native builds/archive/tests, and invokes the post-action from a dereferenced copy of `ci_scripts` against the resulting archive. This proves the adapter and configuration precedence in hosted macOS, once that PR gate passes. It does not simulate Apple's authentication, product discovery, signing service or upload processing. [Validation](Validation.md) and the PR checks record actual results.
+GitHub exercises the actual post-clone adapter with fixture product metadata and build 42, runs unsigned native builds/archive/tests, and invokes the post-action from a dereferenced copy of `ci_scripts` against the resulting archive. This proves the adapter and configuration precedence in hosted macOS, once that PR gate passes. It does not simulate Apple's authentication, product discovery, signing service or upload processing. [Validation](Validation.md) and the PR checks record actual results.
 
 ## Primary references
 
@@ -122,3 +122,9 @@ GitHub exercises the actual post-clone adapter with a clearly fictitious team an
 - [Cloud numbering](https://developer.apple.com/documentation/xcode/setting-the-next-build-number-for-xcode-cloud-builds)
 - [TestFlight distribution](https://developer.apple.com/documentation/xcode/distributing-your-xcode-cloud-builds-through-testflight)
 - [Included compute allowance](https://developer.apple.com/xcode-cloud/)
+
+## Diagnosing a Cloud script failure
+
+App Store Connect's issue summary can show only `ci_post_clone.sh exited with code 1`. That summary does not identify the failed command. On the Mac, open Xcode's Report navigator (**View → Navigators → Reports**, ⌘9), select the Cloud build, expand its failed action and inspect **Logs**; **Artifacts** provides downloadable logs. Apple documents this in [Resolving common configuration and build issues](https://developer.apple.com/documentation/xcode/resolving-common-configuration-and-build-issues).
+
+Our adapter logs an authored phase label, tool name, elapsed duration and exit status. It does not print command arguments or environment values. Preserve the full output before the final exit line when reporting a failure; a successful GitHub fixture run cannot establish Apple's real identity/network/signing environment. [Issue #13](https://github.com/joshrwolf/mossling/issues/13) tracks the current Apple-hosted post-clone failure until its actual log identifies the cause.

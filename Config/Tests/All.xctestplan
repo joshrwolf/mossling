@@ -1,0 +1,24 @@
+{
+  "configurations": [
+    {
+      "id": "5E7F9A86-1266-4474-8A85-68E6C4C729D5",
+      "name": "Default",
+      "options": {}
+    }
+  ],
+  "defaultOptions": {
+    "codeCoverage": false,
+    "mainThreadCheckerEnabled": true
+  },
+  "testTargets": [
+    {
+      "parallelizable": false,
+      "target": {
+        "containerPath": "container:Mossling.xcodeproj",
+        "identifier": "419E6DA306D3D4AE5F638F20",
+        "name": "MosslingUITests"
+      }
+    }
+  ],
+  "version": 1
+}

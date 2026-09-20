@@ -138,17 +138,26 @@ func loadOwnedSimulator() throws -> OwnedSimulator {
     return state
 }
 
-func buildArguments() -> [String] {
+enum UITestPlan: String, CaseIterable { case all = "All", focused = "Focused", remainder = "Remainder" }
+
+func selectedTestPlan(_ environment: [String: String]) throws -> UITestPlan {
+    guard let plan = UITestPlan(rawValue: environment["MOSSLING_UI_TEST_PLAN"] ?? "All") else {
+        throw UITestError("MOSSLING_UI_TEST_PLAN must be All, Focused or Remainder")
+    }
+    return plan
+}
+
+func buildArguments(plan: UITestPlan = .all) -> [String] {
     ["xcodebuild", "build-for-testing", "-project", "Mossling.xcodeproj", "-scheme", "Mossling",
-     "-destination", "generic/platform=iOS Simulator", "-only-testing:MosslingUITests",
+     "-destination", "generic/platform=iOS Simulator", "-testPlan", plan.rawValue,
      "-derivedDataPath", derivedDataPath, "-showBuildTimingSummary", "CODE_SIGNING_ALLOWED=NO"]
 }
 
-func testArguments(for state: OwnedSimulator, diagnostics: Bool) throws -> [String] {
+func testArguments(for state: OwnedSimulator, diagnostics: Bool, plan: UITestPlan = .all) throws -> [String] {
     try state.validate()
     return ["xcodebuild", "test-without-building", "-project", "Mossling.xcodeproj", "-scheme", "Mossling",
             "-destination", "platform=iOS Simulator,id=\(state.identifier)",
-            "-only-testing:MosslingUITests", "-parallel-testing-enabled", "NO",
+            "-testPlan", plan.rawValue, "-parallel-testing-enabled", "NO",
             // Preserve XCTest attachments without the 600-second system diagnostic stall.
             "-collect-test-diagnostics", diagnostics ? "on-failure" : "never",
             "-resultBundlePath", resultPath, "-derivedDataPath", derivedDataPath,
@@ -161,7 +170,7 @@ func runPhase(_ phase: UIPhase) throws -> Int32 {
         guard FileManager.default.fileExists(atPath: "Mossling.xcodeproj/project.pbxproj") else {
             throw UITestError("Run from the repository root after generating Mossling.xcodeproj")
         }
-        return try run(buildArguments()).status
+        return try run(buildArguments(plan: selectedTestPlan(ProcessInfo.processInfo.environment))).status
     case .prepare:
         guard !FileManager.default.fileExists(atPath: statePath) else {
             throw UITestError("Owned simulator state already exists; run cleanup before preparing another device")
@@ -193,7 +202,8 @@ func runPhase(_ phase: UIPhase) throws -> Int32 {
             try FileManager.default.removeItem(atPath: path)
         }
         let result = try run(testArguments(for: state,
-            diagnostics: ProcessInfo.processInfo.environment["MOSSLING_UI_DIAGNOSTICS"] == "1"))
+            diagnostics: ProcessInfo.processInfo.environment["MOSSLING_UI_DIAGNOSTICS"] == "1",
+            plan: selectedTestPlan(ProcessInfo.processInfo.environment)))
         if FileManager.default.fileExists(atPath: resultPath) {
             do {
                 let exported = try run(["xcresulttool", "export", "attachments", "--path", resultPath,
@@ -216,29 +226,6 @@ func runPhase(_ phase: UIPhase) throws -> Int32 {
     }
 }
 
-func timedPhase(_ phase: UIPhase) throws -> Int32 {
-    let start = ProcessInfo.processInfo.systemUptime
-    var status: Int32 = 1
-    defer {
-        let seconds = ProcessInfo.processInfo.systemUptime - start
-        let line = "\(phase.rawValue)\t\(String(format: "%.3f", seconds))\t\(status)\n"
-        diagnostic("UI phase \(phase.rawValue): \(String(format: "%.1f", seconds))s, exit \(status)")
-        do {
-            try FileManager.default.createDirectory(atPath: ".build-artifacts", withIntermediateDirectories: true)
-            let path = ".build-artifacts/UI-Timings.tsv"
-            if !FileManager.default.fileExists(atPath: path) {
-                try Data("phase\tseconds\texit_status\n".utf8).write(to: URL(fileURLWithPath: path))
-            }
-            let handle = try FileHandle(forWritingTo: URL(fileURLWithPath: path))
-            defer { try? handle.close() }
-            try handle.seekToEnd()
-            try handle.write(contentsOf: Data(line.utf8))
-        } catch { diagnostic("Could not record UI phase timing: \(error)") }
-    }
-    status = try runPhase(phase)
-    return status
-}
-
 #if !UI_RUNNER_TESTS
 let exitStatus: Int32
 do {
@@ -247,7 +234,7 @@ do {
     if plan.count > 1 && FileManager.default.fileExists(atPath: statePath) {
         throw UITestError("Owned simulator state already exists; run cleanup before starting another suite")
     }
-    exitStatus = try executePlan(plan, execute: timedPhase)
+    exitStatus = try executePlan(plan, execute: runPhase)
 } catch {
     diagnostic("UI test setup failed: \(error)")
     exitStatus = 1

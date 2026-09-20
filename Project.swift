@@ -88,12 +88,13 @@ let project = Project(
             name: "Mossling",
             shared: true,
             buildAction: .buildAction(targets: ["Mossling"]),
-            testAction: .targets(
-                ["MosslingUITests"],
-                configuration: .debug,
-                // UI flows validate behavior; no UI coverage report is consumed.
-                // Match the preceding Debug build to reuse its compiled products.
-                options: .options(coverage: false)
+            // The first plan is Xcode's default: local and Cloud runs keep the
+            // entire suite. CI selects complementary plans on separate runners.
+            testAction: .testPlans(
+                [.path("Config/Tests/All.xctestplan"),
+                 .path("Config/Tests/Focused.xctestplan"),
+                 .path("Config/Tests/Remainder.xctestplan")],
+                configuration: .debug
             ),
             runAction: .runAction(configuration: .debug, executable: .executable("Mossling")),
             archiveAction: .archiveAction(configuration: .release)

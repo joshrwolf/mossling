@@ -1,5 +1,5 @@
 // Product identity and marketing version come from Config/Product.json via Tuist.
-// Cloud values take precedence over optional personal development settings.
+// Cloud supplies the build number; its native action selects the signing team.
 CURRENT_PROJECT_VERSION = 1
 DEVELOPMENT_TEAM =
 CODE_SIGN_STYLE = Automatic

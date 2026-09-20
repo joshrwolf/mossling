@@ -1,0 +1,27 @@
+{
+  "configurations": [
+    {
+      "id": "013A081F-FC37-48A5-A138-C305941211B3",
+      "name": "Default",
+      "options": {}
+    }
+  ],
+  "defaultOptions": {
+    "codeCoverage": false,
+    "mainThreadCheckerEnabled": true
+  },
+  "testTargets": [
+    {
+      "parallelizable": false,
+      "target": {
+        "containerPath": "container:Mossling.xcodeproj",
+        "identifier": "419E6DA306D3D4AE5F638F20",
+        "name": "MosslingUITests"
+      },
+      "skippedTests": [
+        "MosslingUITests/testEarnedAffinityChoicePersistsAndCanBeChanged()"
+      ]
+    }
+  ],
+  "version": 1
+}
