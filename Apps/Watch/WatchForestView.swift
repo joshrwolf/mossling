@@ -39,6 +39,10 @@ struct WatchForestView: View {
                         Text(session.activity.title).font(.headline).multilineTextAlignment(.center)
                         Button("Return to snack") { showingSession = true }
                             .buttonStyle(.borderedProminent)
+                    } else if store.isPausedToday {
+                        Text("Resting for today").font(.headline)
+                        Text("Your rhythm returns tomorrow. Resume earlier on your iPhone.")
+                            .font(.caption).multilineTextAlignment(.center)
                     } else if let opportunity = store.currentOpportunity {
                         Text(opportunity.activity.title).font(.headline).multilineTextAlignment(.center)
                         Text(opportunity.activity.targetSummary).font(.caption).foregroundStyle(MossPalette.mint)
@@ -117,15 +121,15 @@ struct WatchSnackSessionView: View {
                     if let error = store.error { Text(error).font(.caption).foregroundStyle(Color.orange) }
                     TimelineView(.periodic(from: .now, by: isLuminanceReduced ? 60 : 1)) { context in
                         let isTimed = session.activity.targetKind == .duration
-                        let remaining = max(0, Double(session.activity.targetValue) - session.elapsed(at: context.date))
-                        let expired = context.date >= session.opportunity.expiresAt
+                        let remaining = max(0, Double(session.activity.targetValue) - session.elapsed(at: store.currentDate))
+                        let expired = store.currentDate >= session.completionDeadline
                         VStack(spacing: 12) {
                             Text(isTimed ? timerText(remaining) : "\(session.activity.targetValue) reps")
                                 .font(.system(.largeTitle, design: .rounded, weight: .medium))
                                 .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
                                 .accessibilityLabel(isTimed ? "\(Int(ceil(remaining))) seconds remaining" : "\(session.activity.targetValue) repetitions")
                             if expired {
-                                Text("This break’s window has ended. The next is a fresh start.")
+                                Text("This break’s finishing time has ended. The next is a fresh start.")
                                     .font(.caption).multilineTextAlignment(.center)
                                 Button("Back to forest") { store.cancelSession(); dismiss() }
                             } else {

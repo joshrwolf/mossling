@@ -9,6 +9,9 @@ enum DeviceRole { case phone, watch }
 final class MosslingStore {
     private var document: AppDocument
     private(set) var now = Date()
+    @ObservationIgnored private let clock: () -> Date
+    var currentDate: Date { clock() }
+    private(set) var notificationCoverageEnd: Date?
     private(set) var isReady: Bool
     private(set) var status: String?
     var error: String?
@@ -40,7 +43,9 @@ final class MosslingStore {
         return try? ScheduleEngine(configuration: configuration).next(after: now, calendar: .current)
     }
 
-    private init(role: DeviceRole, controller: DocumentController?, failure: String? = nil) {
+    private init(role: DeviceRole, controller: DocumentController?, failure: String? = nil, clock: @escaping () -> Date = Date.init) {
+        self.clock = clock
+        self.now = clock()
         self.role = role
         self.controller = controller
         document = controller?.document ?? AppDocument()
@@ -67,7 +72,18 @@ final class MosslingStore {
             #endif
             let repository = FileDocumentRepository(url: documentURL)
             let controller = try DocumentController(repository: repository)
-            return MosslingStore(role: role, controller: controller)
+            var clock: () -> Date = Date.init
+            #if DEBUG && targetEnvironment(simulator)
+            let arguments = ProcessInfo.processInfo.arguments
+            if arguments.contains("--ui-testing"),
+               let index = arguments.firstIndex(of: "--ui-testing-now"), index + 1 < arguments.count,
+               let seconds = Double(arguments[index + 1]), seconds.isFinite {
+                let fixed = Date(timeIntervalSince1970: seconds)
+                NSTimeZone.default = TimeZone(secondsFromGMT: 0)!
+                clock = { fixed }
+            }
+            #endif
+            return MosslingStore(role: role, controller: controller, clock: clock)
         } catch {
             return MosslingStore(role: role, controller: nil,
                 failure: "Your forest could not be opened. Existing data has been preserved. \(error.localizedDescription)")
@@ -102,7 +118,7 @@ final class MosslingStore {
         #endif
     }
 
-    func refresh() { now = Date() }
+    func refresh() { now = clock() }
     func clearError() { error = nil }
 
     @discardableResult
@@ -144,32 +160,69 @@ final class MosslingStore {
             error = "Choose an enabled activity from your library."; return false
         }
         let date = now
-        if activity.targetKind == .duration,
-           date.addingTimeInterval(Double(activity.targetValue)) >= opportunity.expiresAt {
-            error = "There isn't enough time left in this snack window for that timer. Choose a shorter activity or wait for the next snack."
-            return false
-        }
-        return commit { $0.session = SnackSession(opportunity: opportunity, activity: activity, runningSince: date) }
+        do {
+            let session = try SnackSession.start(opportunity: opportunity, activity: activity, at: date)
+            return commit { $0.session = session }
+        } catch { self.error = error.localizedDescription; return false }
     }
 
-    func pause() { let date = Date(); _ = commit { $0.session?.pause(at: date) } }
-    func resume() { let date = Date(); _ = commit { $0.session?.resume(at: date) } }
+    var isPausedToday: Bool { configuration.isPaused(at: now) }
+    var currentScheduledOpportunity: Opportunity? {
+        guard isReady, role == .phone || document.hasReceivedPhoneConfiguration else { return nil }
+        return try? ScheduleEngine(configuration: configuration).opportunities(on: now, calendar: .current)
+            .first { $0.isActive(at: now) }
+    }
+    var isCurrentSkipped: Bool {
+        guard let opportunity = currentScheduledOpportunity else { return false }
+        return configuration.isSkipped(opportunity, at: now)
+    }
+    var isCurrentCompleted: Bool {
+        guard let opportunity = currentScheduledOpportunity else { return false }
+        return CompletionLedger(events: events).containsReward(key: opportunity.rewardKey)
+    }
+
+    func skipCurrentSnack() async {
+        refresh()
+        guard role == .phone, session == nil, let opportunity = currentOpportunity else { return }
+        var next = configuration
+        do { try next.skip(opportunity, at: now, calendar: .current) }
+        catch { self.error = error.localizedDescription; return }
+        _ = await saveConfig(next)
+    }
+
+    func pauseToday() async {
+        refresh()
+        guard role == .phone else { return }
+        var next = configuration
+        do { try next.pauseForToday(at: now, calendar: .current) }
+        catch { self.error = error.localizedDescription; return }
+        _ = await saveConfig(next)
+    }
+
+    func resumeToday() async {
+        refresh()
+        guard role == .phone else { return }
+        var next = configuration
+        next.resumeToday(at: now)
+        _ = await saveConfig(next)
+    }
+
+    func pause() { let date = clock(); _ = commit { $0.session?.pause(at: date) } }
+    func resume() { let date = clock(); _ = commit { $0.session?.resume(at: date) } }
     func cancelSession() { _ = commit { $0.session = nil } }
 
     @discardableResult
     func complete() async -> Bool {
         guard let session else { return false }
-        let date = Date()
+        let date = clock()
         guard commit({ try DocumentSync.complete(session, at: date, in: &$0) }) else { return false }
         celebrationID += 1
         synchronize(includeInventory: false)
         #if os(iOS)
-        let slot = RecurringSlot(weekday: Calendar.current.component(.weekday, from: session.opportunity.scheduledAt),
-                                 minuteOfDay: session.opportunity.minuteOfDay)
         _ = await notificationOperation { [notifications] in
-            notifications.markCompleted(opportunityID: session.opportunity.id,
-                deliveredReminderID: NotificationService.reminderIdentifier(for: slot))
+            notifications.markCompleted(opportunityID: session.opportunity.id)
         }
+        _ = await reconcileNotifications()
         #endif
         return true
     }
@@ -180,8 +233,8 @@ final class MosslingStore {
         #if os(iOS)
         _ = await notificationOperation { [weak self, notifications] in
             guard let self, self.currentOpportunity?.id == opportunity.id else { return }
-            let until = Date().addingTimeInterval(600)
-            try await notifications.snooze(opportunityID: opportunity.id, until: until, expiresAt: opportunity.expiresAt)
+            let until = self.clock().addingTimeInterval(600)
+            try await notifications.snooze(opportunity: opportunity, until: until)
             self.status = "A gentle reminder in 10 minutes."
         }
         #else
@@ -214,6 +267,9 @@ final class MosslingStore {
             let backup = try AppDocument.decode(data)
             guard commit({ try DocumentSync.mergeBackup(backup, into: &$0) }) else { return false }
             synchronize(includeInventory: true)
+            #if os(iOS)
+            _ = await reconcileNotifications()
+            #endif
             status = "Backup merged. Your current schedule and activities are unchanged."
             return true
         } catch { self.error = "The backup could not be opened. Your current forest is unchanged. \(error.localizedDescription)"; return false }
@@ -260,17 +316,10 @@ final class MosslingStore {
                         guard let self else { return }
                         _ = await self.notificationOperation { [notifications = self.notifications] in
                             for event in receivedEvents {
-                                // Old deliveries must not remove today's recurring notification.
-                                let deliveredID: String?
-                                if Calendar.current.isDateInToday(event.scheduledAt) {
-                                    let minute = Calendar.current.component(.hour, from: event.scheduledAt) * 60
-                                        + Calendar.current.component(.minute, from: event.scheduledAt)
-                                    let slot = RecurringSlot(weekday: Calendar.current.component(.weekday, from: event.scheduledAt), minuteOfDay: minute)
-                                    deliveredID = NotificationService.reminderIdentifier(for: slot)
-                                } else { deliveredID = nil }
-                                notifications.markCompleted(opportunityID: event.opportunityID, deliveredReminderID: deliveredID)
+                                notifications.markCompleted(opportunityID: event.opportunityID)
                             }
                         }
+                        _ = await self.reconcileNotifications()
                     }
                     #endif
                 }
@@ -311,9 +360,13 @@ final class MosslingStore {
         await notificationOperation { [weak self, notifications] in
             guard let self else { return }
             // Permission is opt-in. Passive reconciliation must not interrupt onboarding.
+            self.notificationCoverageEnd = nil
             if self.configuration.schedule.enabled,
                !(await notifications.authorizationStatus()).canSchedule { return }
-            try await notifications.replaceSchedule(self.configuration.schedule.recurringSlots)
+            let plan = try ReminderPlan(configuration: self.configuration, at: self.clock(), calendar: .current,
+                                        completedRewardKeys: Set(self.events.map(\.rewardKey)))
+            try await notifications.replaceSchedule(plan)
+            if self.configuration.schedule.enabled { self.notificationCoverageEnd = plan.coverageEnd }
         }
     }
 
@@ -330,10 +383,9 @@ final class MosslingStore {
 
     private func handleNotification(_ action: NotificationService.Action) async {
         refresh()
-        guard let candidate = try? ScheduleEngine(configuration: configuration).current(at: action.deliveredAt, calendar: .current),
-              candidate.isActive(at: now),
-              action.opportunityID == nil || action.opportunityID == candidate.id,
-              currentOpportunity?.id == candidate.id else { return }
+        guard let opportunityID = action.opportunityID,
+              let candidate = currentOpportunity, candidate.id == opportunityID,
+              action.scheduledAt == candidate.scheduledAt else { return }
         navigationRequest += 1
         if action.kind == .snooze { await snooze() }
         // Home consumes this intent; notification actions never mark a snack complete.

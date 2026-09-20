@@ -20,6 +20,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         let requestIdentifier: String
         let deliveredAt: Date
         let opportunityID: String?
+        let scheduledAt: Date?
     }
 
     enum ServiceError: LocalizedError {
@@ -28,7 +29,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         var errorDescription: String? {
             switch self {
             case .invalidSchedule:
-                "Reminders need unique weekday/time slots and at most 56 reminders per week."
+                "Reminders need unique snack windows and at most 56 scheduled reminders."
             case .permissionRequired:
                 "Allow notifications in Settings to receive movement reminders."
             case .expiredSnooze:
@@ -50,12 +51,15 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
 
     private let center: UNUserNotificationCenter
     private var bufferedActions: [Action] = []
-    private static let recurringPrefix = "mossling.reminder."
+    private static let legacyRecurringPrefix = "mossling.reminder."
+    private static let datedPrefix = "mossling.dated."
     private static let snoozePrefix = "mossling.snooze."
     private nonisolated static let category = "MOSSLING_SNACK"
     private nonisolated static let openAction = "MOSSLING_OPEN"
     private nonisolated static let snoozeAction = "MOSSLING_SNOOZE"
     private nonisolated static let opportunityKey = "mosslingOpportunityID"
+    private nonisolated static let scheduledKey = "mosslingScheduledAt"
+    private nonisolated static let expiryKey = "mosslingExpiresAt"
 
     init(center: UNUserNotificationCenter = .current()) {
         self.center = center
@@ -91,93 +95,117 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         return await authorizationStatus()
     }
 
-    static func reminderIdentifier(for slot: RecurringSlot) -> String {
-        recurringPrefix + slot.id
+    static func reminderIdentifier(for opportunityID: String) -> String {
+        datedPrefix + opportunityID
     }
 
-    /// The store serializes reconciliation calls. UNUserNotificationCenter has no transaction API:
-    /// an add failure may leave a partial schedule and must be shown and retried by the store.
-    func replaceSchedule(_ slots: [RecurringSlot]) async throws {
-        guard slots.count <= 56,
-              Set(slots.map(\.id)).count == slots.count,
-              slots.allSatisfy({ (1...7).contains($0.weekday) && (0..<1440).contains($0.minuteOfDay) }) else {
-            throw ServiceError.invalidSchedule
-        }
-        if !slots.isEmpty {
-            guard await authorizationStatus().canSchedule else { throw ServiceError.permissionRequired }
-        }
+    /// Dated requests make skip/pause effective while the app is closed. The caller must expose
+    /// the finite coverage and refresh on foreground; no background execution is assumed.
+    /// The store serializes calls. An add failure leaves visible, retryable partial coverage.
+    func replaceSchedule(_ plan: ReminderPlan) async throws {
+        let opportunities = plan.opportunities
+        guard opportunities.count <= 56,
+              Set(opportunities.map(\.id)).count == opportunities.count,
+              opportunities.allSatisfy({
+                  !$0.id.isEmpty && $0.scheduledAt.timeIntervalSinceReferenceDate.isFinite
+                      && $0.expiresAt.timeIntervalSinceReferenceDate.isFinite
+                      && $0.scheduledAt < $0.expiresAt
+              }) else { throw ServiceError.invalidSchedule }
 
-        let desiredIDs = Set(slots.map(Self.reminderIdentifier))
+        let desiredIDs = Set(opportunities.map { Self.reminderIdentifier(for: $0.id) })
         let previous = await center.pendingNotificationRequests()
-        let previousRecurringIDs = Set(previous.filter {
-            $0.identifier.hasPrefix(Self.recurringPrefix)
-        }.map(\.identifier))
-        let scheduleChanged = previousRecurringIDs != desiredIDs || slots.isEmpty
+        let observedAt = Date()
         let obsolete = previous.compactMap { request -> String? in
-            if scheduleChanged, request.identifier.hasPrefix(Self.snoozePrefix) { return request.identifier }
-            if request.identifier.hasPrefix(Self.recurringPrefix), !desiredIDs.contains(request.identifier) {
+            if request.identifier.hasPrefix(Self.legacyRecurringPrefix) { return request.identifier }
+            if request.identifier.hasPrefix(Self.datedPrefix), !desiredIDs.contains(request.identifier) {
                 return request.identifier
+            }
+            if request.identifier.hasPrefix(Self.snoozePrefix) {
+                // A routine horizon top-up must not cancel a legitimate current snooze.
+                guard let current = plan.currentOpportunity,
+                      request.identifier == Self.snoozePrefix + current.id,
+                      let scheduled = request.content.userInfo[Self.scheduledKey] as? Double,
+                      scheduled == current.scheduledAt.timeIntervalSince1970,
+                      let trigger = request.trigger as? UNTimeIntervalNotificationTrigger,
+                      let fireDate = trigger.nextTriggerDate(),
+                      fireDate > observedAt, fireDate < current.expiresAt else { return request.identifier }
             }
             return nil
         }
         center.removePendingNotificationRequests(withIdentifiers: obsolete)
-        if scheduleChanged { center.removeDeliveredNotifications(withIdentifiers: obsolete) }
 
-        for slot in slots {
-            var components = DateComponents()
-            // No fixed date/zone: reminder follows the phone's local calendar clock.
-            components.weekday = slot.weekday
-            components.hour = slot.minuteOfDay / 60
-            components.minute = slot.minuteOfDay % 60
-            components.second = 0
-            let content = makeContent()
-            let request = UNNotificationRequest(
-                identifier: Self.reminderIdentifier(for: slot),
-                content: content,
-                trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
-            )
-            try await center.add(request)
+        // Remove stale deliveries too, including old repeating notifications after migration.
+        let deliveries = await center.deliveredNotifications()
+        let activeID = plan.currentOpportunity?.id
+        let staleDelivered = deliveries.compactMap { notification -> String? in
+            let request = notification.request
+            if request.identifier.hasPrefix(Self.legacyRecurringPrefix) { return request.identifier }
+            guard request.identifier.hasPrefix(Self.datedPrefix) || request.identifier.hasPrefix(Self.snoozePrefix) else { return nil }
+            guard let activeID,
+                  request.content.userInfo[Self.opportunityKey] as? String == activeID,
+                  let scheduled = request.content.userInfo[Self.scheduledKey] as? Double,
+                  scheduled == plan.currentOpportunity?.scheduledAt.timeIntervalSince1970 else { return request.identifier }
+            return nil
+        }
+        center.removeDeliveredNotifications(withIdentifiers: staleDelivered)
+
+        if !opportunities.isEmpty {
+            guard await authorizationStatus().canSchedule else { throw ServiceError.permissionRequired }
+        }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        for opportunity in opportunities {
+            // A reconciliation that crosses a boundary must not enqueue an overdue alert.
+            guard opportunity.scheduledAt > Date() else { continue }
+            var components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: opportunity.scheduledAt)
+            components.calendar = calendar
+            components.timeZone = calendar.timeZone
+            try await center.add(UNNotificationRequest(
+                identifier: Self.reminderIdentifier(for: opportunity.id),
+                content: makeContent(for: opportunity),
+                trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+            ))
         }
     }
 
-    func snooze(opportunityID: String, until: Date, expiresAt: Date) async throws {
-        guard !opportunityID.isEmpty, until > Date(), until < expiresAt else {
+    func snooze(opportunity: Opportunity, until: Date) async throws {
+        guard !opportunity.id.isEmpty, until > Date(), until < opportunity.expiresAt else {
             throw ServiceError.expiredSnooze
         }
         guard await authorizationStatus().canSchedule else { throw ServiceError.permissionRequired }
-        let identifier = Self.snoozePrefix + opportunityID
+        let identifier = Self.snoozePrefix + opportunity.id
         let requests = await center.pendingNotificationRequests()
         let otherSnoozes = requests.filter {
             $0.identifier.hasPrefix(Self.snoozePrefix) && $0.identifier != identifier
         }
         guard otherSnoozes.count < 8 else { throw ServiceError.snoozeCapacity }
         let delay = until.timeIntervalSinceNow
-        // Recheck after the authorization/pending-request suspension points.
-        guard delay > 0, Date() < expiresAt else { throw ServiceError.expiredSnooze }
-        let content = makeContent()
-        content.userInfo = [Self.opportunityKey: opportunityID]
+        guard delay > 0, Date() < opportunity.expiresAt else { throw ServiceError.expiredSnooze }
         try await center.add(UNNotificationRequest(
             identifier: identifier,
-            content: content,
+            content: makeContent(for: opportunity),
             trigger: UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
         ))
     }
 
-    func markCompleted(opportunityID: String, deliveredReminderID: String?) {
-        let snoozeID = Self.snoozePrefix + opportunityID
-        center.removePendingNotificationRequests(withIdentifiers: [snoozeID])
-        var deliveredIDs = [snoozeID]
-        if let deliveredReminderID { deliveredIDs.append(deliveredReminderID) }
-        center.removeDeliveredNotifications(withIdentifiers: deliveredIDs)
+    func markCompleted(opportunityID: String) {
+        let identifiers = [Self.snoozePrefix + opportunityID, Self.reminderIdentifier(for: opportunityID)]
+        center.removePendingNotificationRequests(withIdentifiers: identifiers)
+        center.removeDeliveredNotifications(withIdentifiers: identifiers)
     }
 
-    private func makeContent() -> UNMutableNotificationContent {
+    private func makeContent(for opportunity: Opportunity) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         content.title = "A little movement, a little growth"
         content.body = "Your woodland friend is ready for a movement snack."
         content.categoryIdentifier = Self.category
         content.threadIdentifier = "mossling.snacks"
         content.sound = .default
+        content.userInfo = [
+            Self.opportunityKey: opportunity.id,
+            Self.scheduledKey: opportunity.scheduledAt.timeIntervalSince1970,
+            Self.expiryKey: opportunity.expiresAt.timeIntervalSince1970
+        ]
         return content
     }
 
@@ -185,7 +213,9 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
-        [.banner, .sound]
+        if let expires = notification.request.content.userInfo[Self.expiryKey] as? Double,
+           Date().timeIntervalSince1970 >= expires { return [] }
+        return [.banner, .sound]
     }
 
     nonisolated func userNotificationCenter(
@@ -200,11 +230,13 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         }
         // Extract Sendable values on the delegate's executor; never move an SDK response
         // object across actors or assert unchecked Sendable conformance.
+        let scheduledTimestamp = response.notification.request.content.userInfo[Self.scheduledKey] as? Double
         let action = Action(
             kind: kind,
             requestIdentifier: response.notification.request.identifier,
             deliveredAt: response.notification.date,
-            opportunityID: response.notification.request.content.userInfo[Self.opportunityKey] as? String
+            opportunityID: response.notification.request.content.userInfo[Self.opportunityKey] as? String,
+            scheduledAt: scheduledTimestamp.map(Date.init(timeIntervalSince1970:))
         )
         await deliver(action)
     }

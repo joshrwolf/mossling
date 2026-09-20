@@ -60,3 +60,13 @@ Original `MosslingStore.receive(_:channel:)` used one catch message for decoding
 ## Future hardening
 
 The full JSON ledger is encoded on the main actor and history reconciliation resends all events on an inventory mismatch. This is reasonable for a small, low-frequency household app, but profile multi-year histories before adding more event types. Add migrations before changing a distributed schema; the current unreleased schema additions do not establish a migration framework. Time-zone travel may make removal of an already delivered reminder imprecise because the receipt path derives its weekday/minute from the current zone; this does not affect reward identity, future recurring reminders, or saved history.
+
+## Everyday snack loop review (September 2026)
+
+An independent reviewer examined the full daily-loop diff, separately from the domain, notification-adapter, UI-test, and integration authors. Confirmed findings:
+
+1. Backup import merged rewards without removing pending reminders for them. Successful import now reconciles the dated plan, like completion and Watch event receipt.
+2. Version-1 configuration decoders silently ignored temporary routine fields. New configuration snapshots use protocol version 2; both apps must update. Migrating a version-1 save clears the Watch's received-configuration flag so an equal-revision current snapshot repairs the cache.
+3. Clearing that flag could retire the same phone authority during repair. Retirement now requires a different authority ID. Regression coverage accepts the equal-revision refresh, then a higher revision from the same phone, without retiring it.
+
+The reviewer found no further blocking issues in grace, override boundaries, ledger rewards, finite reminder planning, or the UI clock harness. Native compilation and real UI execution remain required PR gates; physical notification delivery and paired-device acceptance remain separate.

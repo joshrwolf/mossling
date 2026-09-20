@@ -2,7 +2,7 @@ import Foundation
 
 public enum ConfigurationError: Error, LocalizedError, Equatable, Sendable {
     case invalidWeekdays, emptyWeekdays, invalidWindow, invalidInterval, tooManySlots
-    case invalidActivity(String), duplicateActivityIDs, noEnabledActivities, invalidCompanionName, invalidRevision
+    case invalidActivity(String), duplicateActivityIDs, noEnabledActivities, invalidCompanionName, invalidRevision, invalidDailyOverride
 
     public var errorDescription: String? {
         switch self {
@@ -16,6 +16,7 @@ public enum ConfigurationError: Error, LocalizedError, Equatable, Sendable {
         case .noEnabledActivities: "Enable at least one activity."
         case .invalidCompanionName: "Give your companion a name of 1–40 characters."
         case .invalidRevision: "Configuration revision cannot be negative."
+        case .invalidDailyOverride: "The temporary routine change could not be validated."
         }
     }
 }
@@ -93,15 +94,88 @@ public struct ActivityDefinition: Codable, Equatable, Sendable, Identifiable {
     ]
 }
 
+/// Temporary changes use an absolute deadline captured at the originating phone's next
+/// local midnight. Travel and DST therefore cannot extend a pause indefinitely.
+public struct DailyRoutineOverride: Codable, Equatable, Sendable {
+    public var expiresAt: Date
+    public var pausedForDay: Bool
+    public var skippedRewardKeys: Set<String>
+
+    public init(expiresAt: Date, pausedForDay: Bool = false, skippedRewardKeys: Set<String> = []) {
+        self.expiresAt = expiresAt; self.pausedForDay = pausedForDay; self.skippedRewardKeys = skippedRewardKeys
+    }
+
+    public func validate() throws {
+        guard expiresAt.timeIntervalSinceReferenceDate.isFinite, skippedRewardKeys.count <= 24 else {
+            throw ConfigurationError.invalidDailyOverride
+        }
+        for key in skippedRewardKeys {
+            let parts = key.split(separator: "-")
+            guard key.count == 14, parts.count == 4,
+                  parts[0].count == 4, Int(parts[0]) != nil,
+                  parts[1].count == 2, let month = Int(parts[1]), (1...12).contains(month),
+                  parts[2].count == 2, let day = Int(parts[2]), (1...31).contains(day),
+                  parts[3].count == 3, parts[3].first == "h",
+                  let hour = Int(parts[3].dropFirst()), (0...23).contains(hour) else {
+                throw ConfigurationError.invalidDailyOverride
+            }
+        }
+    }
+
+}
+
 public struct AppConfiguration: Codable, Equatable, Sendable {
     public var revision: Int
     public var companionName: String
     public var schedule: ScheduleConfiguration
     public var activities: [ActivityDefinition]
+    public var dailyOverride: DailyRoutineOverride?
     public static let standard = Self()
 
-    public init(revision: Int = 0, companionName: String = "Moss", schedule: ScheduleConfiguration = .standard, activities: [ActivityDefinition] = ActivityDefinition.starters) {
-        self.revision = revision; self.companionName = companionName; self.schedule = schedule; self.activities = activities
+    public init(revision: Int = 0, companionName: String = "Moss", schedule: ScheduleConfiguration = .standard, activities: [ActivityDefinition] = ActivityDefinition.starters, dailyOverride: DailyRoutineOverride? = nil) {
+        self.revision = revision; self.companionName = companionName; self.schedule = schedule; self.activities = activities; self.dailyOverride = dailyOverride
+    }
+
+    public func isPaused(at date: Date) -> Bool {
+        guard let dailyOverride, date < dailyOverride.expiresAt else { return false }
+        return dailyOverride.pausedForDay
+    }
+
+    public func isSkipped(_ opportunity: Opportunity, at date: Date) -> Bool {
+        guard let dailyOverride, date < dailyOverride.expiresAt else { return false }
+        return dailyOverride.skippedRewardKeys.contains(opportunity.rewardKey)
+    }
+
+    public func isSuppressed(_ opportunity: Opportunity, at date: Date) -> Bool {
+        isPaused(at: date) || isSkipped(opportunity, at: date)
+    }
+
+    /// Caller increments configuration revision in the same durable transaction.
+    public mutating func pauseForToday(at date: Date, calendar: Calendar) throws {
+        try prepareDailyOverride(at: date, calendar: calendar)
+        dailyOverride?.pausedForDay = true
+    }
+
+    public mutating func skip(_ opportunity: Opportunity, at date: Date, calendar: Calendar) throws {
+        guard opportunity.isActive(at: date) else { throw CompletionError.expired }
+        try prepareDailyOverride(at: date, calendar: calendar)
+        dailyOverride?.skippedRewardKeys.insert(opportunity.rewardKey)
+        try dailyOverride?.validate()
+    }
+
+    public mutating func resumeToday(at date: Date) {
+        guard let dailyOverride, date < dailyOverride.expiresAt else { self.dailyOverride = nil; return }
+        self.dailyOverride?.pausedForDay = false
+    }
+
+    private mutating func prepareDailyOverride(at date: Date, calendar: Calendar) throws {
+        guard date.timeIntervalSinceReferenceDate.isFinite,
+              let midnight = calendar.dateInterval(of: .day, for: date)?.end else {
+            throw ConfigurationError.invalidDailyOverride
+        }
+        if dailyOverride == nil || date >= dailyOverride!.expiresAt {
+            dailyOverride = DailyRoutineOverride(expiresAt: midnight)
+        }
     }
 
     public func validate() throws {
@@ -109,6 +183,7 @@ public struct AppConfiguration: Codable, Equatable, Sendable {
         let name = companionName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty, name.count <= 40 else { throw ConfigurationError.invalidCompanionName }
         try schedule.validate()
+        try dailyOverride?.validate()
         guard Set(activities.map(\.id)).count == activities.count else { throw ConfigurationError.duplicateActivityIDs }
         for activity in activities { try activity.validate() }
         guard !schedule.enabled || activities.contains(where: \.isEnabled) else { throw ConfigurationError.noEnabledActivities }

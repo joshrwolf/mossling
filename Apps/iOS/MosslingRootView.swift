@@ -150,6 +150,14 @@ struct ForestView: View {
                     .buttonStyle(MossPrimaryButtonStyle())
                     .accessibilityIdentifier("resumeSnack")
             }.mossCard()
+        } else if store.isPausedToday {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Resting for today", systemImage: "moon.zzz").font(.headline)
+                    .accessibilityIdentifier("pausedDayState")
+                Text("Your usual rhythm returns tomorrow. Everything you’ve grown stays yours.")
+                Button("Resume today") { Task { await store.resumeToday() } }
+                    .buttonStyle(MossPrimaryButtonStyle()).accessibilityIdentifier("resumeToday")
+            }.mossCard()
         } else if let opportunity = store.currentOpportunity {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
@@ -176,12 +184,18 @@ struct ForestView: View {
                     Spacer()
                     Button("In 10 minutes") { Task { await store.snooze() } }
                 }.font(.subheadline).tint(MossPalette.moss)
+                Button("Skip this break") { Task { await store.skipCurrentSnack() } }
+                    .font(.subheadline).tint(MossPalette.moss).accessibilityIdentifier("skipSnack")
+                Button("Pause for today") { Task { await store.pauseToday() } }
+                    .font(.subheadline).tint(MossPalette.moss).accessibilityIdentifier("pauseToday")
             }.mossCard()
         } else {
             VStack(alignment: .leading, spacing: 12) {
                 Label("Room to breathe", systemImage: "moon.stars")
                     .font(.caption.weight(.semibold)).foregroundStyle(MossPalette.moss)
-                Text("Nothing to catch up on.").font(.title2.weight(.semibold))
+                Text(store.isCurrentCompleted ? "A little movement, safely saved." : store.isCurrentSkipped ? "This break is yours to skip." : "Nothing to catch up on.")
+                    .font(.title2.weight(.semibold))
+                    .accessibilityIdentifier(store.isCurrentCompleted ? "completedSnackState" : store.isCurrentSkipped ? "skippedSnackState" : "restingSnackState")
                 if let next = store.nextOpportunity {
                     Text("Your next little break is \(next.scheduledAt.formatted(.dateTime.weekday(.abbreviated).hour().minute())). Until then, enjoy your day.")
                         .font(.subheadline)
@@ -199,6 +213,7 @@ struct ForestView: View {
                 Text("Little by little").font(.system(.title3, design: .serif, weight: .medium))
                 Spacer()
                 Text("\(store.progress.growth) growth").font(.subheadline.weight(.semibold))
+                    .accessibilityIdentifier("earnedGrowthValue")
             }
             ProgressView(value: store.progress.stageProgress).tint(MossPalette.fern)
                 .accessibilityLabel("Progress to the next growth stage")
