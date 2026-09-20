@@ -126,7 +126,8 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
                       request.identifier == Self.snoozePrefix + current.id,
                       let scheduled = request.content.userInfo[Self.scheduledKey] as? Double,
                       scheduled == current.scheduledAt.timeIntervalSince1970,
-                      let fireDate = request.trigger?.nextTriggerDate(),
+                      let trigger = request.trigger as? UNTimeIntervalNotificationTrigger,
+                      let fireDate = trigger.nextTriggerDate(),
                       fireDate > observedAt, fireDate < current.expiresAt else { return request.identifier }
             }
             return nil
