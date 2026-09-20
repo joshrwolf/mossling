@@ -28,17 +28,17 @@ struct JournalView: View {
             Group {
                 if moments.isEmpty {
                     ContentUnavailableView {
-                        Label("Your story starts small", systemImage: "leaf")
+                        Label("No snacks yet", systemImage: "leaf")
                     } description: {
-                        Text("Your completed movement breaks will find a home here. No empty days, missed streaks, or catching up.")
+                        Text("Complete a snack to add it to your journal and earn growth.")
                     }
                 } else {
                     List {
                         Section {
                             VStack(alignment: .leading, spacing: 6) {
-                                Text("\(store.progress.completedSnackCount) little moments")
+                                Text("\(store.progress.completedSnackCount) \(store.progress.completedSnackCount == 1 ? "snack completed" : "snacks completed")")
                                     .font(.system(.title2, design: .serif, weight: .medium))
-                                Text("A record of making time for yourself.")
+                                Text("Your snacks and forest milestones.")
                                     .font(.subheadline).foregroundStyle(MossPalette.moss)
                             }.padding(.vertical, 10).listRowBackground(Color.clear)
                         }
@@ -49,7 +49,7 @@ struct JournalView: View {
                                         Image(systemName: milestone.symbolName).foregroundStyle(MossPalette.fern)
                                         VStack(alignment: .leading, spacing: 5) {
                                             Text(milestone.title).font(.headline)
-                                            Text("At \(milestone.requiredSnackCount) breaks")
+                                            Text("At \(milestone.requiredSnackCount) \(milestone.requiredSnackCount == 1 ? "snack" : "snacks")")
                                                 .font(.subheadline).foregroundStyle(MossPalette.moss)
                                         }
                                     }.padding(.vertical, 5)
@@ -107,12 +107,12 @@ struct JournalView: View {
                     Task {
                         let saved = await store.importData(data)
                         importing = false
-                        if saved { importMessage = "Your backed-up progress has joined your forest. Your current rhythm and activities are unchanged." }
+                        if saved { importMessage = "Backup merged. Your current schedule and activities are unchanged." }
                     }
                 }
                 Button("Cancel", role: .cancel) { pendingImport = nil }
             } message: {
-                Text("Add saved movement history to this forest. Your existing progress, rhythm, and activities will stay. Repeated entries won’t earn growth twice.")
+                Text("Merge completed snacks into your journal. Your existing progress, schedule, and activities stay unchanged. Duplicate snacks won’t earn growth twice.")
             }
             .alert("Forest backup", isPresented: Binding(get: { importMessage != nil }, set: { if !$0 { importMessage = nil } })) {
                 Button("OK") { importMessage = nil }

@@ -23,7 +23,7 @@ struct MosslingRootView: View {
                 }
             } else {
                 ContentUnavailableView {
-                    Label("Your forest is safe", systemImage: "externaldrive.badge.exclamationmark")
+                    Label("Couldn’t open saved progress", systemImage: "externaldrive.badge.exclamationmark")
                 } description: {
                     Text(store.error ?? "We couldn’t open your saved forest. Your existing data has been preserved. Close and reopen Mossling to try again.")
                 } actions: {
@@ -40,7 +40,7 @@ struct MosslingRootView: View {
         .sheet(isPresented: $showingWelcome, onDismiss: { hasSeenWelcome = true }) {
             WelcomeView { hasSeenWelcome = true; showingWelcome = false }
         }
-        .alert("A little snag", isPresented: Binding(
+        .alert("Something went wrong", isPresented: Binding(
             get: { store.isReady && store.error != nil },
             set: { if !$0 { store.clearError() } }
         )) {
@@ -64,10 +64,10 @@ struct ForestView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("A LITTLE MOVEMENT. A LITTLE MAGIC.")
+                            Text("MOVEMENT SNACKS. WOODLAND MAGIC.")
                                 .font(.caption2.weight(.semibold)).tracking(1.4)
                                 .foregroundStyle(MossPalette.moss)
-                            Text("Your quiet corner.")
+                            Text("Your forest")
                                 .font(.system(.largeTitle, design: .serif, weight: .medium))
                         }
                         Spacer(minLength: 0)
@@ -77,16 +77,16 @@ struct ForestView: View {
                             .frame(height: 270)
                         Text(store.configuration.companionName)
                             .font(.system(.title, design: .rounded, weight: .semibold))
-                        Text(store.progress.stage.title + " · growing at your pace")
+                        Text(store.progress.stage.title)
                             .font(.subheadline).foregroundStyle(MossPalette.moss)
                             .padding(.top, 4)
                     }.frame(maxWidth: .infinity)
 
                     if celebrating {
                         VStack(alignment: .leading, spacing: 10) {
-                            Label("A small break. A little more forest.", systemImage: "sparkles")
+                            Label("Snack complete", systemImage: "sparkles")
                                 .font(.headline)
-                            Text("Your movement earned \(ProgressionCatalog.growthPerSnack) growth. \(store.configuration.companionName) is very pleased.")
+                            Text("+\(ProgressionCatalog.growthPerSnack) growth")
                                 .font(.subheadline)
                             if !store.celebrationMilestones.isEmpty {
                                 VStack(alignment: .leading, spacing: 8) {
@@ -96,7 +96,7 @@ struct ForestView: View {
                                     }
                                 }.accessibilityIdentifier("celebrationMilestones")
                             }
-                            Button("Lovely") { celebrating = false }.font(.subheadline.weight(.semibold))
+                            Button("Done") { celebrating = false }.font(.subheadline.weight(.semibold))
                         }.mossCard()
                         .accessibilityElement(children: .contain)
                     }
@@ -118,10 +118,6 @@ struct ForestView: View {
                             }
                         }.mossCard()
                     }
-                    Text("No streaks to lose. Every little break counts.")
-                        .font(.footnote).foregroundStyle(MossPalette.moss)
-                        .frame(maxWidth: .infinity).multilineTextAlignment(.center)
-                        .padding(.bottom, 12)
                 }.padding(22)
             }
             .background(MossPalette.cream)
@@ -150,26 +146,26 @@ struct ForestView: View {
     @ViewBuilder private var opportunityCard: some View {
         if let session = store.session {
             VStack(alignment: .leading, spacing: 12) {
-                Label("Your snack is waiting", systemImage: "pause.circle")
+                Label("Snack in progress", systemImage: "pause.circle")
                     .font(.caption.weight(.semibold)).foregroundStyle(MossPalette.moss)
                 Text(session.activity.title).font(.title2.weight(.semibold))
-                Text("Pick up where you left off.").font(.subheadline)
-                Button("Return to snack") { showingSession = true }
+                Text("Continue your activity.").font(.subheadline)
+                Button("Continue snack") { showingSession = true }
                     .buttonStyle(MossPrimaryButtonStyle())
                     .accessibilityIdentifier("resumeSnack")
             }.mossCard()
         } else if store.isPausedToday {
             VStack(alignment: .leading, spacing: 12) {
-                Label("Resting for today", systemImage: "moon.zzz").font(.headline)
+                Label("Paused for today", systemImage: "moon.zzz").font(.headline)
                     .accessibilityIdentifier("pausedDayState")
-                Text("Your usual rhythm returns tomorrow. Everything you’ve grown stays yours.")
+                Text("Your schedule resumes tomorrow.")
                 Button("Resume today") { Task { await store.resumeToday() } }
                     .buttonStyle(MossPrimaryButtonStyle()).accessibilityIdentifier("resumeToday")
             }.mossCard()
         } else if let opportunity = store.currentOpportunity {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Label("A moment for you", systemImage: "sun.max")
+                    Label("Ready for a snack?", systemImage: "sun.max")
                         .font(.caption.weight(.semibold)).foregroundStyle(MossPalette.moss)
                     Spacer()
                     Text("+\(ProgressionCatalog.growthPerSnack) growth").font(.caption.weight(.semibold)).foregroundStyle(MossPalette.moss)
@@ -177,10 +173,10 @@ struct ForestView: View {
                 Text(opportunity.activity.title).font(.title2.weight(.semibold))
                 Text(opportunity.activity.targetSummary + " · " + opportunity.activity.instructions)
                     .font(.subheadline).fixedSize(horizontal: false, vertical: true)
-                Text("This break is available until \(opportunity.expiresAt.formatted(date: .omitted, time: .shortened)).")
+                Text("This snack is available until \(opportunity.expiresAt.formatted(date: .omitted, time: .shortened)).")
                     .font(.caption).foregroundStyle(MossPalette.moss)
                 Button { begin(opportunity.activity) } label: {
-                    Label("Take a little break", systemImage: "play.fill")
+                    Label("Start snack", systemImage: "play.fill")
                 }.buttonStyle(MossPrimaryButtonStyle())
                     .accessibilityIdentifier("startSnack")
                 HStack {
@@ -190,25 +186,25 @@ struct ForestView: View {
                         }
                     }
                     Spacer()
-                    Button("In 10 minutes") { Task { await store.snooze() } }
+                    Button("Snooze 10 minutes") { Task { await store.snooze() } }
                 }.font(.subheadline).tint(MossPalette.moss)
-                Button("Skip this break") { Task { await store.skipCurrentSnack() } }
+                Button("Skip snack") { Task { await store.skipCurrentSnack() } }
                     .font(.subheadline).tint(MossPalette.moss).accessibilityIdentifier("skipSnack")
                 Button("Pause for today") { Task { await store.pauseToday() } }
                     .font(.subheadline).tint(MossPalette.moss).accessibilityIdentifier("pauseToday")
             }.mossCard()
         } else {
             VStack(alignment: .leading, spacing: 12) {
-                Label("Room to breathe", systemImage: "moon.stars")
+                Label("Next snack", systemImage: "moon.stars")
                     .font(.caption.weight(.semibold)).foregroundStyle(MossPalette.moss)
-                Text(store.isCurrentCompleted ? "A little movement, safely saved." : store.isCurrentSkipped ? "This break is yours to skip." : "Nothing to catch up on.")
+                Text(store.isCurrentCompleted ? "Snack complete" : store.isCurrentSkipped ? "Snack skipped" : "No snack scheduled now")
                     .font(.title2.weight(.semibold))
                     .accessibilityIdentifier(store.isCurrentCompleted ? "completedSnackState" : store.isCurrentSkipped ? "skippedSnackState" : "restingSnackState")
                 if let next = store.nextOpportunity {
-                    Text("Your next little break is \(next.scheduledAt.formatted(.dateTime.weekday(.abbreviated).hour().minute())). Until then, enjoy your day.")
+                    Text("Next snack: \(next.scheduledAt.formatted(.dateTime.weekday(.abbreviated).hour().minute())).")
                         .font(.subheadline)
                 } else {
-                    Text("Set your active days and hours in Rhythm. Your forest will be here when you’re ready.")
+                    Text("Set your snack schedule in Rhythm.")
                         .font(.subheadline)
                 }
             }.mossCard()
@@ -218,7 +214,7 @@ struct ForestView: View {
     private var growthCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Little by little").font(.system(.title3, design: .serif, weight: .medium))
+                Text("Growth").font(.system(.title3, design: .serif, weight: .medium))
                 Spacer()
                 Text("\(store.progress.growth) growth").font(.subheadline.weight(.semibold))
                     .accessibilityIdentifier("earnedGrowthValue")
@@ -231,13 +227,13 @@ struct ForestView: View {
                 Label(milestone.title, systemImage: milestone.symbolName)
                     .font(.subheadline.weight(.semibold))
                 let remaining = (milestone.requiredGrowth - store.progress.growth + ProgressionCatalog.growthPerSnack - 1) / ProgressionCatalog.growthPerSnack
-                Text("\(remaining) more little breaks until this joins your forest.")
+                Text("\(remaining) more \(remaining == 1 ? "snack" : "snacks") to unlock.")
                     .font(.footnote).foregroundStyle(MossPalette.moss)
             } else {
-                Text("Every corner has come to life. Your story keeps growing with every break.")
+                Text("All forest milestones unlocked. Keep earning growth with every snack.")
                     .font(.footnote).foregroundStyle(MossPalette.moss)
             }
-            Text("\(store.progress.completedSnackCount) movement breaks, all yours.")
+            Text("\(store.progress.completedSnackCount) \(store.progress.completedSnackCount == 1 ? "snack completed" : "snacks completed")")
                 .font(.caption).foregroundStyle(MossPalette.moss)
         }.mossCard()
     }
@@ -246,7 +242,7 @@ struct ForestView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("A forest of your own").font(.system(.title3, design: .serif, weight: .medium))
             if store.progress.canChooseAffinity {
-                Text("Choose the light your Mossling loves. You can change it anytime; your growth stays yours.")
+                Text("Choose sunlight or moonlight for your forest. You can change it anytime.")
                     .font(.subheadline)
                 ForEach(CompanionAffinity.allCases, id: \.self) { affinity in
                     Button {
@@ -273,7 +269,7 @@ struct ForestView: View {
             } else {
                 Label("Sunlit or Moonlit", systemImage: "lock")
                     .font(.subheadline.weight(.semibold))
-                Text("After three movement breaks, choose a little sunlight or moonlight for your companion.")
+                Text("Complete three snacks to unlock Sunlit and Moonlit forests.")
                     .font(.footnote).foregroundStyle(MossPalette.moss)
             }
         }.mossCard()

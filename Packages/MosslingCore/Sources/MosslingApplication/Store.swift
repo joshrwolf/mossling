@@ -117,7 +117,7 @@ public final class MosslingStore {
     public func start(activity: ActivityDefinition) -> Bool {
         refresh()
         guard session == nil else { error = "Finish or close your current snack first."; return false }
-        guard let opportunity = currentOpportunity else { error = "There is no open snack right now. The next one is a fresh start."; return false }
+        guard let opportunity = currentOpportunity else { error = "No snack is available right now."; return false }
         guard configuration.activities.contains(where: { $0 == activity && $0.isEnabled }) else {
             error = "Choose an enabled activity from your library."; return false
         }
@@ -211,7 +211,7 @@ public final class MosslingStore {
             guard let self, self.currentOpportunity?.id == opportunity.id else { return }
             let until = self.clock().addingTimeInterval(600)
             try await notifications.snooze(opportunity: opportunity, until: until)
-            self.status = "A gentle reminder in 10 minutes."
+            self.status = "Reminder snoozed for 10 minutes."
         }
     }
 
@@ -306,7 +306,7 @@ public final class MosslingStore {
         guard let connection else { return }
         switch connection.state {
         case .ready:
-            status = document.pendingEventIDs.isEmpty ? nil : "Saved here · waiting to sync \(document.pendingEventIDs.count) snack(s)"
+            status = document.pendingEventIDs.isEmpty ? nil : "Saved here · waiting to sync \(document.pendingEventIDs.count) \(document.pendingEventIDs.count == 1 ? "snack" : "snacks")"
         case .waitingForCompanion:
             status = role == .phone ? nil : "Open the iPhone app to sync. Your progress is saved here."
         case .failed(let message): status = "Sync unavailable: \(message)"

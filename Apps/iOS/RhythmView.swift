@@ -16,7 +16,7 @@ struct RhythmView: View {
         NavigationStack {
             Form {
                 Section {
-                    Text("A rhythm that fits your real life.")
+                    Text("Your snack schedule")
                         .font(.system(.title2, design: .serif, weight: .medium))
                         .foregroundStyle(MossPalette.ink)
                         .listRowBackground(Color.clear)
@@ -36,12 +36,12 @@ struct RhythmView: View {
                 } header: {
                     Text("Your rhythm")
                 } footer: {
-                    Text("Times follow your current local time zone. Skipped breaks never cost you growth.")
+                    Text("Times follow your current local time zone.")
                 }
                 Section {
                     LabeledContent("Notifications", value: store.notificationStatus)
                     if let through = store.notificationCoverageEnd {
-                        Text("Reminders prepared until \(through.formatted(date: .abbreviated, time: .shortened)). Open Mossling regularly to keep them topped up.")
+                        Text("Reminders prepared until \(through.formatted(date: .abbreviated, time: .shortened)). Open Mossling to refresh your reminders.")
                             .font(.footnote).accessibilityIdentifier("reminderCoverage")
                     }
                     Text("Up to a week of reminders is prepared whenever you open the app. After traveling, open Mossling to use your new local time.")
@@ -51,20 +51,20 @@ struct RhythmView: View {
                         if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
                     }
                 } header: {
-                    Text("Gentle reminders")
+                    Text("Reminders")
                 } footer: {
                     Text("Your device’s Focus and notification settings decide when reminders appear. Your app never needs to run in the background for scheduled reminders.")
                 }
                 Section("Today") {
                     if store.isPausedToday {
-                        Text("Resting for today. Your usual rhythm returns tomorrow.")
+                        Text("Paused for today. Your schedule resumes tomorrow.")
                         Button("Resume today") { Task { await store.resumeToday() } }
                             .accessibilityIdentifier("rhythmResumeToday")
                     } else {
                         Button("Pause for today") { Task { await store.pauseToday() } }
                             .accessibilityIdentifier("rhythmPauseToday")
                     }
-                    Text("Earned growth stays yours. A snack already underway can still be finished.")
+                    Text("You can still finish a snack already in progress.")
                         .font(.footnote)
                 }
                 Section("Your forest friend") {
@@ -82,7 +82,7 @@ struct RhythmView: View {
                 } header: {
                     Text("Your data")
                 } footer: {
-                    Text("Your history is saved on your devices. No account, ads, or analytics. The phone manages your schedule and snacks; your watch can record breaks offline and sync when connected.")
+                    Text("Your history is saved on your devices. No account, ads, or analytics. The phone manages your schedule and snacks; your watch can record snacks offline and sync when connected.")
                 }
                 Section {
                     HStack {
@@ -91,10 +91,10 @@ struct RhythmView: View {
                         Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Development")
                             .foregroundStyle(MossPalette.moss)
                     }
-                } footer: { Text("A little movement. A little magic.") }
+                } footer: { Text("Movement snacks. Woodland magic.") }
             }
             .scrollContentBackground(.hidden).background(MossPalette.cream)
-            .navigationTitle("Find your rhythm")
+            .navigationTitle("Your rhythm")
             .onAppear { companionName = store.configuration.companionName }
             .sheet(isPresented: $showingSchedule) { ScheduleEditor(schedule: store.configuration.schedule) }
             .onChange(of: store.navigationRequest) { _, _ in showingSchedule = false; exporting = false }
@@ -136,7 +136,7 @@ struct ScheduleEditor: View {
         NavigationStack {
             Form {
                 Section {
-                    Toggle("Make room for movement breaks", isOn: $schedule.enabled)
+                    Toggle("Enable snack schedule", isOn: $schedule.enabled)
                 }
                 Section("Active days") {
                     // Full-width rows adapt cleanly to the largest accessibility sizes.
@@ -149,9 +149,9 @@ struct ScheduleEditor: View {
                     }
                 }.disabled(!schedule.enabled)
                 Section {
-                    DatePicker("First break", selection: minuteBinding(isEnd: false), displayedComponents: .hourAndMinute)
+                    DatePicker("First snack", selection: minuteBinding(isEnd: false), displayedComponents: .hourAndMinute)
                     DatePicker("Reminders stop", selection: minuteBinding(isEnd: true), displayedComponents: .hourAndMinute)
-                    Picker("A break every", selection: $schedule.intervalMinutes) {
+                    Picker("A snack every", selection: $schedule.intervalMinutes) {
                         Text("60 minutes").tag(60)
                         Text("90 minutes").tag(90)
                         Text("120 minutes").tag(120)
@@ -160,13 +160,13 @@ struct ScheduleEditor: View {
                 } header: {
                     Text("Active hours")
                 } footer: {
-                    Text("Breaks begin at your first time and stop before the end time. Use midnight as the end to include the rest of the day. Overnight schedules aren’t supported yet. You can schedule up to 56 reminders a week.")
+                    Text("Snacks begin at your first time and stop before the end time. Use midnight as the end to include the rest of the day. Overnight schedules aren’t supported yet. You can schedule up to 56 reminders a week.")
                 }.disabled(!schedule.enabled)
                 if let validationMessage {
                     Section { Text(validationMessage).font(.subheadline).foregroundStyle(Color.red) }
                 }
                 Section {
-                    Text("Your forest rests outside these hours. There’s no catch-up list and no lost progress.")
+                    Text("Your forest rests outside these hours.")
                         .font(.subheadline).foregroundStyle(MossPalette.moss)
                 }
             }

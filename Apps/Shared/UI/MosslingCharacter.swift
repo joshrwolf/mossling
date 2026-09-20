@@ -100,7 +100,7 @@ struct MosslingCharacter: View {
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(isHappy ? "Mossling is celebrating" : isSleeping ? "Mossling is resting" : "Your cozy woodland Mossling")
+        .accessibilityLabel(isHappy ? "Mossling is celebrating" : isSleeping ? "Mossling is resting" : "Your woodland Mossling")
         .onAppear { updateAnimation() }
         .onChange(of: allowsMotion) { _, _ in updateAnimation() }
         .onChange(of: mood) { _, _ in updateAnimation() }
@@ -297,7 +297,7 @@ struct ForestHabitat: View {
             }.frame(width: proxy.size.width, height: proxy.size.height)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Your Mossling in a peaceful " + (affinity?.title.lowercased() ?? "woodland") + " clearing")
+        .accessibilityLabel("Your Mossling in a " + (affinity?.title.lowercased() ?? "woodland") + " clearing")
         .accessibilityValue(unlocks.map(\.title).joined(separator: ", "))
     }
 }
