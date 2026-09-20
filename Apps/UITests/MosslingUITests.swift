@@ -11,10 +11,19 @@ final class MosslingUITests: XCTestCase {
         capture("Forest", app: app)
 
         app.tabBars.buttons["Rhythm"].tap()
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        XCTAssertFalse(app.alerts.firstMatch.exists)
+        XCTAssertFalse(springboard.alerts.firstMatch.exists,
+                       "Exploring first must not show a system notification permission prompt")
+        // A fresh hosted simulator can display the form while the system's
+        // initial notification-settings query is still pending. Wait for that
+        // real response, then require the exact unchanged authorization state.
+        // This is a maximum readiness budget, not a sleep or a test retry.
+        XCTAssertTrue(app.staticTexts["Notifications, Checking…"].waitForNonExistence(timeout: 180),
+                      "The system notification settings query must finish")
         // LabeledContent exposes the label and current value as one AX element.
         XCTAssertTrue(app.staticTexts["Notifications, Not requested"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.alerts.firstMatch.exists)
-        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         XCTAssertFalse(springboard.alerts.firstMatch.exists,
                        "Exploring first must not show a system notification permission prompt")
         capture("Rhythm without notification permission", app: app)
