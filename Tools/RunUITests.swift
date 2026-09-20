@@ -81,6 +81,13 @@ func runUITests() throws -> Int32 {
         } catch { diagnostic("Could not delete temporary simulator \(identifier): \(error)") }
     }
 
+    // Finish first-boot services before XCTest starts its app-launch timeout.
+    diagnostic("Booting disposable simulator before UI tests…")
+    let boot = try run(["simctl", "boot", identifier])
+    guard boot.status == 0 else { throw UITestError("Could not boot the test simulator") }
+    let ready = try run(["simctl", "bootstatus", identifier, "-b"])
+    guard ready.status == 0 else { throw UITestError("Test simulator did not finish booting") }
+
     let resultPath = ".build-artifacts/UI-Tests.xcresult"
     let screenshotsPath = ".build-artifacts/screenshots"
     try FileManager.default.createDirectory(atPath: ".build-artifacts", withIntermediateDirectories: true)
