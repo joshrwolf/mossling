@@ -112,7 +112,7 @@ struct JournalView: View {
                 }
                 Button("Cancel", role: .cancel) { pendingImport = nil }
             } message: {
-                Text("Merge completed snacks into your journal. Your existing progress, schedule, and activities stay unchanged. Duplicate snacks won’t earn growth twice.")
+                Text("Merge completed snacks into your journal. Existing snacks are kept, and your schedule and activities stay unchanged. Duplicate snacks won’t earn growth twice.")
             }
             .alert("Forest backup", isPresented: Binding(get: { importMessage != nil }, set: { if !$0 { importMessage = nil } })) {
                 Button("OK") { importMessage = nil }

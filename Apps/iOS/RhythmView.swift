@@ -82,7 +82,7 @@ struct RhythmView: View {
                 } header: {
                     Text("Your data")
                 } footer: {
-                    Text("Your history is saved on your devices. No account, ads, or analytics. The phone manages your schedule and snacks; your watch can record snacks offline and sync when connected.")
+                    Text("Your history is saved on your devices. No account, ads, or analytics. The phone manages your schedule and activities; your watch can record snacks offline and sync when connected.")
                 }
                 Section {
                     HStack {

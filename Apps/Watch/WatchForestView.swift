@@ -54,7 +54,7 @@ struct WatchForestView: View {
                             .accessibilityIdentifier("watchStartSnack")
                         Button("Choose another") { showingActivities = true }.font(.caption)
                     } else {
-                        Text("No snack scheduled now").font(.headline)
+                        Text("No snack available now").font(.headline)
                         if let next = store.nextOpportunity {
                             Text("Next snack\n\(next.scheduledAt.formatted(.dateTime.weekday(.abbreviated).hour().minute()))")
                                 .font(.caption).multilineTextAlignment(.center).foregroundStyle(MossPalette.mint)
@@ -89,7 +89,7 @@ struct WatchForestView: View {
                             Text(activity.targetSummary).font(.caption).foregroundStyle(MossPalette.mint)
                         }
                     }
-                }.navigationTitle("Choose a snack")
+                }.navigationTitle("Choose an activity")
             }
             .onChange(of: store.celebrationID) { _, _ in
                 celebrating = true
