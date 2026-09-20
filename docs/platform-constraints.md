@@ -2,13 +2,13 @@
 
 ## Notifications
 
-The phone owns repeating local notifications. Their calendar triggers follow local weekday/time; there is no server and no background hourly timer. Permission, Focus, notification summaries, device state and system routing control actual presentation. Watch mirroring is a user/system preference, not a second independently scheduled reminder source.
+The phone owns dated local notifications prepared from the local calendar up to seven days ahead. Requests keep their absolute dates until the next foreground reconciliation; open after timezone travel. There is no server or background hourly timer. Permission, Focus, notification summaries, device state and system routing control actual presentation. Watch mirroring is a user/system preference, not a second independently scheduled reminder source.
 
-The product's 56-recurring-request budget reserves eight requests for one-shot snoozes. It is an internal conservative capacity policy, not a guarantee of delivery. Re-snoozing replaces the same opportunity's request. The store must resolve a notification action against its original delivered time and recheck current opportunity expiry; tapping yesterday's notification must not complete or snooze today's snack. Both actions bring the app to the foreground so the user can see the result.
+The product's 56-dated-request budget reserves eight requests for one-shot snoozes. It is an internal conservative capacity policy, not a guarantee of delivery. Re-snoozing replaces the same opportunity's request. The store must resolve a notification action against its embedded original opportunity ID and scheduled timestamp and recheck current opportunity expiry; tapping yesterday's notification must not complete or snooze today's snack. Both actions bring the app to the foreground so the user can see the result.
 
-Notification center does not expose an atomic schedule transaction. Invalid schedules are rejected before mutation. Obsolete requests are removed before adding replacements to preserve the request budget. An OS add failure is thrown and may leave a partial schedule; show a retry action and reconcile the full persisted configuration. Schedule mutation, snooze, and completion cancellation must be serialized by the store across suspension points. Refreshing unchanged weekly slots preserves snoozes; changing slots or disabling reminders removes them.
+Notification center does not expose an atomic schedule transaction. Invalid schedules are rejected before mutation. Obsolete requests are removed before adding replacements to preserve the request budget. An OS add failure is thrown and may leave a partial schedule; show a retry action and reconcile the full persisted configuration. Schedule mutation, snooze, and completion cancellation must be serialized by the store across suspension points. Refreshing the horizon preserves a valid current snooze; suppression, completion, expiry or schedule changes that invalidate it remove it.
 
-Finishing a snack removes delivered reminders and its pending one-shot snooze. It deliberately does not cancel a repeating request, which would remove future weeks. A watch completion can race an already-delivering phone reminder. Generic notification wording avoids making a false statement about pending activity or growth.
+Finishing a snack removes that opportunity’s pending and delivered reminder and snooze. Pausing today removes today’s prepared alerts while retaining tomorrow’s dated requests. The finite horizon must be replenished by opening the app; no delayed background restoration is assumed. A watch completion can race an already-delivering phone reminder. Generic notification wording avoids making a false statement about pending activity or growth.
 
 ## Phone/watch transport
 
@@ -23,7 +23,7 @@ Operating-system transfer success is not an application acknowledgment. The send
 1. Build both targets with current Xcode and complete strict Swift concurrency checking. Linux parsing is not an Apple SDK build.
 2. Allow, deny and revoke notification permission; verify accurate state and no automatic repeated permission requests.
 3. Verify each weekday and end-exclusive active window, device time-zone changes, DST boundaries and schedule edits against the domain's slot policy.
-4. Snooze twice, refresh/open the app, complete, and confirm no extra snooze remains. Confirm next week's repeating reminder survives completion.
+4. Snooze twice, refresh/open the app, complete, and confirm no extra snooze remains. Pause today, close the app, and confirm tomorrow's already prepared reminder still arrives. Verify the displayed coverage horizon and foreground replenishment.
 5. Test stale delivered actions, Focus, quiet hours, and the phone/watch routing settings on a physical pair.
 6. Complete on an offline watch, terminate/reopen it, reconnect, and confirm one reward after duplicate/reordered delivery. Kill the receiver around persistence and acknowledgment boundaries.
 7. Verify configuration changes propagate and offline watch changes never overwrite phone settings. Ensure malformed or newer protocol packets remain a visible sync error without resetting progress.

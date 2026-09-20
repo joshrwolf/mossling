@@ -7,11 +7,11 @@ Phone setup + simple watch interaction; one round fern woodland spirit and its f
 ## Defaults chosen to unblock implementation
 
 - Monday–Friday 09:00–17:00, fixed wall-clock cadence of 60 minutes. Settings offer 60/90/120 minutes, selected weekdays, and a same-day start/end window. No overnight windows yet.
-- The active window's end is exclusive. An opportunity expires at the next valid slot or at quiet hours. No future completion, catch-up queue, or automatic timer completion.
+- The active window's end is exclusive. An opportunity closes to new starts at the next valid slot or quiet hours; a validated started session has five extra minutes to finish. No future completion, catch-up queue, or automatic timer completion.
 - Equal rewards for all enabled activities. Duration requires elapsed target + explicit confirmation; repetitions require explicit confirmation. No inference from sensors.
-- 10 growth for a unique scheduled local date/hour. Three stages at 0/30/150 growth; fern/mushrooms/pond at 10/50/100. These are explicit version-1 tuning constants, not user-customized difficulty.
+- 10 growth for a unique scheduled local date/hour. Four stages at 0/30/150/1200 growth; fern/mushrooms/pond/wildflowers/stepping stones/lanterns at 10/50/100/300/600/900. Reward rule 1 stays unchanged; content catalog 2 adds milestones without removing earned unlocks.
 - Rotation among enabled activities is deterministic across devices and launches. User may choose another enabled activity when starting. Sessions carry snapshots, so editing an activity never changes an already-started session.
-- Up to 56 recurring reminder requests; capacity is validated rather than silently truncating. Eight request slots are reserved for one-shot snoozes. Ten-minute snooze cannot extend beyond the opportunity.
+- Up to 56 dated reminder requests over a finite horizon, replenished on foreground and state changes; successful coverage is visible in Rhythm. Eight request slots are reserved for one-shot snoozes. Ten-minute snooze cannot extend beyond the opportunity.
 - Phone owns reminders; Watch relies on Apple's notification routing and cached app state. Watch can save a completed session offline. Independent watch reminders are deferred.
 
 ## Components
