@@ -99,6 +99,10 @@ func runUITests() throws -> Int32 {
         "xcodebuild", "test", "-project", "Mossling.xcodeproj", "-scheme", "Mossling",
         "-destination", "platform=iOS Simulator,id=\(identifier)",
         "-only-testing:MosslingUITests", "-parallel-testing-enabled", "NO",
+        // Broad simulator diagnostics have stalled for 600s after a failed suite.
+        // Keep XCTest results/attachments, but opt into system diagnostics only
+        // when investigating the simulator itself.
+        "-collect-test-diagnostics", ProcessInfo.processInfo.environment["MOSSLING_UI_DIAGNOSTICS"] == "1" ? "on-failure" : "never",
         "-resultBundlePath", resultPath, "-derivedDataPath", ".build-artifacts/SimulatorDerivedData",
         "-showBuildTimingSummary", "CODE_SIGNING_ALLOWED=NO"
     ])

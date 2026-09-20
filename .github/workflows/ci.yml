@@ -71,9 +71,6 @@ jobs:
       - name: Build both simulator schemes
         timeout-minutes: 6
         run: mise run --skip-deps build
-      - name: Run all seven iPhone UI flows
-        timeout-minutes: 18
-        run: mise run --skip-deps test:ui
       - name: Build and validate the Release archive
         timeout-minutes: 6
         run: mise run --skip-deps archive:check
@@ -93,6 +90,9 @@ jobs:
           trap 'rm -rf "$phase_dir"' EXIT
           cp -RL ci_scripts "$phase_dir/ci_scripts"
           CI_ARCHIVE_PATH="$GITHUB_WORKSPACE/.build-artifacts/Mossling.xcarchive" "$phase_dir/ci_scripts/ci_post_xcodebuild.sh"
+      - name: Run all seven iPhone UI flows
+        timeout-minutes: 18
+        run: mise run --skip-deps test:ui
       - name: Preserve UI screenshots and test results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

@@ -91,7 +91,9 @@ let project = Project(
             testAction: .targets(
                 ["MosslingUITests"],
                 configuration: .debug,
-                options: .options(coverage: true)
+                // UI flows validate behavior; no UI coverage report is consumed.
+                // Match the preceding Debug build to reuse its compiled products.
+                options: .options(coverage: false)
             ),
             runAction: .runAction(configuration: .debug, executable: .executable("Mossling")),
             archiveAction: .archiveAction(configuration: .release)
