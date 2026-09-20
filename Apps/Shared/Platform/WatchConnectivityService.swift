@@ -1,13 +1,10 @@
 import Foundation
+import MosslingApplication
 @preconcurrency import WatchConnectivity
 
 /// Byte transport only. Delivery completion is NOT a durable application acknowledgment.
 @MainActor
-final class WatchConnectivityService: NSObject, WCSessionDelegate {
-    enum Channel: Sendable { case snapshot, events }
-    enum State: Equatable, Sendable {
-        case unsupported, inactive, activating, ready, waitingForCompanion, failed(String)
-    }
+final class WatchConnectivityService: NSObject, CompanionConnection, WCSessionDelegate {
     enum ServiceError: LocalizedError {
         case unsupported, notActivated, counterpartUnavailable, oversized, wrongDirection, emptyPayload
         var errorDescription: String? {
@@ -23,11 +20,11 @@ final class WatchConnectivityService: NSObject, WCSessionDelegate {
     }
 
     static let maximumPayloadBytes = 48 * 1024
-    var onReceive: ((Data, Channel) -> Void)?
+    var onReceive: ((Data, CompanionChannel) -> Void)?
     var onResync: (() -> Void)?
     var onError: ((String) -> Void)?
     var onStateChange: (() -> Void)?
-    private(set) var state: State = .inactive {
+    private(set) var state: CompanionConnectionState = .inactive {
         didSet { if oldValue != state { onStateChange?() } }
     }
     private(set) var isReachable = false {
@@ -111,7 +108,7 @@ final class WatchConnectivityService: NSObject, WCSessionDelegate {
         #endif
     }
 
-    private func receive(_ data: Data?, channel: Channel) {
+    private func receive(_ data: Data?, channel: CompanionChannel) {
         guard let data, !data.isEmpty, data.count <= Self.maximumPayloadBytes else {
             onError?("The other device sent an invalid or oversized sync packet.")
             return

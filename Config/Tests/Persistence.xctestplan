@@ -20,7 +20,7 @@
       },
       "selectedTests": [
         "MosslingUITests/testCompletedSnackEarnsGrowthOnceAndSurvivesRelaunch()",
-        "MosslingUITests/testCreatedAndEditedSnackPersistsAcrossRelaunch()"
+        "MosslingUITests/testActivityEditorCreatesAndUpdatesSnack()"
       ]
     }
   ],

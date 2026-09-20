@@ -1,11 +1,12 @@
 import XCTest
+import MosslingCore
 
-/// These tests drive the shipped forms and verify changes after a new process
-/// reads the on-disk document. No test-only model setters or seeded UI state.
+/// UI coverage owns control wiring, presentation, onboarding and one real process
+/// restart. Store integration tests own workflow permutations and file persistence.
 @MainActor
 final class MosslingUITests: XCTestCase {
     func testExploreFirstDoesNotRequestNotificationPermission() {
-        let app = launchFresh()
+        let app = launchFresh(skipWelcome: false)
         capture("Welcome", app: app)
         exploreFirst(in: app)
         capture("Forest", app: app)
@@ -33,9 +34,8 @@ final class MosslingUITests: XCTestCase {
         XCTAssertFalse(app.buttons["Explore first"].exists, "Welcome dismissal must survive relaunch")
     }
 
-    func testCreatedAndEditedSnackPersistsAcrossRelaunch() {
+    func testActivityEditorCreatesAndUpdatesSnack() {
         let app = launchFresh()
-        exploreFirst(in: app)
         app.tabBars.buttons["Snacks"].tap()
         reveal(app.buttons["createActivity"], in: app)
         app.buttons["createActivity"].tap()
@@ -56,9 +56,6 @@ final class MosslingUITests: XCTestCase {
         XCTAssertTrue(original.waitForExistence(timeout: 5))
         capture("Custom snack in rotation", app: app)
 
-        relaunch(app)
-        app.tabBars.buttons["Snacks"].tap()
-        reveal(original, in: app)
         original.tap()
         XCTAssertEqual(app.textFields["activityTitle"].value as? String, "Kitchen wiggle")
         XCTAssertEqual(app.textFields["activityInstructions"].value as? String,
@@ -70,19 +67,13 @@ final class MosslingUITests: XCTestCase {
                       "A durable save must dismiss the editor without waiting for reminder delivery")
         let edited = app.buttons["Edit Kitchen wiggle, 30 sec"]
         reveal(edited, in: app)
-        XCTAssertTrue(edited.waitForExistence(timeout: 5))
-
-        relaunch(app)
-        app.tabBars.buttons["Snacks"].tap()
-        reveal(edited, in: app)
-        XCTAssertTrue(edited.exists, "The edited target must survive a new app process")
+        XCTAssertTrue(edited.waitForExistence(timeout: 5), "The saved editor must display the changed target")
         XCTAssertFalse(original.exists, "Editing must update the existing snack instead of duplicating it")
-        capture("Persisted custom snack", app: app)
+        capture("Edited custom snack", app: app)
     }
 
-    func testScheduleChangesPersistAcrossRelaunch() {
+    func testScheduleEditorUpdatesDaysAndInterval() {
         let app = launchFresh()
-        exploreFirst(in: app)
         app.tabBars.buttons["Rhythm"].tap()
         app.buttons["editSchedule"].tap()
 
@@ -105,19 +96,16 @@ final class MosslingUITests: XCTestCase {
         capture("Schedule editor", app: app)
         app.buttons["saveSchedule"].tap()
         XCTAssertTrue(app.staticTexts["Every 90 minutes"].waitForExistence(timeout: 5))
-
-        relaunch(app)
-        app.tabBars.buttons["Rhythm"].tap()
-        XCTAssertTrue(app.staticTexts["Every 90 minutes"].waitForExistence(timeout: 5))
         app.buttons["editSchedule"].tap()
         XCTAssertTrue(monday.waitForExistence(timeout: 5))
-        XCTAssertEqual(monday.value as? String, "0", "The saved active days must survive relaunch")
-        capture("Persisted schedule", app: app)
+        XCTAssertEqual(monday.value as? String, "0", "Reopening the editor must show the saved active days")
+        capture("Saved schedule", app: app)
     }
 
     func testCompletedSnackEarnsGrowthOnceAndSurvivesRelaunch() {
         let app = launchFresh()
-        exploreFirst(in: app)
+        XCTAssertFalse(app.buttons["affinityMoonlit"].exists)
+        XCTAssertFalse(app.buttons["affinitySunlit"].exists)
         completeRepetitionSnack(in: app)
 
         assertGrowth(10, in: app)
@@ -140,9 +128,8 @@ final class MosslingUITests: XCTestCase {
         capture("One persisted movement moment", app: app)
     }
 
-    func testSkippedBreakPersistsWithoutSkippingTheNextBreak() {
+    func testSkipButtonShowsSkippedStateWithoutGrowth() {
         let app = launchFresh()
-        exploreFirst(in: app)
         let skip = app.buttons["skipSnack"]
         reveal(skip, in: app)
         skip.tap()
@@ -150,26 +137,10 @@ final class MosslingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["skippedSnackState"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["startSnack"].exists)
         assertGrowth(0, in: app)
-
-        relaunch(app)
-        XCTAssertTrue(app.staticTexts["skippedSnackState"].waitForExistence(timeout: 5),
-                      "Skipping must survive a new process in the same opportunity")
-        XCTAssertFalse(app.buttons["startSnack"].exists)
-        capture("Skipped break after relaunch", app: app)
-
-        // Advance only the clock. The next opportunity comes from the normal
-        // schedule and the saved skip must still apply only to the earlier one.
-        relaunch(app, now: activeWeekday + 60 * 60)
-        let nextSnack = app.buttons["startSnack"]
-        reveal(nextSnack, in: app)
-        XCTAssertTrue(nextSnack.isEnabled)
-        XCTAssertFalse(app.staticTexts["skippedSnackState"].exists)
-        assertGrowth(0, in: app)
     }
 
-    func testPauseTodayPersistsAndCanBeResumed() {
+    func testPauseAndResumeButtonsUpdateAvailability() {
         let app = launchFresh()
-        exploreFirst(in: app)
         let pause = app.buttons["pauseToday"]
         reveal(pause, in: app)
         pause.tap()
@@ -178,12 +149,9 @@ final class MosslingUITests: XCTestCase {
         XCTAssertTrue(pausedState.waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["startSnack"].exists)
 
-        relaunch(app)
-        XCTAssertTrue(pausedState.waitForExistence(timeout: 5),
-                      "Pausing today must survive process termination")
         let resume = app.buttons["resumeToday"]
         reveal(resume, in: app)
-        capture("Paused day after relaunch", app: app)
+        capture("Paused day", app: app)
         resume.tap()
 
         let currentSnack = app.buttons["startSnack"]
@@ -192,63 +160,59 @@ final class MosslingUITests: XCTestCase {
         XCTAssertTrue(currentSnack.isEnabled)
         XCTAssertFalse(pausedState.exists)
         assertGrowth(0, in: app)
-
-        relaunch(app)
-        XCTAssertTrue(currentSnack.waitForExistence(timeout: 5),
-                      "Resuming must persist, rather than reapplying the day pause on launch")
-        XCTAssertFalse(pausedState.exists)
     }
 
-    func testEarnedAffinityChoicePersistsAndCanBeChanged() {
-        let app = launchFresh()
-        exploreFirst(in: app)
+    func testEarnedAffinityCanBeSelectedAndChanged() throws {
+        // Start from a validated earned document. Thresholds and durable choices
+        // are covered through the real Store without repeating three UI breaks.
+        let app = launchFresh(document: try earnedAffinityDocument())
         let moonlit = app.buttons["affinityMoonlit"]
         let sunlit = app.buttons["affinitySunlit"]
-        XCTAssertFalse(moonlit.exists, "Affinity choice must be earned through movement")
-        XCTAssertFalse(sunlit.exists)
-
-        for snack in 0..<3 {
-            if snack > 0 {
-                relaunch(app, now: activeWeekday + TimeInterval(snack * 60 * 60))
-            }
-            completeRepetitionSnack(in: app)
-            if snack < 2 {
-                XCTAssertFalse(moonlit.exists, "Affinity choice must stay locked before the third snack")
-                XCTAssertFalse(sunlit.exists)
-            }
-        }
-
         assertGrowth(30, in: app)
         reveal(moonlit, in: app)
         moonlit.tap()
-        assertSelectedAffinity(moonlit)
-        capture("Earned Moonlit affinity", app: app)
-
-        let thirdSnackTime = activeWeekday + 2 * 60 * 60
-        relaunch(app, now: thirdSnackTime)
-        assertGrowth(30, in: app)
-        reveal(moonlit, in: app)
         assertSelectedAffinity(moonlit)
         XCTAssertEqual(sunlit.value as? String, "Not selected")
         reveal(sunlit, in: app)
         sunlit.tap()
         assertSelectedAffinity(sunlit)
         XCTAssertEqual(moonlit.value as? String, "Not selected")
-
-        relaunch(app, now: thirdSnackTime)
         assertGrowth(30, in: app)
-        reveal(sunlit, in: app)
-        assertSelectedAffinity(sunlit)
-        XCTAssertEqual(moonlit.value as? String, "Not selected")
-        capture("Persisted Sunlit affinity", app: app)
+        capture("Changed earned affinity", app: app)
     }
 
-    private func launchFresh() -> XCUIApplication {
+    private func earnedAffinityDocument() throws -> AppDocument {
+        var document = AppDocument()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let activity = try XCTUnwrap(document.configuration.activities.first { $0.id == "wall-push" })
+        for hour in 0..<3 {
+            let date = Date(timeIntervalSince1970: activeWeekday - 3 * 24 * 3600 + Double(hour) * 3600)
+            let opportunity = try XCTUnwrap(try ScheduleEngine(configuration: document.configuration)
+                .current(at: date, calendar: calendar))
+            let session = try SnackSession.start(opportunity: opportunity, activity: activity, at: date)
+            document.session = session
+            try DocumentSync.complete(session, at: date, in: &document)
+        }
+        try document.validate()
+        return document
+    }
+
+    private func launchFresh(skipWelcome: Bool = true, document: AppDocument? = nil) -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = arguments(now: activeWeekday) + ["--ui-testing-reset"]
+        if skipWelcome { app.launchArguments.append("--ui-testing-skip-welcome") }
+        if let document {
+            do { app.launchEnvironment["MOSSLING_UI_TEST_DOCUMENT"] = try document.encoded().base64EncodedString() }
+            catch { XCTFail("Invalid UI fixture: \(error)") }
+        }
         app.launch()
-        XCTAssertTrue(app.buttons["Explore first"].waitForExistence(timeout: 15))
+        if skipWelcome {
+            XCTAssertTrue(app.tabBars.buttons["Forest"].waitForExistence(timeout: 15))
+        } else {
+            XCTAssertTrue(app.buttons["Explore first"].waitForExistence(timeout: 15))
+        }
         return app
     }
 
@@ -264,6 +228,7 @@ final class MosslingUITests: XCTestCase {
     private func relaunch(_ app: XCUIApplication, now: TimeInterval? = nil) {
         app.terminate()
         app.launchArguments = arguments(now: now ?? activeWeekday)
+        app.launchEnvironment.removeValue(forKey: "MOSSLING_UI_TEST_DOCUMENT")
         app.launch()
         XCTAssertTrue(app.tabBars.buttons["Forest"].waitForExistence(timeout: 15))
     }

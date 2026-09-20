@@ -4,8 +4,8 @@ Native iPhone and Apple Watch apps using Swift 6 strict concurrency, SwiftUI and
 
 ## Code map
 
-- `Packages/MosslingCore`: portable domain logic, persistence, sync protocol and Swift Testing tests. Keep Apple UI/platform frameworks out of this package.
-- `Apps/Shared/Store.swift`: main-actor application coordinator; platform adapters live in `Apps/Shared/Platform`, shared presentation in `Apps/Shared/UI`.
+- `Packages/MosslingCore`: portable `MosslingCore` domain/persistence/sync and `MosslingApplication` Store targets with Swift Testing. Keep Apple UI/platform frameworks out.
+- `Apps/Shared/StoreFactory.swift` wires live Store dependencies; Apple adapters live in `Apps/Shared/Platform`, shared presentation in `Apps/Shared/UI`.
 - `Apps/iOS`, `Apps/Watch`, `Apps/UITests`: platform views and XCTest UI scenarios.
 - `Project.swift`, `Tuist.swift`, `Config`: project graph, toolchain compatibility and product configuration. `mise.toml` owns development commands.
 

@@ -6,7 +6,8 @@ Follow the [README setup](../README.md#setup) first. Task definitions and tool p
 
 | Command | Use |
 | --- | --- |
-| `mise run test:core` | Portable domain tests; also runs on Linux |
+| `mise run test:core` | Domain and Store tests with real-file persistence; also runs on Linux |
+| `mise run test:app` | Store integration tests without a simulator |
 | `mise run build` | Generate and build both simulator apps |
 | `mise run --skip-deps build` | Reuse the generated project for incremental builds |
 | `mise run test:tooling` | Cloud hooks, simulator runner and archive/plan guards |
@@ -27,7 +28,7 @@ mise run test:ui:cleanup
 
 The focused command rebuilds incrementally, runs exactly one method, retains its owned simulator and writes a unique `.xcresult` under `.build-artifacts`. Reuse retains system notification permission even when tests reset app data. Run cleanup before fresh-install checks or a full suite; it removes only the validated owned device.
 
-`test:ui` defaults to the All plan. `MOSSLING_UI_TEST_PLAN` selects a native plan for phased CI execution; it cannot override an explicit focused method. GitHub requires every partition and rejects incomplete, failed or skipped results. Focused runs do not replace full acceptance.
+`test:ui` defaults to the All plan. `MOSSLING_UI_TEST_PLAN` selects a native plan for phased CI execution; it cannot override an explicit focused method. GitHub requires every partition and rejects incomplete, failed or skipped results. Focused runs do not replace full acceptance. UI tests cover controls and presentation; Store tests cover workflow persistence and failure ordering. Debug simulator fixtures reset only the isolated UI-test document/preferences; onboarding and completion retain real process-relaunch checks.
 
 ## Diagnostics
 

@@ -18,7 +18,7 @@ open Mossling.xcworkspace
 Select the **Mossling** or **MosslingWatch** scheme and a compatible simulator.
 
 ```sh
-mise run test:core       # Domain tests
+mise run test:core       # Domain and Store tests
 mise run build           # Both simulator apps
 mise run test:ui          # Full UI suite on a fresh simulator
 ```

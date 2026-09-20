@@ -1,4 +1,5 @@
 import SwiftUI
+import MosslingApplication
 
 @main
 struct MosslingWatchApp: App {

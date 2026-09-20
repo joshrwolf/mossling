@@ -1,28 +1,12 @@
 #if os(iOS)
 import Foundation
 import MosslingCore
+import MosslingApplication
 @preconcurrency import UserNotifications
 
 /// Owns phone reminders only. Apple Watch notification mirroring remains a system preference.
 @MainActor
-final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
-    enum Authorization: String, Sendable {
-        case notDetermined, denied, authorized, provisional, ephemeral, unknown
-
-        var canSchedule: Bool {
-            self == .authorized || self == .provisional || self == .ephemeral
-        }
-    }
-
-    struct Action: Sendable {
-        enum Kind: Sendable { case open, snooze }
-        let kind: Kind
-        let requestIdentifier: String
-        let deliveredAt: Date
-        let opportunityID: String?
-        let scheduledAt: Date?
-    }
-
+final class NotificationService: NSObject, ReminderService, UNUserNotificationCenterDelegate {
     enum ServiceError: LocalizedError {
         case invalidSchedule, permissionRequired, expiredSnooze, snoozeCapacity
 
@@ -40,7 +24,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    var onAction: ((Action) -> Void)? {
+    var onAction: ((ReminderAction) -> Void)? {
         didSet {
             guard let onAction else { return }
             let actions = bufferedActions
@@ -50,7 +34,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
     }
 
     private let center: UNUserNotificationCenter
-    private var bufferedActions: [Action] = []
+    private var bufferedActions: [ReminderAction] = []
     private static let legacyRecurringPrefix = "mossling.reminder."
     private static let datedPrefix = "mossling.dated."
     private static let snoozePrefix = "mossling.snooze."
@@ -78,7 +62,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         ])
     }
 
-    func authorizationStatus() async -> Authorization {
+    func authorizationStatus() async -> ReminderAuthorization {
         let interval = AppDiagnostics.begin("notificationSettingsRequest")
         defer { AppDiagnostics.end(interval) }
         let settings = await center.notificationSettings()
@@ -92,7 +76,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    func requestAuthorization() async throws -> Authorization {
+    func requestAuthorization() async throws -> ReminderAuthorization {
         _ = try await center.requestAuthorization(options: [.alert, .sound])
         return await authorizationStatus()
     }
@@ -224,7 +208,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
-        let kind: Action.Kind
+        let kind: ReminderAction.Kind
         switch response.actionIdentifier {
         case Self.snoozeAction: kind = .snooze
         case Self.openAction, UNNotificationDefaultActionIdentifier: kind = .open
@@ -233,7 +217,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         // Extract Sendable values on the delegate's executor; never move an SDK response
         // object across actors or assert unchecked Sendable conformance.
         let scheduledTimestamp = response.notification.request.content.userInfo[Self.scheduledKey] as? Double
-        let action = Action(
+        let action = ReminderAction(
             kind: kind,
             requestIdentifier: response.notification.request.identifier,
             deliveredAt: response.notification.date,
@@ -243,7 +227,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         await deliver(action)
     }
 
-    private func deliver(_ action: Action) {
+    private func deliver(_ action: ReminderAction) {
         if let onAction { onAction(action) }
         else { bufferedActions.append(action) }
     }

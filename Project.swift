@@ -47,6 +47,7 @@ let project = Project(
             resources: ["Apps/Shared/Assets.xcassets", "Config/PrivacyInfo.xcprivacy"],
             dependencies: [
                 .package(product: "MosslingCore"),
+                .package(product: "MosslingApplication"),
                 // Tuist embeds an .app watchOS dependency under the phone app's Watch/ directory.
                 .target(name: "MosslingWatch"),
             ],
@@ -65,7 +66,7 @@ let project = Project(
             infoPlist: .file(path: "Config/watchOS-Info.plist"),
             sources: ["Apps/Watch/**/*.swift", "Apps/Shared/**/*.swift"],
             resources: ["Apps/Shared/Assets.xcassets", "Config/PrivacyInfo.xcprivacy"],
-            dependencies: [.package(product: "MosslingCore")],
+            dependencies: [.package(product: "MosslingCore"), .package(product: "MosslingApplication")],
             settings: .settings(base: [
                 "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
                 "SKIP_INSTALL": "YES",
@@ -79,7 +80,7 @@ let project = Project(
             deploymentTargets: .iOS("18.0"),
             infoPlist: .default,
             sources: ["Apps/UITests/**/*.swift"],
-            dependencies: [.target(name: "Mossling")],
+            dependencies: [.target(name: "Mossling"), .package(product: "MosslingCore")],
             settings: .settings(base: ["TEST_TARGET_NAME": "Mossling"])
         ),
     ],

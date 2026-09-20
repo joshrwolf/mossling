@@ -1,13 +1,13 @@
 import Foundation
-#if DEBUG
+#if DEBUG && canImport(os)
 import os
 #endif
 
 /// Local Debug diagnostics only. No document contents, identifiers or payloads
 /// are logged, and Release builds compile these calls to no-ops.
-enum AppDiagnostics {
-    struct Interval {
-        #if DEBUG
+public enum AppDiagnostics {
+    public struct Interval {
+        #if DEBUG && canImport(os)
         let name: StaticString
         let id: OSSignpostID
         let state: OSSignpostIntervalState
@@ -15,13 +15,13 @@ enum AppDiagnostics {
         #endif
     }
 
-    #if DEBUG
+    #if DEBUG && canImport(os)
     private static let logger = Logger(subsystem: "com.joshrwolf.mossling", category: "Lifecycle")
     private static let signposter = OSSignposter(logger: logger)
     #endif
 
-    static func begin(_ name: StaticString) -> Interval {
-        #if DEBUG
+    public static func begin(_ name: StaticString) -> Interval {
+        #if DEBUG && canImport(os)
         let id = signposter.makeSignpostID()
         let state = signposter.beginInterval(name, id: id)
         logger.notice("\(String(describing: name), privacy: .public) begin id=\(id.rawValue)")
@@ -31,8 +31,8 @@ enum AppDiagnostics {
         #endif
     }
 
-    static func end(_ interval: Interval) {
-        #if DEBUG
+    public static func end(_ interval: Interval) {
+        #if DEBUG && canImport(os)
         let duration = interval.start.duration(to: .now).components
         let milliseconds = Double(duration.seconds) * 1_000 + Double(duration.attoseconds) / 1e15
         signposter.endInterval(interval.name, interval.state)
@@ -40,8 +40,8 @@ enum AppDiagnostics {
         #endif
     }
 
-    static func event(_ name: StaticString) {
-        #if DEBUG
+    public static func event(_ name: StaticString) {
+        #if DEBUG && canImport(os)
         signposter.emitEvent(name)
         logger.notice("\(String(describing: name), privacy: .public)")
         #endif

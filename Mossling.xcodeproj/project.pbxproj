@@ -11,25 +11,26 @@
 		022BB7323418857461AC7207 /* MosslingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 971DDC1DF94DE50C2906B55A /* MosslingUITests.swift */; };
 		0607FC925D202C5F523535DD /* RhythmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9623259E340A47FB8D996BE2 /* RhythmView.swift */; };
 		3384A528A07678DF66A3A8CA /* MosslingWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EFCC37F6FAC828A7B861562 /* MosslingWatchApp.swift */; };
-		39F5E2093ED4F2DFC7A5AED0 /* AppDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276697847B1A96A453C119E9 /* AppDiagnostics.swift */; };
 		3C670E2207DA584922C14B98 /* WatchConnectivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931F83F371CA0B4206B58937 /* WatchConnectivityService.swift */; };
+		442500C43F7119DB268E6913 /* MosslingCore in Frameworks */ = {isa = PBXBuildFile; productRef = 76D21AA70056166787610F21 /* MosslingCore */; };
 		4C49DFDF9787B7B8D8C787FA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F5A22668FEAEB5E5C6E12331 /* Assets.xcassets */; };
-		68BC8218EEEFDC1BEF4AEA54 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = B78FE59A4B7194DE662A785A /* Store.swift */; };
 		6CCB145759346802F943B4A9 /* ActivitiesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11F019F67AA463BD9386335 /* ActivitiesView.swift */; };
 		7036D684FAA1575E42524E40 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB2F40EF86672E4D5B010D34 /* NotificationService.swift */; };
 		78E65A8CBE8FC84DF97B70A2 /* ActivityPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12BCCA0C52BECAB5A25FD649 /* ActivityPresentation.swift */; };
 		8A7B43D17AB67EA7E8D22B12 /* JournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51138135BCC962B2167D9E2A /* JournalView.swift */; };
 		8D5D2F47C2C74AAFC3B54A8F /* MosslingCharacter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6BF72A07804E2F59C11CCB1 /* MosslingCharacter.swift */; };
 		92CD7E71450AC45E78297E79 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C67A9784F94DE1B4403A61E8 /* PrivacyInfo.xcprivacy */; };
-		986B96E08AB76FED76C2E606 /* MosslingCore in Frameworks */ = {isa = PBXBuildFile; productRef = C55404B75E7B668FBA5A983F /* MosslingCore */; };
-		991BEDA3CAFA133EEFBD00D4 /* MosslingCore in Frameworks */ = {isa = PBXBuildFile; productRef = 76D21AA70056166787610F21 /* MosslingCore */; };
+		93FCFB32AD2F542E18D1B3D7 /* MosslingCore in Frameworks */ = {isa = PBXBuildFile; productRef = 737BA3158F0605CBF0965BB3 /* MosslingCore */; };
+		97692D77C589A4173D328D89 /* StoreFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4AAAD96881717D131DA3AE3 /* StoreFactory.swift */; };
+		986B96E08AB76FED76C2E606 /* MosslingApplication in Frameworks */ = {isa = PBXBuildFile; productRef = DA05BE96B4ACFD51D2F0B1C6 /* MosslingApplication */; };
+		991BEDA3CAFA133EEFBD00D4 /* MosslingApplication in Frameworks */ = {isa = PBXBuildFile; productRef = A7C1DED1F4B7DB5E6EAF91A2 /* MosslingApplication */; };
 		9AFD693E6C15F0CB07F0ECB3 /* WatchConnectivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931F83F371CA0B4206B58937 /* WatchConnectivityService.swift */; };
-		9CF3AD261C17BF37C4A866F8 /* AppDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276697847B1A96A453C119E9 /* AppDiagnostics.swift */; };
 		9FE2E729DFFA6B7ED9A240C4 /* ActivityPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12BCCA0C52BECAB5A25FD649 /* ActivityPresentation.swift */; };
 		A965FD37FD63C9C8BC2137D5 /* MosslingWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = ACEBC599E644A20A7043344A /* MosslingWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AA2F9494040A555028F3A1DD /* MosslingCore in Frameworks */ = {isa = PBXBuildFile; productRef = C55404B75E7B668FBA5A983F /* MosslingCore */; };
 		B46D58F87B185AAE4AFAD136 /* WatchForestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 220E2B217B0954361A91CF7A /* WatchForestView.swift */; };
 		C42E5D0EB08351CAC133B1AA /* MosslingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43BC7578ACF1A877E10E6151 /* MosslingApp.swift */; };
-		C778537F6BDE9BE0CFA0C482 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = B78FE59A4B7194DE662A785A /* Store.swift */; };
+		C5BE8AE9C91EF7274BE01DEA /* StoreFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4AAAD96881717D131DA3AE3 /* StoreFactory.swift */; };
 		CBC98C7C510F6CA0795ABF31 /* SnackSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9FD104D31925B021C72F128 /* SnackSessionView.swift */; };
 		D1FF4DAB983F32B2844CDDA3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F5A22668FEAEB5E5C6E12331 /* Assets.xcassets */; };
 		EA50523DAEA634D6E32B8DC4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C67A9784F94DE1B4403A61E8 /* PrivacyInfo.xcprivacy */; };
@@ -101,7 +102,6 @@
 /* Begin PBXFileReference section */
 		12BCCA0C52BECAB5A25FD649 /* ActivityPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityPresentation.swift; sourceTree = "<group>"; };
 		220E2B217B0954361A91CF7A /* WatchForestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchForestView.swift; sourceTree = "<group>"; };
-		276697847B1A96A453C119E9 /* AppDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDiagnostics.swift; sourceTree = "<group>"; };
 		279CB4458C9CC67AC7F8DC2F /* MosslingUITests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "MosslingUITests-Info.plist"; sourceTree = "<group>"; };
 		3C5A30B533AD8CA2D638B32F /* iOS-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "iOS-Info.plist"; sourceTree = "<group>"; };
 		3FABA8FB8ACE22068F5ECFDE /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -124,10 +124,10 @@
 		9EFCC37F6FAC828A7B861562 /* MosslingWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MosslingWatchApp.swift; sourceTree = "<group>"; };
 		A11F019F67AA463BD9386335 /* ActivitiesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitiesView.swift; sourceTree = "<group>"; };
 		ACEBC599E644A20A7043344A /* MosslingWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MosslingWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		B78FE59A4B7194DE662A785A /* Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Store.swift; sourceTree = "<group>"; };
 		C67A9784F94DE1B4403A61E8 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		CB2F40EF86672E4D5B010D34 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		E9FD104D31925B021C72F128 /* SnackSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnackSessionView.swift; sourceTree = "<group>"; };
+		F4AAAD96881717D131DA3AE3 /* StoreFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreFactory.swift; sourceTree = "<group>"; };
 		F5A22668FEAEB5E5C6E12331 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F6BF72A07804E2F59C11CCB1 /* MosslingCharacter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MosslingCharacter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -137,7 +137,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				986B96E08AB76FED76C2E606 /* MosslingCore in Frameworks */,
+				986B96E08AB76FED76C2E606 /* MosslingApplication in Frameworks */,
+				AA2F9494040A555028F3A1DD /* MosslingCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -145,6 +146,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				93FCFB32AD2F542E18D1B3D7 /* MosslingCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -152,7 +154,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				991BEDA3CAFA133EEFBD00D4 /* MosslingCore in Frameworks */,
+				991BEDA3CAFA133EEFBD00D4 /* MosslingApplication in Frameworks */,
+				442500C43F7119DB268E6913 /* MosslingCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -268,9 +271,8 @@
 			children = (
 				56A4D2F04477E917AFD8B87C /* Platform */,
 				2C80466E22D821517A0C7DD6 /* UI */,
-				276697847B1A96A453C119E9 /* AppDiagnostics.swift */,
 				F5A22668FEAEB5E5C6E12331 /* Assets.xcassets */,
-				B78FE59A4B7194DE662A785A /* Store.swift */,
+				F4AAAD96881717D131DA3AE3 /* StoreFactory.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -327,6 +329,7 @@
 			);
 			name = MosslingUITests;
 			packageProductDependencies = (
+				737BA3158F0605CBF0965BB3 /* MosslingCore */,
 			);
 			productName = MosslingUITests;
 			productReference = 8731C76CD9FB082729A93C7B /* MosslingUITests.xctest */;
@@ -347,6 +350,7 @@
 			);
 			name = MosslingWatch;
 			packageProductDependencies = (
+				DA05BE96B4ACFD51D2F0B1C6 /* MosslingApplication */,
 				C55404B75E7B668FBA5A983F /* MosslingCore */,
 			);
 			productName = MosslingWatch;
@@ -370,6 +374,7 @@
 			);
 			name = Mossling;
 			packageProductDependencies = (
+				A7C1DED1F4B7DB5E6EAF91A2 /* MosslingApplication */,
 				76D21AA70056166787610F21 /* MosslingCore */,
 			);
 			productName = Mossling;
@@ -445,10 +450,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				39F5E2093ED4F2DFC7A5AED0 /* AppDiagnostics.swift in Sources */,
 				7036D684FAA1575E42524E40 /* NotificationService.swift in Sources */,
 				9AFD693E6C15F0CB07F0ECB3 /* WatchConnectivityService.swift in Sources */,
-				68BC8218EEEFDC1BEF4AEA54 /* Store.swift in Sources */,
+				C5BE8AE9C91EF7274BE01DEA /* StoreFactory.swift in Sources */,
 				78E65A8CBE8FC84DF97B70A2 /* ActivityPresentation.swift in Sources */,
 				8D5D2F47C2C74AAFC3B54A8F /* MosslingCharacter.swift in Sources */,
 				6CCB145759346802F943B4A9 /* ActivitiesView.swift in Sources */,
@@ -472,10 +476,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9CF3AD261C17BF37C4A866F8 /* AppDiagnostics.swift in Sources */,
 				00AF82B24D78C3D573D36E0F /* NotificationService.swift in Sources */,
 				3C670E2207DA584922C14B98 /* WatchConnectivityService.swift in Sources */,
-				C778537F6BDE9BE0CFA0C482 /* Store.swift in Sources */,
+				97692D77C589A4173D328D89 /* StoreFactory.swift in Sources */,
 				9FE2E729DFFA6B7ED9A240C4 /* ActivityPresentation.swift in Sources */,
 				F0C0109451124AD7FD461A55 /* MosslingCharacter.swift in Sources */,
 				3384A528A07678DF66A3A8CA /* MosslingWatchApp.swift in Sources */,
@@ -852,13 +855,25 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		737BA3158F0605CBF0965BB3 /* MosslingCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MosslingCore;
+		};
 		76D21AA70056166787610F21 /* MosslingCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = MosslingCore;
 		};
+		A7C1DED1F4B7DB5E6EAF91A2 /* MosslingApplication */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MosslingApplication;
+		};
 		C55404B75E7B668FBA5A983F /* MosslingCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = MosslingCore;
+		};
+		DA05BE96B4ACFD51D2F0B1C6 /* MosslingApplication */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MosslingApplication;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

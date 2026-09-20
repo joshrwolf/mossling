@@ -1,4 +1,5 @@
 import SwiftUI
+import MosslingApplication
 
 @main
 struct MosslingApp: App {
@@ -15,6 +16,9 @@ struct MosslingApp: App {
             }
             if ProcessInfo.processInfo.arguments.contains("--ui-testing-reset") {
                 testPreferences.removePersistentDomain(forName: suite)
+                if ProcessInfo.processInfo.arguments.contains("--ui-testing-skip-welcome") {
+                    testPreferences.set(true, forKey: "hasSeenWelcome")
+                }
             }
             preferences = testPreferences
         } else {

@@ -16,8 +16,12 @@ run = [
 ]
 
 [tasks."test:core"]
-description = "Run the portable Swift domain tests (Linux or macOS)"
+description = "Run portable domain and application integration tests (Linux or macOS)"
 run = "swift test --package-path Packages/MosslingCore --parallel"
+
+[tasks."test:app"]
+description = "Run Store integration tests without a simulator"
+run = "swift test --package-path Packages/MosslingCore --filter MosslingApplicationTests"
 
 [tasks."tools:ui"]
 description = "Compile the simulator helper before any device boots"
