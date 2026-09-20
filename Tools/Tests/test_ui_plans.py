@@ -10,11 +10,11 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 FOCUSED = {
-    "MosslingUITests/testEarnedAffinityChoicePersistsAndCanBeChanged()",
+    "MosslingUITests/testEarnedAffinityCanBeSelectedAndChanged()",
 }
 PERSISTENCE = {
     "MosslingUITests/testCompletedSnackEarnsGrowthOnceAndSurvivesRelaunch()",
-    "MosslingUITests/testCreatedAndEditedSnackPersistsAcrossRelaunch()",
+    "MosslingUITests/testActivityEditorCreatesAndUpdatesSnack()",
 }
 PLAN_NAMES = ("All", "Focused", "Persistence", "Remainder")
 

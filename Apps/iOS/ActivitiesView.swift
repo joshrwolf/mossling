@@ -1,4 +1,5 @@
 import SwiftUI
+import MosslingApplication
 import MosslingCore
 
 struct ActivitiesView: View {
