@@ -16,12 +16,12 @@ Xcode Cloud supplies the build counter; do not reset it below a previously uploa
 
 ## One-time account connection
 
-After membership approval, use a Mac with Xcode 26.2 and sign into the enrolled Apple account:
+Use a Mac with Xcode to complete initial onboarding and sign into the enrolled Apple account. Cloud and project generation target Xcode 27.0. An older local Xcode can open the committed workspace for onboarding; use 27.0 for local generation and validation:
 
 1. Clone the repository and open the committed `Mossling.xcworkspace`. The reviewed generated project is already present; local mise/Tuist installation is not required just to onboard Cloud. Developers changing the project graph should use the generation commands in [Tooling](Tooling.md).
 2. Copy the local signing example to `Config/Local.xcconfig` and enter the enrolled team. Register/confirm the phone and Watch identifiers and the phone's App Store Connect product. Keep automatic signing. Review any proposed identifier change before registration.
 3. In Xcode, select the **Mossling** scheme and configure Xcode Cloud for this product. Authorize access to only the `joshrwolf/mossling` repository using Apple's GitHub connection. No GitHub token or signing private key needs to be committed or pasted into chat.
-4. Edit the suggested workflow to the validation settings below **before starting the first build**. Select the included 25 compute-hour plan; do not buy an upgrade. If Xcode 26.2 is unavailable in Cloud, update the verified toolchain across Tuist/GitHub/Cloud together rather than selecting an untested version silently.
+4. Edit the suggested workflow to the validation settings below **before starting the first build**. Select the included 25 compute-hour plan; do not buy an upgrade. If Xcode 27.0 is unavailable in Cloud, update the verified toolchain across Tuist/GitHub/Cloud together rather than selecting an untested version silently.
 5. Run the first validation build manually and inspect the acceptance evidence. Apple requires Xcode for initial product onboarding; subsequent workflow edits and manual builds are available in App Store Connect.
 
 ## Validation workflow: Mossling Verify
@@ -30,7 +30,7 @@ After membership approval, use a Mac with Xcode 26.2 and sign into the enrolled 
 | --- | --- |
 | Repository / branch | `joshrwolf/mossling`, `main` for first manual acceptance |
 | Project / scheme | Root `Mossling.xcworkspace`, shared `Mossling` scheme |
-| Xcode | 26.2, matching the manifest and verified GitHub baseline |
+| Xcode | 27.0, matching the manifest and GitHub migration gate; select the explicit version, not Latest Release |
 | Starts initially | Manual; remove suggested automatic branch triggers during onboarding |
 | Test action | iOS, scheme settings, one available iPhone simulator, Required To Pass |
 | Archive action | iOS, Release scheme configuration, Deployment Preparation **None** |
@@ -74,7 +74,7 @@ Register these two explicit App IDs, with default capabilities unless a current 
 - iPhone: `com.joshrwolf.mossling`
 - Embedded Watch app: `com.joshrwolf.mossling.watchkitapp`
 
-The Watch app requires the iPhone app for initial setup and is declared dependent; it continues to support valid offline completions after receiving its first phone configuration. There is no separate Watch extension target. Do not create a second App Store Connect app record for the companion. Create the phone product using platform **iOS**, primary language **English (U.S.)**, bundle ID `com.joshrwolf.mossling` and SKU `mossling-ios`. Try the name **Mossling**; if unavailable, agree on a store-facing alternative before registration rather than changing the code's bundle identity. Xcode's onboarding can create this app record if it does not already exist.
+The Watch app requires the iPhone app for initial setup and is declared dependent; it continues to support valid offline completions after receiving its first phone configuration. There is no separate Watch extension target. Do not create a second App Store Connect app record for the companion. Create the phone product using platform **iOS**, primary language **English (U.S.)**, bundle ID `com.joshrwolf.mossling` and SKU `mossling-ios`. The account holder registered the name **Mosslinger**, App Store Connect app ID **6814046299**, with the existing bundle ID and SKU. Xcode's onboarding can create this app record if it does not already exist.
 
 After the first Cloud setup in Xcode, manage workflows and builds in App Store Connect. Grant Apple's GitHub app access only to this repository. Keep the included Cloud plan and manual starts while validating the first delivery.
 

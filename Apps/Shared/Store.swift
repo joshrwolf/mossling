@@ -146,8 +146,9 @@ final class MosslingStore {
         guard commit({ $0.configuration = next }) else { return false }
         synchronize(includeInventory: false)
         #if os(iOS)
-        // Saving settings succeeds independently; a scheduling failure stays visible with retry on reopen.
-        _ = await reconcileNotifications()
+        // The durable save is complete. A slow system notification service must not
+        // hold the editor open; scheduling errors remain visible and retry on reopen.
+        _ = enqueueNotificationReconciliation()
         #endif
         return true
     }
@@ -229,10 +230,10 @@ final class MosslingStore {
         celebrationID += 1
         synchronize(includeInventory: false)
         #if os(iOS)
-        _ = await notificationOperation { [notifications] in
+        _ = enqueueNotificationOperation { [notifications] in
             notifications.markCompleted(opportunityID: session.opportunity.id)
         }
-        _ = await reconcileNotifications()
+        _ = enqueueNotificationReconciliation()
         #endif
         return true
     }
@@ -278,7 +279,7 @@ final class MosslingStore {
             guard commit({ try DocumentSync.mergeBackup(backup, into: &$0) }) else { return false }
             synchronize(includeInventory: true)
             #if os(iOS)
-            _ = await reconcileNotifications()
+            _ = enqueueNotificationReconciliation()
             #endif
             status = "Backup merged. Your current schedule and activities are unchanged."
             return true
@@ -356,6 +357,12 @@ final class MosslingStore {
 
     #if os(iOS)
     private func notificationOperation(_ operation: @escaping @MainActor () async throws -> Void) async -> Bool {
+        await enqueueNotificationOperation(operation).value
+    }
+
+    // Enqueue synchronously so post-commit work retains ordering without delaying
+    // durable success. The store retains the tail; each task retains its predecessor.
+    private func enqueueNotificationOperation(_ operation: @escaping @MainActor () async throws -> Void) -> Task<Bool, Never> {
         let previous = notificationTask
         let task = Task { @MainActor [weak self] in
             _ = await previous?.value
@@ -363,11 +370,17 @@ final class MosslingStore {
             catch { self?.error = "Reminder update failed. Reopen the app to retry. \(error.localizedDescription)"; return false }
         }
         notificationTask = task
-        return await task.value
+        return task
     }
 
     private func reconcileNotifications() async -> Bool {
-        await notificationOperation { [weak self, notifications] in
+        await enqueueNotificationReconciliation().value
+    }
+
+    private func enqueueNotificationReconciliation() -> Task<Bool, Never> {
+        // Existing coverage describes the old configuration until this job succeeds.
+        notificationCoverageEnd = nil
+        return enqueueNotificationOperation { [weak self, notifications] in
             guard let self else { return }
             // Permission is opt-in. Passive reconciliation must not interrupt onboarding.
             self.notificationCoverageEnd = nil

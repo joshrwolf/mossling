@@ -1,5 +1,11 @@
 # Validation report — 19 September 2026
 
+## Xcode 27 migration
+
+The current configuration targets Xcode 27.0 on GitHub’s dedicated `xcode-27` image and Xcode Cloud. Native validation for that toolchain is tracked by the migration PR; the Xcode 26.2 evidence below remains historical and is not proof of a 27.0 pass. The gate still requires project drift checks, Cloud adapters, all seven UI flows, both simulator schemes and an unsigned phone/Watch Release archive.
+
+The first Xcode 27 run, [35485349209](https://github.com/joshrwolf/mossling/actions/runs/35485349209), passed canonical generation/drift, Cloud preparation and 66 domain tests, but failed two UI flows. XCTest timed out on the first cold app launch. The activity recording showed a successfully persisted snack behind an editor stuck on “Saving…”: durable save completion incorrectly awaited system notification reconciliation. The follow-up separates durable success from serialized reminder work, explicitly boots the disposable simulator before XCTest, and adds an editor-dismissal assertion. All seven flows and the remaining native/archive gates must pass on the corrected source before acceptance.
+
 ## Executed checks
 
 | Check | Result | Evidence / limits |

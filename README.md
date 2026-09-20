@@ -18,7 +18,7 @@ There is no account, backend, analytics SDK, in-app payment, HealthKit requireme
 
 ## Open on a Mac
 
-Install Xcode **26.2**, its iOS/watchOS simulator runtimes, and [mise](https://mise.jdx.dev/getting-started.html). The apps support iOS 18+ and watchOS 11+.
+Install Xcode **27.0**, its iOS/watchOS simulator runtimes, and [mise](https://mise.jdx.dev/getting-started.html). The apps support iOS 18+ and watchOS 11+.
 
 ```sh
 mise trust

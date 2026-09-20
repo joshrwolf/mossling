@@ -11,8 +11,8 @@ run = "tuist generate --no-open"
 description = "Compile the iPhone and Watch simulator applications"
 depends = ["generate"]
 run = [
-  "xcodebuild -project Mossling.xcodeproj -scheme Mossling -configuration Debug -destination 'generic/platform=iOS Simulator' -derivedDataPath .build-artifacts/DerivedData CODE_SIGNING_ALLOWED=NO build",
-  "xcodebuild -project Mossling.xcodeproj -scheme MosslingWatch -configuration Debug -destination 'generic/platform=watchOS Simulator' -derivedDataPath .build-artifacts/WatchDerivedData CODE_SIGNING_ALLOWED=NO build",
+  "xcodebuild -project Mossling.xcodeproj -scheme Mossling -configuration Debug -destination 'generic/platform=iOS Simulator' -derivedDataPath .build-artifacts/SimulatorDerivedData CODE_SIGNING_ALLOWED=NO -showBuildTimingSummary build",
+  "xcodebuild -project Mossling.xcodeproj -scheme MosslingWatch -configuration Debug -destination 'generic/platform=watchOS Simulator' -derivedDataPath .build-artifacts/SimulatorDerivedData CODE_SIGNING_ALLOWED=NO -showBuildTimingSummary build",
 ]
 
 [tasks."test:core"]
@@ -20,6 +20,8 @@ description = "Run the portable Swift domain tests (Linux or macOS)"
 run = "swift test --package-path Packages/MosslingCore --parallel"
 
 [tasks."test:ui"]
+# Both tasks share Xcode's build database; serialize when selected together.
+wait_for = ["build"]
 description = "Exercise real iPhone forms in a disposable simulator and save screenshots"
 depends = ["generate"]
 run = "swift Tools/RunUITests.swift"
@@ -28,7 +30,7 @@ run = "swift Tools/RunUITests.swift"
 description = "Build an unsigned Release archive and validate the phone/Watch bundle contract"
 depends = ["generate"]
 run = [
-  "xcodebuild -project Mossling.xcodeproj -scheme Mossling -configuration Release -destination 'generic/platform=iOS' -archivePath .build-artifacts/Mossling.xcarchive -derivedDataPath .build-artifacts/ReleaseDerivedData CODE_SIGNING_ALLOWED=NO archive",
+  "xcodebuild -project Mossling.xcodeproj -scheme Mossling -configuration Release -destination 'generic/platform=iOS' -archivePath .build-artifacts/Mossling.xcarchive -derivedDataPath .build-artifacts/ReleaseDerivedData CODE_SIGNING_ALLOWED=NO -showBuildTimingSummary archive",
   "swift Tools/CheckArchive.swift .build-artifacts/Mossling.xcarchive",
 ]
 

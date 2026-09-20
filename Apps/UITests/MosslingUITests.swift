@@ -39,6 +39,8 @@ final class MosslingUITests: XCTestCase {
         instructions.tap()
         instructions.typeText("Move gently to a favorite song.")
         app.buttons["saveActivity"].tap()
+        XCTAssertTrue(app.buttons["saveActivity"].waitForNonExistence(timeout: 10),
+                      "A durable save must dismiss the editor without waiting for reminder delivery")
 
         let original = app.buttons["Edit Kitchen wiggle, 2 min"]
         reveal(original, in: app)
@@ -55,6 +57,8 @@ final class MosslingUITests: XCTestCase {
         app.buttons["30 sec"].tap()
         capture("Editing a custom snack", app: app)
         app.buttons["saveActivity"].tap()
+        XCTAssertTrue(app.buttons["saveActivity"].waitForNonExistence(timeout: 10),
+                      "A durable save must dismiss the editor without waiting for reminder delivery")
         let edited = app.buttons["Edit Kitchen wiggle, 30 sec"]
         reveal(edited, in: app)
         XCTAssertTrue(edited.waitForExistence(timeout: 5))
