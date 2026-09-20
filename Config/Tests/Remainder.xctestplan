@@ -19,7 +19,6 @@
         "name": "MosslingUITests"
       },
       "skippedTests": [
-        "MosslingUITests/testCreatedAndEditedSnackPersistsAcrossRelaunch()",
         "MosslingUITests/testEarnedAffinityChoicePersistsAndCanBeChanged()"
       ]
     }

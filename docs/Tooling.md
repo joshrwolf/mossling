@@ -17,7 +17,7 @@ Tuist is the project source of truth. Apple requires a continuously present proj
 
 This deliberately replaces the earlier ignored-project policy. Apple's project-discovery requirement is more restrictive than a generic CI runner. Keeping a generated snapshot does not create a second manually maintained project definition.
 
-Optional `Local.xcconfig` and generated `Cloud.xcconfig` are ignored and deliberately excluded from Tuist's additional-file list so they cannot change the project graph. The base configuration includes Local then Cloud; Cloud's team/build values win. Tuist defines concrete bundle identifiers and the marketing version, but does not define the build number or team at a higher settings precedence.
+Optional `Local.xcconfig` and generated `Cloud.xcconfig` are ignored and deliberately excluded from Tuist's additional-file list so they cannot change the project graph. The base configuration includes Local then Cloud; Cloud's build number wins; its native action selects the signing team. Tuist defines concrete bundle identifiers and the marketing version, but does not define the build number or team at a higher settings precedence.
 
 GitHub uses the dedicated `xcode-27` hosted image and its `/Applications/Xcode_27.0.app` alias. The image is currently marked preview by GitHub; CI must validate the actual installed toolchain. Xcode Cloud selects explicit 27.0. The iOS 18 and watchOS 11 deployment targets remain unchanged. Linux continues testing the portable package with Swift 6.2 to preserve its minimum compiler baseline.
 
@@ -44,7 +44,9 @@ For hardware signing, copy `Config/Local.xcconfig.example` to `Config/Local.xcco
 
 The two executable shell files under `ci_scripts` are Apple's required entry points. Each delegates immediately to `Tools/XcodeCloud.swift`; they contain no build or signing implementation.
 
-Post-clone validates Apple's product/team/build variables, writes the ignored Cloud settings, verifies the pinned mise binary checksum, installs locked Tuist, runs domain tests and checks the generated snapshot. Xcode Cloud then performs native Test/Archive actions itself. It does not invoke the local simulator runner or nest another `xcodebuild` pipeline.
+Post-clone validates Apple's product/build variables, writes only the build number to the ignored Cloud settings, verifies the pinned mise binary checksum, installs locked Tuist, runs domain tests and checks the generated snapshot. Xcode Cloud then performs native Test/Archive actions itself. It does not invoke the local simulator runner or nest another `xcodebuild` pipeline.
+
+The adapter does not interpret `CI_TEAM_ID` as a signing-team identifier or write it to an xcconfig. Cloud owns automatic signing through its native action; local device signing continues to use `Config/Local.xcconfig`.
 
 Post-xcodebuild preserves a failed native action's exit status. For a successful archive it calls the same `CheckArchive.swift` used locally, additionally requiring the exact Cloud bundle identifier, build number and marketing version. Other successful actions do nothing. Build numbering belongs to Xcode Cloud; no repository commits or timestamp incrementer are involved.
 
@@ -72,11 +74,11 @@ GitHub verifies every PR and main commit. Xcode Cloud owns Apple-hosted signing 
 | --- | --- |
 | Domain (Linux) | Portable domain tests and tooling contracts |
 | Apple builds/archive | Real Cloud preparation adapter, Apple Foundation domain tests, both generic simulator schemes, Release archive and detached archive adapter, generated-project drift |
-| iPhone UI / Focused | Two longer persistence/affinity flows on its own standard VM |
+| iPhone UI / Focused | The longest affinity flow on its own standard VM |
 | iPhone UI / Remainder | Every other UI test on a separate standard VM |
 | Verify all required checks | Fail if any required job or UI partition failed, was cancelled, or was skipped |
 
-`Config/Tests/*.xctestplan` owns test selection, coverage and serial target execution. Focused selects the two long flows; Remainder skips exactly those, so new tests automatically join Remainder. Tooling checks protect the complementary selection. Each native result must report exactly the selected test count, all passed, with no skipped or expected-failure results; empty or incomplete runs fail the gate. Each VM runs one simulator; this avoids the resource contention observed with two simulator workers on one 7 GB host. Both partitions remain mandatory, with no retries or quarantined tests.
+`Config/Tests/*.xctestplan` owns test selection, coverage and serial target execution. Focused selects the longest affinity flow; Remainder skips exactly that test, so new tests automatically join Remainder. Tooling checks protect the complementary selection. Each native result must report exactly the selected test count, all passed, with no skipped or expected-failure results; empty or incomplete runs fail the gate. Each VM runs one simulator; this avoids the resource contention observed with two simulator workers on one 7 GB host. Both partitions remain mandatory, with no retries or quarantined tests.
 
 Each UI job generates once and builds its own products before booting. Compilation is short relative to real UI automation, so no cross-machine product relocation or custom shard scheduler is needed. The simulator helper is compiled before boot and reused for preparation, test execution and cleanup. Its fresh-device ownership checks also protect local developer simulators and isolate notification permission state. Replacing it with Tuist's existing-device selection would lose that isolation.
 

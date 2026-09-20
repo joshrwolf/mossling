@@ -3,7 +3,7 @@ import Foundation
 func runCloudHookTests() throws {
         let product = Product(bundleIdentifier: "com.joshrwolf.mossling", marketingVersion: "0.1.0")
         let valid = ["CI": "TRUE", "CI_BUNDLE_ID": product.bundleIdentifier,
-            "CI_TEAM_ID": "ABCDE12345", "CI_BUILD_NUMBER": "42"]
+            "CI_BUILD_NUMBER": "42"]
         var checked = 0
         func expectFailure(_ name: String, _ operation: () throws -> Void) throws {
             do { try operation() } catch { checked += 1; return }
@@ -49,12 +49,20 @@ func runCloudHookTests() throws {
         }
         let config = try identity(valid, product: product).configuration
         try requireCloud(config.contains("CURRENT_PROJECT_VERSION = 42\n"), "Valid build must reach configuration")
+        // Signing belongs to Cloud's native action. Metadata must never become xcconfig code.
+        try requireCloud(!config.contains("DEVELOPMENT_TEAM"), "Adapter must not override Cloud's signing team")
+        for teamMetadata in ["", "ABCDE12345", "00000000-0000-4000-8000-000000000001",
+                             "ABCDE12345\nCODE_SIGNING_ALLOWED = NO", "$(TEAM)"] {
+            var env = valid
+            env["CI_TEAM_ID"] = teamMetadata
+            try requireCloud(try identity(env, product: product).configuration == config,
+                "Cloud team metadata changed the generated build configuration")
+        }
         for key in valid.keys {
             var env = valid; env.removeValue(forKey: key)
             try expectFailure("missing \(key)") { _ = try identity(env, product: product) }
         }
         for (key, values) in [
-            "CI_TEAM_ID": ["XXXXXXXXXX", "YOURTEAMID", "abcde12345", "ABCDE12345\nCODE_SIGNING_ALLOWED = NO", "$(TEAM)", "ABCDE12345\n"],
             "CI_BUILD_NUMBER": ["0", "-1", "1.2", "42\n#include \"evil\"", "$(BUILD)", "42\n"],
             "CI_BUNDLE_ID": ["com.example.mossling", "com.joshrwolf.other", "com.joshrwolf.mossling\n"],
         ] {

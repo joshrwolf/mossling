@@ -47,7 +47,7 @@ jobs:
           CI: "TRUE"
           CI_XCODE_CLOUD: "TRUE"
           CI_BUNDLE_ID: com.joshrwolf.mossling
-          CI_TEAM_ID: ABCDE12345
+          CI_TEAM_ID: 00000000-0000-4000-8000-000000000001
           CI_BUILD_NUMBER: "42"
         run: CI_PRIMARY_REPOSITORY_PATH="$GITHUB_WORKSPACE" ./ci_scripts/ci_post_clone.sh
       - name: Preserve the generated snapshot for review and bootstrap
@@ -80,7 +80,7 @@ jobs:
           CI: "TRUE"
           CI_XCODE_CLOUD: "TRUE"
           CI_BUNDLE_ID: com.joshrwolf.mossling
-          CI_TEAM_ID: ABCDE12345
+          CI_TEAM_ID: 00000000-0000-4000-8000-000000000001
           CI_BUILD_NUMBER: "42"
           CI_XCODEBUILD_ACTION: archive
           CI_XCODEBUILD_EXIT_CODE: "0"
@@ -117,7 +117,7 @@ jobs:
         timeout-minutes: 6
         run: mise run test:ui:prepare
       - name: Run the selected native test plan without rebuilding
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: mise run test:ui:run
       - name: Record host resources on failure
         if: failure() && steps.ui_prepare.outcome != 'skipped'
