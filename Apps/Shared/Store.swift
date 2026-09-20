@@ -17,6 +17,7 @@ final class MosslingStore {
     var error: String?
     private(set) var notificationStatus = "Checking…"
     private(set) var celebrationID = 0
+    private(set) var celebrationMilestones: [ProgressionMilestone] = []
     private(set) var navigationRequest = 0
     let role: DeviceRole
     @ObservationIgnored private var controller: DocumentController?
@@ -207,6 +208,13 @@ final class MosslingStore {
         _ = await saveConfig(next)
     }
 
+    func saveAffinity(_ affinity: CompanionAffinity) async {
+        guard role == .phone, progress.canChooseAffinity else { return }
+        var next = configuration
+        next.companionAffinity = affinity
+        _ = await saveConfig(next)
+    }
+
     func pause() { let date = clock(); _ = commit { $0.session?.pause(at: date) } }
     func resume() { let date = clock(); _ = commit { $0.session?.resume(at: date) } }
     func cancelSession() { _ = commit { $0.session = nil } }
@@ -215,7 +223,9 @@ final class MosslingStore {
     func complete() async -> Bool {
         guard let session else { return false }
         let date = clock()
+        let alreadyUnlocked = Set(progress.unlockedMilestones.map(\.id))
         guard commit({ try DocumentSync.complete(session, at: date, in: &$0) }) else { return false }
+        celebrationMilestones = progress.unlockedMilestones.filter { !alreadyUnlocked.contains($0.id) }
         celebrationID += 1
         synchronize(includeInventory: false)
         #if os(iOS)

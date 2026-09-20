@@ -17,6 +17,7 @@ struct MosslingCharacter: View {
     enum Mood: String, CaseIterable { case cozy, curious, celebrating, sleeping }
     var mood: Mood = .cozy
     var stage: Int = 0
+    var affinity: CompanionAffinity? = nil
     var animate = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -50,10 +51,16 @@ struct MosslingCharacter: View {
                     Image("MossBody")
                         .resizable().scaledToFit()
                         .frame(width: width, height: width)
-                    FernCrest(stage: stage)
+                    FernCrest(stage: stage, affinity: affinity)
                         .frame(width: width * 0.32, height: width * 0.37)
                         .rotationEffect(.degrees(breathing ? 4 : -3), anchor: .bottom)
                         .offset(x: width * 0.035, y: -width * 0.35)
+                    if let affinity {
+                        Image(systemName: affinity == .sunlit ? "sun.max.fill" : "moon.fill")
+                            .font(.system(size: width * 0.075))
+                            .foregroundStyle(affinity == .sunlit ? MossPalette.gold : Color(red: 0.52, green: 0.57, blue: 0.77))
+                            .offset(y: -width * 0.075)
+                    }
                     HStack(spacing: width * 0.19) {
                         eye(width: width)
                         eye(width: width)
@@ -142,6 +149,7 @@ private struct SmileShape: Shape {
 
 private struct FernCrest: View {
     var stage: Int
+    var affinity: CompanionAffinity? = nil
     var body: some View {
         GeometryReader { proxy in
             let w = proxy.size.width
@@ -186,7 +194,32 @@ private struct FernCrest: View {
                     Circle().fill(MossPalette.gold).frame(width: w * 0.12)
                         .offset(x: w * 0.56, y: -h * 0.07)
                 }
+                if stage > 2 {
+                    WoodlandBlossom(color: affinity == .moonlit ? Color(red: 0.76, green: 0.77, blue: 0.94) : MossPalette.cream)
+                        .frame(width: w * 0.46, height: w * 0.46)
+                        .offset(x: -w * 0.40, y: -h * 0.18)
+                    WoodlandBlossom(color: affinity == .moonlit ? Color(red: 0.76, green: 0.77, blue: 0.94) : MossPalette.cream)
+                        .frame(width: w * 0.30, height: w * 0.30)
+                        .offset(x: w * 0.47, y: -h * 0.03)
+                }
             }.frame(width: w, height: h)
+        }
+    }
+}
+
+private struct WoodlandBlossom: View {
+    var color: Color
+    var body: some View {
+        GeometryReader { proxy in
+            let size = min(proxy.size.width, proxy.size.height)
+            ZStack {
+                ForEach(0..<5) { petal in
+                    Ellipse().fill(color).frame(width: size * 0.36, height: size * 0.55)
+                        .offset(y: -size * 0.22)
+                        .rotationEffect(.degrees(Double(petal) * 72))
+                }
+                Circle().fill(MossPalette.gold).frame(width: size * 0.27, height: size * 0.27)
+            }.frame(width: proxy.size.width, height: proxy.size.height)
         }
     }
 }
@@ -195,13 +228,14 @@ struct ForestHabitat: View {
     var mood: MosslingCharacter.Mood = .cozy
     var stage: Int = 0
     var unlocks: [ForestUnlock] = []
+    var affinity: CompanionAffinity? = nil
     var animate = true
 
     var body: some View {
         GeometryReader { proxy in
             let w = proxy.size.width
             ZStack {
-                Circle().fill(MossPalette.mint.opacity(0.16)).frame(width: w * 0.85)
+                Circle().fill((affinity == .moonlit ? Color(red: 0.64, green: 0.68, blue: 0.86) : MossPalette.mint).opacity(0.22)).frame(width: w * 0.85)
                 Circle().fill(Color.white.opacity(0.40)).frame(width: w * 0.60).offset(x: w * 0.17, y: -35)
                 Ellipse().fill(MossPalette.stone).frame(width: w * 0.88, height: 75).offset(y: 87)
                 Ellipse().fill(MossPalette.mint.opacity(0.75)).frame(width: w * 0.74, height: 51).offset(y: 80)
@@ -227,16 +261,43 @@ struct ForestHabitat: View {
                         Circle().fill(MossPalette.cream).frame(width: 3).offset(x: 5, y: -3)
                     }.offset(x: w * 0.35, y: 62)
                 }
+                if unlocks.contains(.wildflowers) {
+                    ForEach(0..<3) { index in
+                        WoodlandBlossom(color: index.isMultiple(of: 2) ? MossPalette.cream : Color(red: 0.88, green: 0.70, blue: 0.71))
+                            .frame(width: 18, height: 18)
+                            .offset(x: w * (0.18 + Double(index) * 0.065), y: 101 - Double(index % 2) * 7)
+                    }
+                }
+                if unlocks.contains(.steppingStones) {
+                    ForEach(0..<3) { index in
+                        Ellipse().fill(MossPalette.ink.opacity(0.20))
+                            .frame(width: 19 + Double(index) * 3, height: 8)
+                            .rotationEffect(.degrees(Double(index) * 12 - 10))
+                            .offset(x: w * (-0.04 + Double(index) * 0.06), y: 103 + Double(index) * 8)
+                    }
+                }
+                if unlocks.contains(.lanterns) {
+                    ForEach(0..<2) { index in
+                        ZStack {
+                            Circle().fill(MossPalette.gold.opacity(0.14)).frame(width: 54, height: 54)
+                            Capsule().fill(MossPalette.moss).frame(width: 3, height: 44).offset(y: 7)
+                            RoundedRectangle(cornerRadius: 5).fill(MossPalette.gold).frame(width: 18, height: 22)
+                            RoundedRectangle(cornerRadius: 3).fill(MossPalette.cream.opacity(0.75)).frame(width: 10, height: 14)
+                            Capsule().fill(MossPalette.moss).frame(width: 20, height: 4).offset(y: -12)
+                        }.offset(x: w * (index == 0 ? -0.37 : 0.38), y: 26)
+                    }
+                }
                 if stage > 0 {
                     Image(systemName: "sparkle").font(.system(size: 18)).foregroundStyle(MossPalette.gold)
                         .offset(x: w * 0.31, y: -55)
                 }
-                MosslingCharacter(mood: mood, stage: stage, animate: animate)
+                MosslingCharacter(mood: mood, stage: stage, affinity: affinity, animate: animate)
                     .frame(width: min(w * 0.70, 245), height: 230)
                     .offset(y: -4)
             }.frame(width: proxy.size.width, height: proxy.size.height)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Your Mossling in a peaceful forest clearing")
+        .accessibilityLabel("Your Mossling in a peaceful " + (affinity?.title.lowercased() ?? "woodland") + " clearing")
+        .accessibilityValue(unlocks.map(\.title).joined(separator: ", "))
     }
 }

@@ -118,15 +118,73 @@ public struct CompletionEvent: Codable, Equatable, Sendable, Identifiable {
 }
 
 public enum CompanionStage: String, Codable, CaseIterable, Sendable {
-    case seedling, sprout, guardian
+    case seedling, sprout, guardian, groveKeeper
     public var title: String {
-        switch self { case .seedling: "Seedling"; case .sprout: "Sprout"; case .guardian: "Forest guardian" }
+        switch self { case .seedling: "Seedling"; case .sprout: "Sprout"; case .guardian: "Forest guardian"; case .groveKeeper: "Grove keeper" }
+    }
+    public var minimumGrowth: Int {
+        switch self { case .seedling: 0; case .sprout: 30; case .guardian: 150; case .groveKeeper: 1_200 }
+    }
+    public var visualLevel: Int {
+        switch self { case .seedling: 0; case .sprout: 1; case .guardian: 2; case .groveKeeper: 3 }
     }
 }
 public enum ForestUnlock: String, Codable, CaseIterable, Sendable {
-    case fern, mushrooms, pond
+    case fern, mushrooms, pond, wildflowers, steppingStones, lanterns
     public var title: String {
-        switch self { case .fern: "Little fern"; case .mushrooms: "Mushroom friends"; case .pond: "Quiet pond" }
+        switch self {
+        case .fern: "Little fern"; case .mushrooms: "Mushroom friends"; case .pond: "Quiet pond"
+        case .wildflowers: "Wildflower meadow"; case .steppingStones: "Woodland stepping stones"; case .lanterns: "Welcoming lanterns"
+        }
+    }
+    public var requiredGrowth: Int {
+        switch self {
+        case .fern: 10; case .mushrooms: 50; case .pond: 100
+        case .wildflowers: 300; case .steppingStones: 600; case .lanterns: 900
+        }
+    }
+    public var symbolName: String {
+        switch self {
+        case .fern: "leaf"; case .mushrooms: "sparkles"; case .pond: "water.waves"
+        case .wildflowers: "camera.macro"; case .steppingStones: "circle.grid.2x2"; case .lanterns: "lamp.desk"
+        }
+    }
+}
+
+/// A reversible cosmetic preference, synchronized by the phone with other settings.
+public enum CompanionAffinity: String, Codable, CaseIterable, Sendable {
+    case sunlit, moonlit
+    public var title: String { self == .sunlit ? "Sunlit" : "Moonlit" }
+    public var detail: String {
+        self == .sunlit ? "Golden light, warm blossoms, and a sunny clearing." : "Soft moonlight, cool blossoms, and a peaceful clearing."
+    }
+}
+
+public struct ProgressionMilestone: Equatable, Sendable, Identifiable {
+    public let id: String
+    public let title: String
+    public let requiredGrowth: Int
+    public let symbolName: String
+    public var requiredSnackCount: Int { requiredGrowth / ProgressionCatalog.growthPerSnack }
+}
+
+/// Content revisions are independent of the permanent reward economy. Append milestones;
+/// never move an existing threshold upward or reinterpret previously earned reward keys.
+public enum ProgressionCatalog {
+    public static let version = 2
+    public static let rewardRuleVersion = 1
+    public static let growthPerSnack = 10
+    public static let affinityGrowth = CompanionStage.sprout.minimumGrowth
+    public static let milestones: [ProgressionMilestone] = (
+        CompanionStage.allCases.filter { $0 != .seedling }.map {
+            ProgressionMilestone(id: "stage.\($0.rawValue)", title: $0.title,
+                requiredGrowth: $0.minimumGrowth, symbolName: "sparkles")
+        } + ForestUnlock.allCases.map {
+            ProgressionMilestone(id: "forest.\($0.rawValue)", title: $0.title,
+                requiredGrowth: $0.requiredGrowth, symbolName: $0.symbolName)
+        }
+    ).sorted {
+        $0.requiredGrowth == $1.requiredGrowth ? $0.id < $1.id : $0.requiredGrowth < $1.requiredGrowth
     }
 }
 
@@ -136,23 +194,31 @@ public struct CompanionProgress: Codable, Equatable, Sendable {
     public let stage: CompanionStage
     public let forestUnlocks: [ForestUnlock]
     public let rewardRuleVersion: Int
+    public var catalogVersion: Int { ProgressionCatalog.version }
+    public var canChooseAffinity: Bool { growth >= ProgressionCatalog.affinityGrowth }
+    public var unlockedMilestones: [ProgressionMilestone] {
+        ProgressionCatalog.milestones.filter { $0.requiredGrowth <= growth }
+    }
+    public var nextMilestone: ProgressionMilestone? {
+        ProgressionCatalog.milestones.first { $0.requiredGrowth > growth }
+    }
+    public func milestones(since previous: CompanionProgress) -> [ProgressionMilestone] {
+        unlockedMilestones.filter { $0.requiredGrowth > previous.growth }
+    }
     public var nextStageGrowth: Int? {
-        switch stage { case .seedling: 30; case .sprout: 150; case .guardian: nil }
+        CompanionStage.allCases.map(\.minimumGrowth).filter { $0 > growth }.min()
     }
     public var stageProgress: Double {
-        switch stage {
-        case .seedling: min(1, Double(growth) / 30)
-        case .sprout: min(1, Double(growth - 30) / 120)
-        case .guardian: 1
-        }
+        guard let target = nextStageGrowth else { return 1 }
+        return min(1, max(0, Double(growth - stage.minimumGrowth) / Double(target - stage.minimumGrowth)))
     }
     fileprivate init(uniqueRewards: Int) {
         completedSnackCount = uniqueRewards
-        let earnedGrowth = uniqueRewards * 10
+        let earnedGrowth = uniqueRewards * ProgressionCatalog.growthPerSnack
         growth = earnedGrowth
-        stage = earnedGrowth >= 150 ? .guardian : (earnedGrowth >= 30 ? .sprout : .seedling)
-        forestUnlocks = [(10, ForestUnlock.fern), (50, .mushrooms), (100, .pond)].compactMap { earnedGrowth >= $0.0 ? $0.1 : nil }
-        rewardRuleVersion = 1
+        stage = CompanionStage.allCases.filter { $0.minimumGrowth <= earnedGrowth }.max { $0.minimumGrowth < $1.minimumGrowth } ?? .seedling
+        forestUnlocks = ForestUnlock.allCases.filter { $0.requiredGrowth <= earnedGrowth }
+        rewardRuleVersion = ProgressionCatalog.rewardRuleVersion
     }
 }
 

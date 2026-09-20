@@ -130,10 +130,12 @@ public struct AppConfiguration: Codable, Equatable, Sendable {
     public var schedule: ScheduleConfiguration
     public var activities: [ActivityDefinition]
     public var dailyOverride: DailyRoutineOverride?
+    public var companionAffinity: CompanionAffinity?
     public static let standard = Self()
 
-    public init(revision: Int = 0, companionName: String = "Moss", schedule: ScheduleConfiguration = .standard, activities: [ActivityDefinition] = ActivityDefinition.starters, dailyOverride: DailyRoutineOverride? = nil) {
+    public init(revision: Int = 0, companionName: String = "Moss", schedule: ScheduleConfiguration = .standard, activities: [ActivityDefinition] = ActivityDefinition.starters, dailyOverride: DailyRoutineOverride? = nil, companionAffinity: CompanionAffinity? = nil) {
         self.revision = revision; self.companionName = companionName; self.schedule = schedule; self.activities = activities; self.dailyOverride = dailyOverride
+        self.companionAffinity = companionAffinity
     }
 
     public func isPaused(at date: Date) -> Bool {

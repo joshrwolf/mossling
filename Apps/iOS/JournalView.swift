@@ -41,6 +41,20 @@ struct JournalView: View {
                                     .font(.subheadline).foregroundStyle(MossPalette.moss)
                             }.padding(.vertical, 10).listRowBackground(Color.clear)
                         }
+                        if !store.progress.unlockedMilestones.isEmpty {
+                            Section("Forest milestones") {
+                                ForEach(store.progress.unlockedMilestones) { milestone in
+                                    HStack(alignment: .top, spacing: 14) {
+                                        Image(systemName: milestone.symbolName).foregroundStyle(MossPalette.fern)
+                                        VStack(alignment: .leading, spacing: 5) {
+                                            Text(milestone.title).font(.headline)
+                                            Text("At \(milestone.requiredSnackCount) breaks")
+                                                .font(.subheadline).foregroundStyle(MossPalette.moss)
+                                        }
+                                    }.padding(.vertical, 5)
+                                }
+                            }.accessibilityIdentifier("journalMilestones")
+                        }
                         ForEach(days, id: \.self) { day in
                             Section(day.formatted(date: .abbreviated, time: .omitted)) {
                                 ForEach(moments.filter { Calendar.current.isDate($0.completedAt, inSameDayAs: day) }.sorted { $0.completedAt > $1.completedAt }) { event in

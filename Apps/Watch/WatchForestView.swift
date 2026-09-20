@@ -10,9 +10,7 @@ struct WatchForestView: View {
     @State private var showingActivities = false
     @State private var celebrating = false
 
-    private var stageNumber: Int {
-        switch store.progress.stage { case .seedling: 0; case .sprout: 1; case .guardian: 2 }
-    }
+    private var stageNumber: Int { store.progress.stage.visualLevel }
 
     var body: some View {
         NavigationStack {
@@ -27,13 +25,17 @@ struct WatchForestView: View {
                     }.multilineTextAlignment(.center)
                 } else {
                 VStack(spacing: 12) {
-                    MosslingCharacter(mood: celebrating ? .celebrating : .cozy, stage: stageNumber, animate: scenePhase == .active && !isLuminanceReduced)
+                    MosslingCharacter(mood: celebrating ? .celebrating : .cozy, stage: stageNumber, affinity: store.configuration.companionAffinity, animate: scenePhase == .active && !isLuminanceReduced)
                         .frame(height: 116)
                     Text(store.configuration.companionName)
                         .font(.system(.title3, design: .rounded, weight: .semibold))
                     if celebrating {
-                        Text("A little more magic.\n+10 growth")
+                        Text("A little more magic.\n+\(ProgressionCatalog.growthPerSnack) growth")
                             .font(.headline).multilineTextAlignment(.center).foregroundStyle(MossPalette.mint)
+                        ForEach(store.celebrationMilestones) { milestone in
+                            Label(milestone.title, systemImage: milestone.symbolName)
+                                .font(.caption).multilineTextAlignment(.center)
+                        }
                         Button("Lovely") { celebrating = false }
                     } else if let session = store.session {
                         Text(session.activity.title).font(.headline).multilineTextAlignment(.center)
@@ -61,6 +63,10 @@ struct WatchForestView: View {
                     Text("\(store.progress.completedSnackCount) breaks · \(store.progress.growth) growth")
                         .font(.caption2).foregroundStyle(MossPalette.mint)
                         .multilineTextAlignment(.center)
+                    if let milestone = store.progress.nextMilestone {
+                        Text("Next: " + milestone.title).font(.caption2)
+                            .foregroundStyle(MossPalette.mint).multilineTextAlignment(.center)
+                    }
                     if let status = store.status {
                         Text(status).font(.caption2).foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)

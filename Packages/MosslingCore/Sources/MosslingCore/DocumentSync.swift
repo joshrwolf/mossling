@@ -62,7 +62,11 @@ public enum DocumentSync {
         _ = try snapshot.encoded()
         guard !document.retiredConfigurationAuthorities.contains(snapshot.authorityID) else { return }
         if document.configurationAuthorityID == snapshot.authorityID && document.hasReceivedPhoneConfiguration {
-            guard snapshot.configuration.revision > document.configuration.revision else { return }
+            // The phone is the sole configuration writer and increments revision for
+            // every content change, including content-changing migrations. Replaying
+            // its equal-revision full snapshot repairs fields an older Watch decoder
+            // discarded from its cache without accepting an older configuration.
+            guard snapshot.configuration.revision >= document.configuration.revision else { return }
         } else if let previous = document.configurationAuthorityID, previous != snapshot.authorityID {
             document.retiredConfigurationAuthorities.append(previous)
         }

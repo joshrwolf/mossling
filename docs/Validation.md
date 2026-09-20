@@ -70,3 +70,9 @@ No overnight schedule, sub-hour cadence, arbitrary explicit-time list, automatic
 Local adversarial tests cover 27 rejected/failing Cloud cases and seven archive contract cases. Two independent reviews found loss of drift enforcement after the CI handoff and optional signing files contaminating the generated graph. Both were corrected; see [Cloud review](reviews/tooling-review.md#xcode-cloud-adversarial-review).
 
 Repository integration and hosted macOS simulation do not establish actual Xcode Cloud activation. The account connection, real Apple-hosted workflow, managed signing, distribution and physical-device acceptance remain pending. The initial Cloud workflow explicitly uses Archive preparation None and no distribution post-action.
+
+## Product vertical slices
+
+PR #4 adds daily routine choices, explicit save migration, and real UI completion/skip/pause flows. Local domain validation passed 55 tests in 11 suites. Its hosted first attempt exposed unqualified Store error assignments; the follow-up commit qualifies the properties. Acceptance requires the succeeding hosted result, not the initial failing run.
+
+The next slice extends companion content and tests affinity earned through three actual UI completions and persistence across relaunch. Subsequent activity rotation coverage checks balance, deterministic ordering, disabled/singleton pools, and DST. Current per-PR hosted results remain authoritative for native SDK and UI acceptance.

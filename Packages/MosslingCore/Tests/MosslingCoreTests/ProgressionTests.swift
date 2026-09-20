@@ -98,9 +98,117 @@ struct LedgerTests {
         #expect(guardian.growth == 150)
         #expect(guardian.completedSnackCount == 15)
         #expect(guardian.stage == .guardian)
-        #expect(guardian.nextStageGrowth == nil)
+        #expect(guardian.nextStageGrowth == 1_200)
         #expect(guardian.forestUnlocks == [.fern, .mushrooms, .pond])
         #expect(guardian.rewardRuleVersion == 1)
+    }
+}
+
+@Suite("Permanent companion progression")
+struct CompanionProgressionTests {
+    private func history(_ count: Int) -> [CompletionEvent] {
+        (0..<count).map { sampleEvent(sampleOpportunity(hour: 9 + ($0 % 8), day: 1 + ($0 / 8))) }
+    }
+
+    @Test(arguments: [1, 3, 5, 10, 15, 30, 60, 90, 120])
+    func milestonesUnlockExactlyAtTheirThreshold(_ count: Int) throws {
+        let expectedIDs = [1: "forest.fern", 3: "stage.sprout", 5: "forest.mushrooms",
+            10: "forest.pond", 15: "stage.guardian", 30: "forest.wildflowers",
+            60: "forest.steppingStones", 90: "forest.lanterns", 120: "stage.groveKeeper"]
+        let events = history(count + 1)
+        let before = CompletionLedger(events: Array(events.prefix(count - 1))).progress
+        let at = CompletionLedger(events: Array(events.prefix(count))).progress
+        let after = CompletionLedger(events: events).progress
+        let id = try #require(expectedIDs[count])
+        #expect(!before.unlockedMilestones.contains { $0.id == id })
+        #expect(at.unlockedMilestones.contains { $0.id == id })
+        #expect(after.unlockedMilestones.contains { $0.id == id })
+        #expect(at.milestones(since: before).map(\.id) == [id])
+        #expect(after.milestones(since: at).isEmpty)
+        #expect(at.growth == count * 10)
+        #expect(at.rewardRuleVersion == 1)
+        #expect(at.catalogVersion == 2)
+    }
+
+    @Test func laterGrowthExtendsTheStoryWithoutTakingAwayLegacyStagesOrDecorations() {
+        let events = history(121)
+        let seedling = CompletionLedger().progress
+        #expect(seedling.stage == .seedling)
+        #expect(seedling.stageProgress == 0)
+        #expect(seedling.nextMilestone?.id == "forest.fern")
+        let guardian = CompletionLedger(events: Array(events.prefix(15))).progress
+        #expect(guardian.stage == .guardian)
+        #expect(guardian.forestUnlocks == [.fern, .mushrooms, .pond])
+        #expect(guardian.stageProgress == 0)
+        #expect(guardian.nextMilestone?.requiredSnackCount == 30)
+        let almostKeeper = CompletionLedger(events: Array(events.prefix(119))).progress
+        #expect(almostKeeper.stage == .guardian)
+        #expect(almostKeeper.stageProgress > 0.99)
+        #expect(almostKeeper.nextStageGrowth == 1_200)
+        let keeper = CompletionLedger(events: Array(events.prefix(120))).progress
+        #expect(keeper.stage == .groveKeeper)
+        #expect(keeper.forestUnlocks == [.fern, .mushrooms, .pond, .wildflowers, .steppingStones, .lanterns])
+        #expect(keeper.stageProgress == 1)
+        #expect(keeper.nextStageGrowth == nil)
+        #expect(keeper.nextMilestone == nil)
+        #expect(CompletionLedger(events: events).progress.growth == 1_210)
+        #expect(Set(ProgressionCatalog.milestones.map(\.id)).count == ProgressionCatalog.milestones.count)
+    }
+
+    @Test func offlineDuplicateRewardsAndMergeOrderNeverChangeMilestones() throws {
+        let phoneEvents = history(120)
+        let watchEvents = history(120) // Distinct event IDs for the same scheduled rewards.
+        var phone = CompletionLedger(events: Array(phoneEvents.prefix(70)))
+        phone.merge(watchEvents.reversed())
+        phone.merge(phoneEvents)
+        var watch = CompletionLedger(events: watchEvents)
+        watch.merge(phoneEvents.reversed())
+        watch.merge(watchEvents)
+        #expect(phone == watch)
+        #expect(phone.events.count == 240)
+        #expect(phone.progress.completedSnackCount == 120)
+        #expect(phone.progress.growth == 1_200)
+        #expect(phone.progress.stage == .groveKeeper)
+        let restored = try JSONDecoder().decode(CompletionLedger.self, from: JSONEncoder().encode(phone))
+        #expect(restored.progress == phone.progress)
+        #expect(restored.progress.milestones(since: phone.progress).isEmpty)
+    }
+
+    @Test func oldSavesKeepTheirProgressAndDefaultToNoAffinity() throws {
+        let original = AppDocument(events: history(15))
+        var json = try #require(JSONSerialization.jsonObject(with: original.encoded()) as? [String: Any])
+        var configuration = try #require(json["configuration"] as? [String: Any])
+        configuration.removeValue(forKey: "companionAffinity")
+        configuration.removeValue(forKey: "dailyOverride")
+        json["configuration"] = configuration
+        json["schemaVersion"] = 1
+        let restored = try AppDocument.decode(JSONSerialization.data(withJSONObject: json))
+        #expect(restored.configuration.companionAffinity == nil)
+        #expect(restored.events == original.events)
+        #expect(CompletionLedger(events: restored.events).progress.stage == .guardian)
+        #expect(CompletionLedger(events: restored.events).progress.forestUnlocks == [.fern, .mushrooms, .pond])
+        #expect(CompletionLedger(events: restored.events).progress.canChooseAffinity)
+        #expect(!CompletionLedger(events: history(2)).progress.canChooseAffinity)
+        #expect(CompletionLedger(events: history(3)).progress.canChooseAffinity)
+    }
+
+    @Test func affinityIsReversiblePersistentAndPhoneAuthoritative() throws {
+        var phone = AppConfiguration(companionAffinity: .sunlit)
+        let authorityID = UUID()
+        var watch = AppDocument()
+        let firstSnapshot = ConfigurationSnapshot(configuration: phone, authorityID: authorityID)
+        try DocumentSync.receive(ConfigurationSnapshot.decode(firstSnapshot.encoded()), into: &watch)
+        #expect(watch.configuration.companionAffinity == .sunlit)
+        phone.revision += 1
+        phone.companionAffinity = .moonlit
+        try DocumentSync.receive(ConfigurationSnapshot(configuration: phone, authorityID: authorityID), into: &watch)
+        try DocumentSync.receive(firstSnapshot, into: &watch)
+        #expect(watch.configuration.companionAffinity == .moonlit)
+        #expect(try AppDocument.decode(watch.encoded()).configuration.companionAffinity == .moonlit)
+        let backup = AppDocument(configuration: AppConfiguration(companionAffinity: .sunlit), events: history(3))
+        try DocumentSync.mergeBackup(backup, into: &watch)
+        #expect(watch.configuration.companionAffinity == .moonlit)
+        #expect(CompletionLedger(events: watch.events).progress.growth == 30)
     }
 }
 

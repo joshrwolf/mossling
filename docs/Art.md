@@ -23,3 +23,7 @@ Motion responds to view visibility and scene activity, Reduce Motion, and watch 
 ## Review limits
 
 The assets and source were inspected, and Swift syntax checked. Animation timing, alignment, accessibility layouts and energy behavior must still be viewed in Apple simulators/hardware. Do not treat a concept sheet as a screenshot of the running app. No native screenshots are included because this workspace could not run Apple SDKs.
+
+## Progression catalog 2
+
+One persistent companion now grows through Grove keeper (120 completed breaks). Native wildflowers, stepping stones, and lanterns join the clearing at 30, 60, and 90 breaks. Grove keeper adds a blossom crown. A reversible Sunlit/Moonlit preference changes clearing light and creature accents after Sprout. Static differences remain visible with Reduce Motion and on dim Watch screens; they add no persistent background animation. Catalog metadata drives stage/unlock presentation on both platforms.
