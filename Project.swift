@@ -108,6 +108,6 @@ let project = Project(
             archiveAction: .archiveAction(configuration: .release)
         ),
     ],
-    additionalFiles: ["Config/Base.xcconfig", "Config/Local.xcconfig.example", "Config/Product.json", "README.md", "docs/**"],
+    additionalFiles: ["Config/Base.xcconfig", "Config/Local.xcconfig.example", "Config/Product.json", "README.md", "AGENTS.md", "docs/**"],
     resourceSynthesizers: []
 )
