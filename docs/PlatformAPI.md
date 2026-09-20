@@ -5,13 +5,14 @@ All adapter owners and callbacks are `@MainActor`; retain one adapter per app pr
 ## NotificationService (iOS only)
 
 - `init(center: UNUserNotificationCenter = .current())` installs delegate and foreground Open / Snooze categories.
-- `onAction: ((NotificationService.Action) -> Void)?`. Action has `kind: .open | .snooze`, `requestIdentifier: String`, `deliveredAt: Date`, `opportunityID: String?`. Resolve a recurring reminder's opportunity using its delivered date, and reject stale actions. No automatic completion.
-- `authorizationStatus() async -> Authorization` (`notDetermined`, `denied`, `authorized`, `provisional`, `ephemeral`, `unknown`).
-- `requestAuthorization() async throws -> Authorization`.
-- `replaceSchedule(_ slots: [MosslingCore.RecurringSlot]) async throws`; serialize mutations in store. At most 56 unique weekly slots. Empty clears recurring requests and pending snoozes. Changes to the recurring slot set clear snoozes; refreshing the same slot set preserves them.
-- `snooze(opportunityID: String, until: Date, expiresAt: Date) async throws`; stable one-shot ID; must be > now and < expiry. Caller decides duration. Replaces prior snooze, reserve cap of 8 one-shots.
-- `markCompleted(opportunityID: String, deliveredReminderID: String?)` cancels pending snooze, delivered snooze, and delivered recurring reminder only. NEVER removes repeating request.
-- `static reminderIdentifier(for: RecurringSlot) -> String`; use to remove delivered notification after completion.
+- `onAction: ((NotificationService.Action) -> Void)?`. Actions carry original `opportunityID` and `scheduledAt`. Resolve against the current opportunity and reject stale/mismatched actions; never infer identity from delivery time or complete automatically.
+- `authorizationStatus() async -> Authorization` and `requestAuthorization() async throws -> Authorization` expose explicit opt-in state.
+- `replaceSchedule(_ plan: ReminderPlan) async throws`: serialized by Store; up to 56 dated upcoming reminders. Removes obsolete and legacy repeating requests, retains a valid current snooze, and prunes stale delivered notifications. Scheduling failures surface and do not claim complete coverage.
+- `snooze(opportunity: Opportunity, until: Date) async throws`: must fire after now and before original expiry; stable ID replaces an earlier snooze; at most eight reserved snoozes.
+- `markCompleted(opportunityID: String)` removes the pending/delivered dated reminder and snooze for that opportunity only.
+- `static reminderIdentifier(for opportunityID: String) -> String`.
+
+The dated horizon extends through the start of the seventh following local calendar day (up to seven days), refreshed on foreground, settings, completion, sync receipt, and backup import. The app shows successful coverage in Rhythm. Prepared requests use absolute dates; reopen after travel to reconcile the new local timezone. No background extension is assumed.
 
 ## WatchConnectivityService (iOS and watchOS)
 

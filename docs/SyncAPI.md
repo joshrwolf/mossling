@@ -1,4 +1,4 @@
-# Sync protocol v1
+# Completion protocol v1 and configuration protocol v2
 
 `SyncProtocol.swift` in MosslingCore defines bounded transport values. Persistence and WatchConnectivity remain adapters. Configuration uses its own phone-to-watch latest-context channel; packets below carry completion history bidirectionally.
 
@@ -34,8 +34,14 @@ The first history exchange may send redundant records while another exchange is 
 
 Keep in-flight transport deduplication keyed by exact encoded packet bytes and clear it when a transfer fails/completes or an activation begins. Never keep a permanent sent-packet cache that prevents retry after a receiver loses state. Do not recursively resync upon every receipt.
 
-Configuration authority is separate: only phone sends configuration, watch accepts strictly newer revisions, and a newly installed watch may accept the initial revision-zero document. Decode/validate and persist configuration before publishing it. A protocol mismatch should surface an update-needed message without emptying saved progress.
+Configuration authority is separate: only phone sends configuration, watch accepts newer revisions and equal-revision authoritative refreshes, and a newly installed watch may accept the initial revision-zero document. Decode/validate and persist configuration before publishing it. A protocol mismatch should surface an update-needed message without emptying saved progress.
 
 ## Known scope boundary
 
 This is a two-device personal sync protocol, not a cloud service or anti-cheat system. The phone and watch may briefly show different growth while disconnected. Permanent progress is a projection of merged completion events and unique reward keys. Sync never adds remote XP totals.
+
+## Configuration upgrades
+
+ConfigurationSnapshot emits and accepts version 2. Older app versions reject this new snapshot rather than silently dropping pause/skip semantics; update phone and Watch together. Save migration from schema 1 preserves history/outbox/authority, but resets the received-configuration flag so the Watch can refresh an equal revision. Only a different previous authority is retired; a refresh must never retire its own phone. Completion packet version and reward identities are unchanged.
+
+Equal-revision snapshots from the same active phone are accepted to restore optional fields an older Watch decoder omitted. Lower revisions and retired authorities remain rejected. This requires the sole phone writer to increment revision for every content change, including future content-changing migrations. Equal-revision replay is otherwise idempotent. Whole-device restoration/downgrade remains outside this authority contract.

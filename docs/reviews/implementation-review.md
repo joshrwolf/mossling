@@ -70,3 +70,11 @@ An independent reviewer examined the full daily-loop diff, separately from the d
 3. Clearing that flag could retire the same phone authority during repair. Retirement now requires a different authority ID. Regression coverage accepts the equal-revision refresh, then a higher revision from the same phone, without retiring it.
 
 The reviewer found no further blocking issues in grace, override boundaries, ledger rewards, finite reminder planning, or the UI clock harness. Native compilation and real UI execution remain required PR gates; physical notification delivery and paired-device acceptance remain separate.
+
+## Companion and rotation review
+
+A separate review of progression and balanced rotation found no blocking defects. The catalog keeps reward-rule version 1 and all existing thresholds, while adding permanent content. Selection is a phone-owned cosmetic preference, independent of temporarily incomplete Watch history. Milestone dates are not fabricated; the Journal shows the required break count.
+
+Review identified an additive-field upgrade concern: an older Watch can discard a new optional affinity while caching the same configuration revision. Equal-revision snapshots from the sole active phone now refresh the complete cache. The reviewer implemented this small sync repair separately; root inspected its diff. Tests cover realistic missing-field cache repair, duplicate replay, stale rejection, and relaunch, and the complete package passed 66 tests across 13 suites. The author of this repair did not author the progression or rotation being reviewed.
+
+The sender contract remains explicit: every actual phone configuration change, including migrations that change values, increments revision. No new background sync guarantee is implied. Native SDK, UI, and visual verification remain hosted gates.
