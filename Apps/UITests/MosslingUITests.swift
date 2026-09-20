@@ -111,12 +111,13 @@ final class MosslingUITests: XCTestCase {
         exploreFirst(in: app)
         completeRepetitionSnack(in: app)
 
-        let completedState = element("completedSnackState", in: app)
         assertGrowth(10, in: app)
         capture("Completed break and earned growth", app: app)
 
         relaunch(app)
-        XCTAssertTrue(completedState.waitForExistence(timeout: 5))
+        // This identifier belongs to Text. Keep the query typed and resolve it
+        // against the new process rather than searching every element kind.
+        XCTAssertTrue(app.staticTexts["completedSnackState"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["startSnack"].exists,
                        "A completed opportunity must not offer another rewarded snack")
         XCTAssertFalse(app.buttons["resumeSnack"].exists,
@@ -137,13 +138,12 @@ final class MosslingUITests: XCTestCase {
         reveal(skip, in: app)
         skip.tap()
 
-        let skippedState = element("skippedSnackState", in: app)
-        XCTAssertTrue(skippedState.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["skippedSnackState"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["startSnack"].exists)
         assertGrowth(0, in: app)
 
         relaunch(app)
-        XCTAssertTrue(skippedState.waitForExistence(timeout: 5),
+        XCTAssertTrue(app.staticTexts["skippedSnackState"].waitForExistence(timeout: 5),
                       "Skipping must survive a new process in the same opportunity")
         XCTAssertFalse(app.buttons["startSnack"].exists)
         capture("Skipped break after relaunch", app: app)
@@ -154,7 +154,7 @@ final class MosslingUITests: XCTestCase {
         let nextSnack = app.buttons["startSnack"]
         reveal(nextSnack, in: app)
         XCTAssertTrue(nextSnack.isEnabled)
-        XCTAssertFalse(skippedState.exists)
+        XCTAssertFalse(app.staticTexts["skippedSnackState"].exists)
         assertGrowth(0, in: app)
     }
 
@@ -281,7 +281,7 @@ final class MosslingUITests: XCTestCase {
         reveal(complete, in: app, file: file, line: line)
         XCTAssertTrue(complete.isEnabled, file: file, line: line)
         complete.tap()
-        XCTAssertTrue(element("completedSnackState", in: app).waitForExistence(timeout: 10),
+        XCTAssertTrue(app.staticTexts["completedSnackState"].waitForExistence(timeout: 10),
                       file: file, line: line)
         XCTAssertFalse(complete.exists, "Completion must dismiss the movement session", file: file, line: line)
     }

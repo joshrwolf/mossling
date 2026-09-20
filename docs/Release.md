@@ -42,18 +42,16 @@ Apple explicitly defines Archive preparation **None** as ineligible for TestFlig
 
 The post-clone hook runs domain tests and project drift verification; Cloud runs the UI tests and native archive. The post-xcodebuild hook validates the real archive. It must receive Apple's phase resources via the tracked `ci_scripts` symlinks; copying only the two shell files is insufficient.
 
-## Acceptance and CI handoff
+## Signed Cloud acceptance
 
-Before changing CI ownership, verify:
+Before the first signed delivery, verify:
 
 - The same committed project generates without drift with Cloud settings present.
 - The real Cloud post-clone bootstrap and native Test action pass; all seven UI tests run rather than being skipped.
 - Archive preparation None succeeds, and the post-action verifies the actual phone/Watch identifiers, marketing version and Cloud build number.
 - A deliberately failing test/check fails the workflow; no distribution post-action exists.
 
-Then enable Cloud verification for pull requests targeting `main`, with automatic cancellation and one simulator destination. Observe a PR run and configure the actual Cloud status as a required check. Only then set the GitHub repository variable `MOSSLING_XCODE_CLOUD_ACTIVE=true` to suppress duplicate automatic Mac jobs. Keep GitHub Linux checks required. Manual GitHub verification still runs the full Apple gate when troubleshooting.
-
-Leaving the variable unset preserves the current Apple gate during onboarding. It is a migration switch, not proof Cloud is configured. If Cloud is disconnected, restore the GitHub gate and required-check policy.
+Keep PR/main verification on GitHub now that the repository is public. Use Cloud for manually started signing and delivery, with one simulator destination for release validation. Do not add a second automatic PR workflow or disable the GitHub Apple gate. The former `MOSSLING_XCODE_CLOUD_ACTIVE` switch is no longer used.
 
 ## Delivery workflow: Mossling TestFlight
 
@@ -110,7 +108,7 @@ If a build fails these checks, stop distributing that build, retain its logs and
 
 ## Cost controls
 
-Stay on Apple's included 25 compute-hour/month allowance. Start releases manually, use one simulator, retain auto-cancel when enabling PR triggers, and avoid duplicate Mac jobs after acceptance. Inspect actual Cloud compute usage before increasing test coverage. No cost cap or billing setting was changed here. For the existing private GitHub repository, confirm an Actions budget that stops paid usage beyond the included allowance; a repository workflow cannot impose an account billing cap.
+Stay on Apple's included 25 compute-hour/month allowance. Start releases manually and use one simulator. GitHub standard hosted runners verify the public repository; Cloud performs signing and delivery. Inspect actual Cloud compute usage before expanding workflows. No account billing setting was changed here; repository workflows cannot impose account-level spending caps.
 
 ## Evidence and limits
 

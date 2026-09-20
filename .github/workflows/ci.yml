@@ -31,10 +31,9 @@ jobs:
           mise run test:tooling
   apple:
     name: Apple builds, UI tests and Release archive
-    # Keep the proven Apple gate until Cloud verification is accepted.
-    if: vars.MOSSLING_XCODE_CLOUD_ACTIVE != 'true' || github.event_name == 'workflow_dispatch'
+    # Public-repository PR verification remains on GitHub; Cloud owns signing/delivery.
     runs-on: xcode-27
-    timeout-minutes: 35
+    timeout-minutes: 45
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
     steps:
@@ -90,16 +89,39 @@ jobs:
           trap 'rm -rf "$phase_dir"' EXIT
           cp -RL ci_scripts "$phase_dir/ci_scripts"
           CI_ARCHIVE_PATH="$GITHUB_WORKSPACE/.build-artifacts/Mossling.xcarchive" "$phase_dir/ci_scripts/ci_post_xcodebuild.sh"
-      - name: Run all seven iPhone UI flows
-        timeout-minutes: 18
-        run: mise run --skip-deps test:ui
+      - name: Build UI test products before booting the simulator
+        id: ui_build
+        timeout-minutes: 6
+        run: mise run --skip-deps test:ui:build
+      - name: Record host resources before simulator boot
+        run: mise run diagnose:host | tee .build-artifacts/ui-host-before.txt
+      - name: Boot one disposable iPhone simulator
+        id: ui_prepare
+        timeout-minutes: 6
+        run: mise run test:ui:prepare
+      - name: Record host resources after simulator boot
+        if: always() && steps.ui_build.outcome == 'success'
+        run: mise run diagnose:host | tee .build-artifacts/ui-host-after-boot.txt
+      - name: Run all seven iPhone UI flows without rebuilding
+        timeout-minutes: 15
+        run: mise run test:ui:run
+      - name: Record host resources after UI execution
+        if: always() && steps.ui_build.outcome == 'success'
+        run: mise run diagnose:host | tee .build-artifacts/ui-host-after-tests.txt
+      - name: Remove the disposable UI simulator
+        if: always() && (steps.ui_prepare.outcome == 'success' || steps.ui_prepare.outcome == 'failure' || steps.ui_prepare.outcome == 'cancelled')
+        timeout-minutes: 2
+        run: mise run test:ui:cleanup
       - name: Preserve UI screenshots and test results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: apple-test-results
+          include-hidden-files: true
           path: |
             .build-artifacts/screenshots
             .build-artifacts/UI-Tests.xcresult
+            .build-artifacts/ui-host-*.txt
+            .build-artifacts/UI-Timings.*
           if-no-files-found: ignore
           retention-days: 7
