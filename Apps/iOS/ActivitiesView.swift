@@ -10,7 +10,7 @@ struct ActivitiesView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("Small enough to fit your day. Choose which snacks appear in your rotation, or make one your own.")
+                    Text("Each day, your suggestions cycle through enabled snacks before repeating. Choose your favorites or make one your own; you can always swap a suggestion.")
                         .font(.body).foregroundStyle(MossPalette.moss)
                         .listRowBackground(Color.clear)
                 }

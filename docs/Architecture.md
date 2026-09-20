@@ -98,3 +98,7 @@ Product defaults: one companion; permanent growth; no debt or decay; self-confir
 - Phone and Watch should be updated together. Configuration snapshots now use protocol version 2; old apps reject them until updated. Schema-1 migration marks the Watch cache for refresh while preserving its phone authority and earned history. No background-only synchronization guarantee is added here.
 
 The finite notification horizon deliberately replaces indefinite weekly repeats: Apple's repeating calendar triggers cannot omit a single occurrence. See [Apple's scheduling model](https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/SchedulingandHandlingLocalNotifications.html). Hardware acceptance must exercise pause while closed, next-day resumption, permission revocation, travel, and offline Watch reconciliation.
+
+### Balanced suggestions
+
+Suggestions are a daily cyclic rotation through enabled activity IDs, starting at a stable day-specific offset. Phone and Watch derive the same suggestion from the same configuration without waiting for completion-history sync. All enabled activities appear before repetition within that day's schedule, and counts differ by at most one. Missing DST slots do not consume a rotation position. Choosing another activity never rewrites an existing session snapshot or changes later suggestions. This is a variety rule, not exercise personalization by equipment, ability, or recovery.
