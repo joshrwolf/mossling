@@ -34,6 +34,7 @@ final class NotificationService: NSObject, ReminderService, UNUserNotificationCe
     }
 
     private let center: UNUserNotificationCenter
+    private let mutations = NotificationMutationQueue()
     private var bufferedActions: [ReminderAction] = []
     private static let legacyRecurringPrefix = "mossling.reminder."
     private static let datedPrefix = "mossling.dated."
@@ -45,8 +46,8 @@ final class NotificationService: NSObject, ReminderService, UNUserNotificationCe
     private nonisolated static let scheduledKey = "mosslingScheduledAt"
     private nonisolated static let expiryKey = "mosslingExpiresAt"
 
-    init(center: UNUserNotificationCenter = .current()) {
-        self.center = center
+    override init() {
+        center = .current()
         super.init()
         center.delegate = self
         center.setNotificationCategories([
@@ -118,7 +119,9 @@ final class NotificationService: NSObject, ReminderService, UNUserNotificationCe
             }
             return nil
         }
-        center.removePendingNotificationRequests(withIdentifiers: obsolete)
+        await mutations.perform {
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: obsolete)
+        }
 
         // Remove stale deliveries too, including old repeating notifications after migration.
         let deliveries = await center.deliveredNotifications()
@@ -133,7 +136,9 @@ final class NotificationService: NSObject, ReminderService, UNUserNotificationCe
                   scheduled == plan.currentOpportunity?.scheduledAt.timeIntervalSince1970 else { return request.identifier }
             return nil
         }
-        center.removeDeliveredNotifications(withIdentifiers: staleDelivered)
+        await mutations.perform {
+            UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: staleDelivered)
+        }
 
         if !opportunities.isEmpty {
             guard await authorizationStatus().canSchedule else { throw ServiceError.permissionRequired }
@@ -174,10 +179,13 @@ final class NotificationService: NSObject, ReminderService, UNUserNotificationCe
         ))
     }
 
-    func markCompleted(opportunityID: String) {
+    func markCompleted(opportunityID: String) async {
         let identifiers = [Self.snoozePrefix + opportunityID, Self.reminderIdentifier(for: opportunityID)]
-        center.removePendingNotificationRequests(withIdentifiers: identifiers)
-        center.removeDeliveredNotifications(withIdentifiers: identifiers)
+        await mutations.perform {
+            let center = UNUserNotificationCenter.current()
+            center.removePendingNotificationRequests(withIdentifiers: identifiers)
+            center.removeDeliveredNotifications(withIdentifiers: identifiers)
+        }
     }
 
     private func makeContent(for opportunity: Opportunity) -> UNMutableNotificationContent {

@@ -53,5 +53,5 @@ public protocol ReminderService: AnyObject {
     func requestAuthorization() async throws -> ReminderAuthorization
     func replaceSchedule(_ plan: ReminderPlan) async throws
     func snooze(opportunity: Opportunity, until: Date) async throws
-    func markCompleted(opportunityID: String)
+    func markCompleted(opportunityID: String) async
 }

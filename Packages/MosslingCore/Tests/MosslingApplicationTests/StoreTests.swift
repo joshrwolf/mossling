@@ -1,4 +1,5 @@
 import Foundation
+import Dispatch
 import Testing
 import MosslingCore
 @testable import MosslingApplication
@@ -188,6 +189,36 @@ struct StoreTests {
         #expect(h.notifications.plans.isEmpty == !status.canSchedule)
     }
 
+    @Test func blockingNotificationRemovalLeavesMainActorResponsiveAndPreservesOrdering() async throws {
+        let h = try Harness(), store = try h.open()
+        h.notifications.authorization = .authorized
+        let mutations = NotificationMutationQueue()
+        let release = DispatchSemaphore(value: 0)
+        let (entered, continuation) = AsyncStream<Void>.makeStream()
+        defer { release.signal(); continuation.finish(); h.notifications.onRemoval = nil }
+        h.notifications.onRemoval = {
+            await mutations.perform {
+                #expect(!Thread.isMainThread, "Synchronous system IPC must not run on the UI thread")
+                continuation.yield(())
+                // This timeout runs on the worker itself: it still terminates a
+                // regression that blocks MainActor and its own test watchdog.
+                #expect(release.wait(timeout: .now() + 2) == .success,
+                        "MainActor must remain able to release blocked notification IPC")
+            }
+        }
+        let activity = try #require(store.configuration.activities.first { $0.targetKind == .repetitions })
+        #expect(store.start(activity: activity))
+        #expect(await store.complete())
+        var iterator = entered.makeAsyncIterator()
+        _ = await iterator.next()
+        #expect(store.progress.growth == 10)
+        #expect(try h.saved().events.count == 1)
+        #expect(h.notifications.operations == ["complete"], "Replacement must wait for removal")
+        release.signal() // Executed on MainActor while the worker is blocked.
+        await store.bootstrap()
+        #expect(Array(h.notifications.operations.prefix(3)) == ["complete", "removed", "replace"])
+    }
+
     @Test func permissionIsRequestedOnlyByExplicitAction() async throws {
         let h = try Harness(), store = try h.open()
         await store.bootstrap()
@@ -364,6 +395,7 @@ private final class FakeReminders: ReminderService {
     var suspendReplacement = false
     var failReplacement = false
     var blocked: CheckedContinuation<Void, Never>?
+    var onRemoval: (() async -> Void)?
     func authorizationStatus() async -> ReminderAuthorization { authorization }
     func requestAuthorization() async throws -> ReminderAuthorization {
         permissionRequests += 1
@@ -383,7 +415,13 @@ private final class FakeReminders: ReminderService {
         continuation?.resume()
     }
     func snooze(opportunity: Opportunity, until: Date) async throws { operations.append("snooze") }
-    func markCompleted(opportunityID: String) { operations.append("complete") }
+    func markCompleted(opportunityID: String) async {
+        operations.append("complete")
+        if let onRemoval {
+            await onRemoval()
+            operations.append("removed")
+        }
+    }
 }
 
 @MainActor

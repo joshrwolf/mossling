@@ -193,7 +193,7 @@ public final class MosslingStore {
         synchronize(includeInventory: false)
         if let notifications {
             _ = enqueueNotificationOperation {
-                notifications.markCompleted(opportunityID: session.opportunity.id)
+                await notifications.markCompleted(opportunityID: session.opportunity.id)
             }
         }
         _ = enqueueNotificationReconciliation()
@@ -287,7 +287,7 @@ public final class MosslingStore {
                         guard let self else { return }
                         _ = await self.notificationOperation { [notifications = self.notifications] in
                             for event in receivedEvents {
-                                notifications?.markCompleted(opportunityID: event.opportunityID)
+                                await notifications?.markCompleted(opportunityID: event.opportunityID)
                             }
                         }
                         _ = await self.reconcileNotifications()
