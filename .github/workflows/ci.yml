@@ -33,10 +33,10 @@ jobs:
     name: Apple builds, UI tests and Release archive
     # Keep the proven Apple gate until Cloud verification is accepted.
     if: vars.MOSSLING_XCODE_CLOUD_ACTIVE != 'true' || github.event_name == 'workflow_dispatch'
-    runs-on: macos-15
+    runs-on: xcode-27
     timeout-minutes: 35
     env:
-      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0

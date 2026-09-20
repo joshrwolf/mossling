@@ -8,7 +8,7 @@
 | Product identifier and marketing version | `Config/Product.json` |
 | Signing defaults and optional overrides | `Config/Base.xcconfig` |
 | Pinned tools and task dependencies | `mise.toml`, `mise.lock` |
-| Compiler and platform SDK | Xcode 26.2 |
+| Compiler and platform SDK | Xcode 27.0 |
 | Portable domain package | Swift Package Manager |
 | Hosted verification during Cloud setup | GitHub Actions |
 | Managed signing and delivery after account setup | Xcode Cloud |
@@ -19,9 +19,11 @@ This deliberately replaces the earlier ignored-project policy. Apple's project-d
 
 Optional `Local.xcconfig` and generated `Cloud.xcconfig` are ignored and deliberately excluded from Tuist's additional-file list so they cannot change the project graph. The base configuration includes Local then Cloud; Cloud's team/build values win. Tuist defines concrete bundle identifiers and the marketing version, but does not define the build number or team at a higher settings precedence.
 
+GitHub uses the dedicated `xcode-27` hosted image and its `/Applications/Xcode_27.0.app` alias. The image is currently marked preview by GitHub; CI must validate the actual installed toolchain. Xcode Cloud selects explicit 27.0. The iOS 18 and watchOS 11 deployment targets remain unchanged. Linux continues testing the portable package with Swift 6.2 to preserve its minimum compiler baseline.
+
 ## Local commands
 
-Install Xcode 26.2 and its simulator runtimes, then mise 2026.9.11 or newer. Run `mise trust`, `mise install --locked`, `mise run generate`, and open `Mossling.xcworkspace`. No Tuist account is required.
+Install Xcode 27.0 and its simulator runtimes, then mise 2026.9.11 or newer. Run `mise trust`, `mise install --locked`, `mise run generate`, and open `Mossling.xcworkspace`. No Tuist account is required.
 
 | Command | Result |
 | --- | --- |

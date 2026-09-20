@@ -1,5 +1,9 @@
 # Validation report — 19 September 2026
 
+## Xcode 27 migration
+
+The current configuration targets Xcode 27.0 on GitHub’s dedicated `xcode-27` image and Xcode Cloud. Native validation for that toolchain is tracked by the migration PR; the Xcode 26.2 evidence below remains historical and is not proof of a 27.0 pass. The gate still requires project drift checks, Cloud adapters, all seven UI flows, both simulator schemes and an unsigned phone/Watch Release archive.
+
 ## Executed checks
 
 | Check | Result | Evidence / limits |
