@@ -70,7 +70,7 @@ class UITestPlanTests(unittest.TestCase):
             with self.subTest(plan=name):
                 self.assertEqual(set(plan), {"configurations", "defaultOptions", "testTargets", "version"})
                 self.assertEqual(plan["version"], 1)
-                self.assertEqual(plan["defaultOptions"], {"codeCoverage": False})
+                self.assertEqual(plan["defaultOptions"], {"codeCoverage": False, "mainThreadCheckerEnabled": True})
                 self.assertEqual(len(plan["configurations"]), 1, "No duplicated configuration runs")
                 config = plan["configurations"][0]
                 self.assertEqual(set(config), {"id", "name", "options"})
