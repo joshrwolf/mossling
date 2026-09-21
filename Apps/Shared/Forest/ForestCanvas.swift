@@ -44,6 +44,7 @@ private final class ForestDirector {
 struct ForestCanvas: View {
     let snapshot: ForestSnapshot
     var active = true
+    var announcementTopInset: CGFloat = 0
     var draftKind: HabitatKind?
     var selectedCell: ForestCell?
     var onSelectCell: ((ForestCell) -> Void)?
@@ -122,7 +123,7 @@ struct ForestCanvas: View {
                         .padding(12)
                         .foregroundStyle(MossPalette.cream)
                         .background(MossPalette.ink.opacity(0.95), in: RoundedRectangle(cornerRadius: 16))
-                        .padding(.top, 84)
+                        .padding(.top, announcementTopInset)
                     }
                 }
                 .onAppear { director.scene.resize(to: geometry.size); visible = true; update() }

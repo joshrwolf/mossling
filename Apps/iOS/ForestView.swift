@@ -11,6 +11,7 @@ struct ForestView: View {
     @State private var showingDetails = false
     @State private var showingBuilder = false
     @State private var celebrating = false
+    @State private var headerHeight: CGFloat = 0
 
     private var snapshot: ForestSnapshot {
         ForestSnapshot(progress: store.progress, affinity: store.configuration.companionAffinity, world: store.configuration.world)
@@ -20,7 +21,11 @@ struct ForestView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 forest
-                    .overlay(alignment: .top) { if !typeSize.isAccessibilitySize { forestHeader } }
+                    .overlay(alignment: .top) {
+                        if !typeSize.isAccessibilitySize {
+                            forestHeader.onGeometryChange(for: CGFloat.self) { $0.size.height } action: { headerHeight = $0 }
+                        }
+                    }
                     .frame(maxHeight: typeSize.isAccessibilitySize ? 220 : .infinity)
                 if typeSize.isAccessibilitySize {
                     ScrollView {
@@ -52,7 +57,8 @@ struct ForestView: View {
     }
 
     private var forest: some View {
-        ForestCanvas(snapshot: snapshot, active: isSelected && !showingSession && !showingDetails && !showingBuilder)
+        ForestCanvas(snapshot: snapshot, active: isSelected && !showingSession && !showingDetails && !showingBuilder,
+                     announcementTopInset: typeSize.isAccessibilitySize ? 0 : headerHeight)
             .frame(maxWidth: .infinity)
             .clipped()
             .overlay(alignment: .bottomLeading) {
