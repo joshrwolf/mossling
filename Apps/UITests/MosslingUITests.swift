@@ -36,14 +36,18 @@ final class MosslingUITests: XCTestCase {
     }
 
     func testActivityEditorCreatesAndUpdatesSnack() {
-        let app = launchFresh()
+        var document = AppDocument()
+        for index in document.configuration.activities.indices {
+            document.configuration.activities[index].instructions = "Instructions saved before the wording update."
+        }
+        let app = launchFresh(document: document)
         app.tabBars.buttons["Snacks"].tap()
-        let walk = app.switches["Include Walk"]
+        let walk = app.buttons["rotation_walk"]
         XCTAssertTrue(walk.waitForExistence(timeout: 5))
-        XCTAssertEqual(walk.value as? String, "1")
-        walk.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        XCTAssertEqual(walk.value as? String, "In rotation")
+        walk.tap()
         let walkTurnedOff = XCTNSPredicateExpectation(
-            predicate: NSPredicate(format: "value == %@", "0"), object: walk
+            predicate: NSPredicate(format: "value == %@", "Not in rotation"), object: walk
         )
         XCTAssertEqual(XCTWaiter.wait(for: [walkTurnedOff], timeout: 5), .completed,
                        "Toggling the card must save the updated rotation")
@@ -71,6 +75,8 @@ final class MosslingUITests: XCTestCase {
         XCTAssertEqual(app.textFields["activityTitle"].value as? String, "Kitchen wiggle")
         XCTAssertEqual(app.textFields["activityInstructions"].value as? String,
                        "Move gently to a favorite song.")
+        app.buttons["activityMovement"].tap()
+        app.buttons["Shoulder mobility"].tap()
         app.buttons["30 sec"].tap()
         capture("Editing a custom snack", app: app)
         app.buttons["saveActivity"].tap()
@@ -82,6 +88,8 @@ final class MosslingUITests: XCTestCase {
         XCTAssertFalse(original.exists, "Editing must update the existing snack instead of duplicating it")
         capture("Edited custom snack", app: app)
         edited.tap()
+        let movement = app.buttons["activityMovement"]
+        XCTAssertTrue(movement.label.contains("Shoulder mobility"), "The saved illustration choice must reopen")
         let delete = app.buttons["deleteActivity"]
         reveal(delete, in: app)
         delete.tap()
@@ -253,7 +261,13 @@ final class MosslingUITests: XCTestCase {
     }
 
     func testHabitatPlacementMovementAndExpansionSurviveRelaunch() throws {
-        let app = launchFresh(document: try earnedAffinityDocument())
+        var document = try earnedAffinityDocument()
+        document.configuration.world = try .generated(seed: 42)
+        let app = launchFresh(document: document)
+        capture("Generated starting woodland", app: app)
+        let forest = app.buttons["forestScene"]
+        forest.swipeLeft(velocity: .slow)
+        app.buttons["centerHabitat"].tap()
         app.buttons["buildForest"].tap()
         app.buttons["habitatKind"].tap()
         app.buttons["Little fern"].tap()

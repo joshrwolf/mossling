@@ -44,6 +44,7 @@ private final class ForestDirector {
 struct ForestCanvas: View {
     let snapshot: ForestSnapshot
     var active = true
+    var announcementTopInset: CGFloat = 0
     var draftKind: HabitatKind?
     var selectedCell: ForestCell?
     var onSelectCell: ((ForestCell) -> Void)?
@@ -122,7 +123,7 @@ struct ForestCanvas: View {
                         .padding(12)
                         .foregroundStyle(MossPalette.cream)
                         .background(MossPalette.ink.opacity(0.95), in: RoundedRectangle(cornerRadius: 16))
-                        .padding(.top, 84)
+                        .padding(.top, announcementTopInset)
                     }
                 }
                 .onAppear { director.scene.resize(to: geometry.size); visible = true; update() }
@@ -150,6 +151,13 @@ struct ForestCanvas: View {
 }
 
 #if os(iOS)
+private final class ForestSKView: SKView {
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        (scene as? ForestScene)?.stopCameraMotion()
+        super.touchesBegan(touches, with: event)
+    }
+}
+
 private struct ForestSurface: UIViewRepresentable {
     let scene: ForestScene
     let paused: Bool
@@ -159,7 +167,7 @@ private struct ForestSurface: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(scene: scene, onTap: onTap) }
 
     func makeUIView(context: Context) -> SKView {
-        let view = SKView()
+        let view = ForestSKView()
         view.ignoresSiblingOrder = true
         context.coordinator.install(on: view)
         return view
@@ -169,10 +177,13 @@ private struct ForestSurface: UIViewRepresentable {
         context.coordinator.onTap = onTap
         if view.scene !== scene { view.presentScene(scene) }
         view.preferredFramesPerSecond = framesPerSecond
+        if paused { context.coordinator.stopDisplayLink(); scene.stopCameraMotion() }
         view.isPaused = paused
     }
 
     static func dismantleUIView(_ view: SKView, coordinator: Coordinator) {
+        coordinator.stopDisplayLink()
+        coordinator.scene.stopCameraMotion()
         view.gestureRecognizers?.forEach(view.removeGestureRecognizer)
         view.presentScene(nil)
     }
@@ -183,6 +194,8 @@ private struct ForestSurface: UIViewRepresentable {
         var onTap: (CGPoint) -> Void
         private var pinch: UIPinchGestureRecognizer!
         private var previousAnchor: CGPoint?
+        private var displayLink: CADisplayLink?
+        private var canCoast = false
 
         init(scene: ForestScene, onTap: @escaping (CGPoint) -> Void) {
             self.scene = scene; self.onTap = onTap
@@ -204,13 +217,30 @@ private struct ForestSurface: UIViewRepresentable {
         @objc private func drag(_ gesture: UIPanGestureRecognizer) {
             let delta = gesture.translation(in: gesture.view)
             gesture.setTranslation(.zero, in: gesture.view)
-            guard pinch.state != .began, pinch.state != .changed else { return }
-            if gesture.state == .changed, gesture.numberOfTouches == 1 { scene.moveCamera(by: delta) }
-            if gesture.state == .ended || gesture.state == .cancelled { scene.finishCameraInteraction() }
+            guard pinch.state != .began, pinch.state != .changed else { canCoast = false; return }
+            if gesture.state == .began { scene.stopCameraMotion(); canCoast = false }
+            if gesture.state == .changed, gesture.numberOfTouches == 1 {
+                canCoast = true
+                scene.moveCamera(by: delta)
+            }
+            if gesture.state == .ended, canCoast {
+                canCoast = false
+                scene.endCameraDrag(velocity: gesture.velocity(in: gesture.view))
+                stopDisplayLink()
+                let link = CADisplayLink(target: self, selector: #selector(coast(_:)))
+                link.preferredFrameRateRange = CAFrameRateRange(minimum: 30, maximum: 60, preferred: 60)
+                link.add(to: .main, forMode: .common)
+                displayLink = link
+            }
+            if gesture.state == .cancelled || gesture.state == .failed {
+                canCoast = false; stopDisplayLink(); scene.stopCameraMotion(); scene.finishCameraInteraction()
+            }
         }
         @objc private func zoom(_ gesture: UIPinchGestureRecognizer) {
             switch gesture.state {
             case .began:
+                canCoast = false
+                scene.stopCameraMotion()
                 previousAnchor = gesture.location(in: gesture.view)
                 gesture.scale = 1
             case .changed:
@@ -223,6 +253,10 @@ private struct ForestSurface: UIViewRepresentable {
                 scene.finishCameraInteraction()
             default: break
             }
+        }
+        func stopDisplayLink() { displayLink?.invalidate(); displayLink = nil }
+        @objc private func coast(_ link: CADisplayLink) {
+            if !scene.advanceCamera(to: link.timestamp) { stopDisplayLink() }
         }
         @objc private func tap(_ gesture: UITapGestureRecognizer) { onTap(gesture.location(in: gesture.view)) }
     }

@@ -9,16 +9,14 @@ private enum ActivityArtwork {
     private static var images: [Int: CGImage] = [:]
 
     static func image(for activity: ActivityDefinition) -> CGImage {
-        let starter = ActivityDefinition.starters.first { $0.id == activity.id }
-        let id = starter?.title == activity.title && starter?.instructions == activity.instructions ? activity.id : "custom"
         let index: Int
-        switch id {
-        case "walk": index = 0
-        case "sit-to-stand": index = 1
-        case "wall-push": index = 2
-        case "calf-raise": index = 3
-        case "easy-mobility": index = 4
-        default: index = 5
+        switch activity.movement {
+        case .walk: index = 0
+        case .chairStand: index = 1
+        case .wallPush: index = 2
+        case .calfRaise: index = 3
+        case .shoulderMobility: index = 4
+        case .custom: index = 5
         }
         if let image = images[index] { return image }
         let frames = [CGRect(x: 146, y: 37, width: 282, height: 460),

@@ -2,7 +2,7 @@ import Foundation
 
 /// A single atomic unit: an earned event and its delivery obligation cannot diverge.
 public struct AppDocument: Codable, Equatable, Sendable {
-    public static let currentSchemaVersion = 3
+    public static let currentSchemaVersion = 4
     public var schemaVersion: Int
     public var deviceID: UUID
     public var configuration: AppConfiguration
@@ -72,11 +72,16 @@ public struct AppDocument: Codable, Equatable, Sendable {
         if header.schemaVersion < currentSchemaVersion {
             guard var fields = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw DocumentError.invalidDocument }
             if var configuration = fields["configuration"] as? [String: Any] {
-                configuration["world"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(ForestWorld()))
+                if header.schemaVersion < 3 {
+                    configuration["world"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(ForestWorld()))
+                } else if var world = configuration["world"] as? [String: Any] {
+                    world["landscape"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(ForestLandscape.standard))
+                    configuration["world"] = world
+                }
                 fields["configuration"] = configuration
             }
             fields["schemaVersion"] = currentSchemaVersion
-            fields["hasReceivedPhoneConfiguration"] = false
+            if header.schemaVersion < 3 { fields["hasReceivedPhoneConfiguration"] = false }
             payload = try JSONSerialization.data(withJSONObject: fields)
         }
         let document = try decoder.decode(AppDocument.self, from: payload)

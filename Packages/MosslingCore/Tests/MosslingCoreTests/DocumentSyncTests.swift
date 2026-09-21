@@ -240,7 +240,7 @@ struct DocumentSyncTests {
 
 @Suite("Phone-owned daily routine sync")
 struct DailyRoutineSyncTests {
-    @Test func upgradedWatchAcceptsEqualRevisionV2AndRejectsOldOrFutureWireVersions() throws {
+    @Test func upgradedWatchAcceptsEqualRevisionAndRejectsUnsupportedWireVersions() throws {
         let authority = UUID(), now = utcDate("2026-09-21T09:05:00Z")
         var oldWatch = AppDocument(configuration: AppConfiguration(revision: 10), hasReceivedPhoneConfiguration: true)
         oldWatch.configurationAuthorityID = authority
@@ -260,7 +260,7 @@ struct DailyRoutineSyncTests {
         #expect(!watch.configuration.isPaused(at: now))
         #expect(watch.configuration.revision == 11)
         var wire = try #require(try JSONSerialization.jsonObject(with: snapshot.encoded()) as? [String: Any])
-        for version in [1, 2, 999] {
+        for version in [1, 2, 3, 999] {
             wire["version"] = version
             let data = try JSONSerialization.data(withJSONObject: wire)
             #expect(throws: SyncProtocolError.unsupportedVersion(version)) { try ConfigurationSnapshot.decode(data) }

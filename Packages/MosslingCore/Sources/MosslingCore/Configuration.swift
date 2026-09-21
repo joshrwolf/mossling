@@ -64,6 +64,33 @@ public enum ActivityTargetKind: String, Codable, CaseIterable, Sendable {
     case duration, repetitions
 }
 
+/// Stable movement identity, independent of editable coaching copy and targets.
+public enum ActivityMovement: String, Codable, CaseIterable, Sendable {
+    case walk, chairStand, wallPush, calfRaise, shoulderMobility, custom
+
+    public var title: String {
+        switch self {
+        case .walk: "Walk"
+        case .chairStand: "Chair stands"
+        case .wallPush: "Wall push-ups"
+        case .calfRaise: "Calf raises"
+        case .shoulderMobility: "Shoulder mobility"
+        case .custom: "Custom activity"
+        }
+    }
+
+    static func initial(for id: String) -> Self {
+        switch id {
+        case "walk": .walk
+        case "sit-to-stand": .chairStand
+        case "wall-push": .wallPush
+        case "calf-raise": .calfRaise
+        case "easy-mobility": .shoulderMobility
+        default: .custom
+        }
+    }
+}
+
 public struct ActivityDefinition: Codable, Equatable, Sendable, Identifiable {
     public var id: String
     public var title: String
@@ -71,10 +98,27 @@ public struct ActivityDefinition: Codable, Equatable, Sendable, Identifiable {
     public var targetKind: ActivityTargetKind
     public var targetValue: Int
     public var isEnabled: Bool
+    public var movement: ActivityMovement
 
-    public init(id: String, title: String, instructions: String, targetKind: ActivityTargetKind, targetValue: Int, isEnabled: Bool = true) {
+    public init(id: String, title: String, instructions: String, targetKind: ActivityTargetKind, targetValue: Int, isEnabled: Bool = true, movement: ActivityMovement? = nil) {
         self.id = id; self.title = title; self.instructions = instructions
         self.targetKind = targetKind; self.targetValue = targetValue; self.isEnabled = isEnabled
+        self.movement = movement ?? .initial(for: id)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, title, instructions, targetKind, targetValue, isEnabled, movement
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(String.self, forKey: .id)
+        title = try values.decode(String.self, forKey: .title)
+        instructions = try values.decode(String.self, forKey: .instructions)
+        targetKind = try values.decode(ActivityTargetKind.self, forKey: .targetKind)
+        targetValue = try values.decode(Int.self, forKey: .targetValue)
+        isEnabled = try values.decode(Bool.self, forKey: .isEnabled)
+        movement = try values.decodeIfPresent(ActivityMovement.self, forKey: .movement) ?? .initial(for: id)
     }
 
     public func validate() throws {

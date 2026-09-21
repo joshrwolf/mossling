@@ -37,4 +37,28 @@ struct ForestCameraTests {
         camera.reset()
         #expect(camera == ForestCamera())
     }
+    @Test func coastIsShortFrameRateIndependentAndInterruptible() {
+        var sixty = ForestCamera(), thirty = ForestCamera()
+        sixty.coast(with: .init(x: 600, y: 300)); thirty.coast(with: .init(x: 600, y: 300))
+        for _ in 0..<60 { sixty.advance(by: 1.0 / 60, viewport: viewport) }
+        for _ in 0..<30 { thirty.advance(by: 1.0 / 30, viewport: viewport) }
+        #expect(!sixty.isCoasting && !thirty.isCoasting)
+        #expect(abs(sixty.offset.x - thirty.offset.x) < 0.1)
+        #expect(sixty.offset.x > 55 && sixty.offset.x < 61)
+        sixty.coast(with: .init(x: 600, y: 0))
+        sixty.stop()
+        let stopped = sixty
+        sixty.advance(by: 1.0 / 60, viewport: viewport)
+        #expect(sixty == stopped)
+        thirty.pan(by: .init(x: 1000, y: 1000), viewport: viewport)
+        thirty.coast(with: .init(x: 600, y: 300))
+        thirty.advance(by: 1.0 / 60, viewport: viewport)
+        #expect(!thirty.isCoasting)
+        #expect(thirty.offset == .init(x: 260, y: 240))
+        sixty.coast(with: .init(x: 9000, y: 0))
+        #expect(sixty.velocity.x == 900)
+        sixty.advance(by: 2, viewport: viewport)
+        #expect(!sixty.isCoasting)
+    }
+
 }

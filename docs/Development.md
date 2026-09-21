@@ -46,4 +46,6 @@ Copy `Config/Local.xcconfig.example` to the ignored `Config/Local.xcconfig`, set
 
 `WoodlandGround`, `WoodlandProps` and `BrackenSprites` in the shared asset catalog supply the painted scene. `ForestArt.swift` owns source-pixel frames, ground-contact anchors and rendered sizes; update these together when replacing an atlas. Preserve transparent gutters around sprites and check both scene and portrait crops. Review an empty clearing, a furnished expanded habitat, placement previews and the small Watch display at native scale; concept boards alone do not verify integration.
 
-`BrackenActivities` supplies movement illustrations through `ActivityArtwork.swift`. Match poses to unchanged built-in movement names/instructions; custom or repurposed activities use the neutral pose. Check card and session crops, including accessibility text sizes.
+`BrackenActivities` supplies movement illustrations through `ActivityArtwork.swift`. Poses follow the saved activity movement choice, independent of its editable wording; the editor lets custom activities choose a pose. Check card and session crops, including accessibility text sizes.
+
+New forests use a seeded composition with a protected path, edge pond, rear canopy and open building patch. Save the realized `ForestLandscape` with the world; generation only runs when creating a document. Terrain changes require save/transport migration, connectivity tests and native visual review.
