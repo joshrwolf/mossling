@@ -10,6 +10,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 FOCUSED = {
+    "MosslingUITests/testActivityLibraryAddsDistinctSnackAndPersistsSelection()",
     "MosslingUITests/testEarnedAffinityCanBeSelectedAndChanged()",
 }
 PERSISTENCE = {

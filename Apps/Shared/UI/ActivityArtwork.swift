@@ -2,13 +2,14 @@ import SwiftUI
 import SpriteKit
 import MosslingCore
 
-/// Built-in movements have explicit poses; custom activities use a neutral character.
+/// Movement identity selects artwork independently of editable activity copy.
 @MainActor
 private enum ActivityArtwork {
     private static let atlas = SKTexture(imageNamed: "BrackenActivities")
-    private static var images: [Int: CGImage] = [:]
+    private static var images: [ActivityMovement: CGImage] = [:]
 
     static func image(for activity: ActivityDefinition) -> CGImage {
+        if let image = images[activity.movement] { return image }
         let index: Int
         switch activity.movement {
         case .walk: index = 0
@@ -16,9 +17,20 @@ private enum ActivityArtwork {
         case .wallPush: index = 2
         case .calfRaise: index = 3
         case .shoulderMobility: index = 4
+        case .march: return individual("BrackenMarch", movement: .march)
+        case .sideStep: return individual("BrackenSideStep", movement: .sideStep)
+        case .stepJack: return individual("BrackenStepJack", movement: .stepJack)
+        case .miniSquat: return individual("BrackenMiniSquat", movement: .miniSquat)
+        case .reverseLunge: return individual("BrackenReverseLunge", movement: .reverseLunge)
+        case .sideLegRaise: return individual("BrackenSideLegRaise", movement: .sideLegRaise)
+        case .legCurl: return individual("BrackenLegCurl", movement: .legCurl)
+        case .seatedKneeExtension: return individual("BrackenSeatedKneeExtension", movement: .seatedKneeExtension)
+        case .seatedMarch: return individual("BrackenSeatedMarch", movement: .seatedMarch)
+        case .seatedToeRaise: return individual("BrackenSeatedToeRaise", movement: .seatedToeRaise)
+        case .wallSlide: return individual("BrackenWallSlide", movement: .wallSlide)
+        case .standingPunch: return individual("BrackenStandingPunch", movement: .standingPunch)
         case .custom: index = 5
         }
-        if let image = images[index] { return image }
         let frames = [CGRect(x: 146, y: 37, width: 282, height: 460),
                       CGRect(x: 604, y: 48, width: 376, height: 443),
                       CGRect(x: 1056, y: 40, width: 439, height: 449),
@@ -29,7 +41,12 @@ private enum ActivityArtwork {
         let texture = SKTexture(rect: CGRect(x: frame.minX / size.width, y: 1 - frame.maxY / size.height,
                                             width: frame.width / size.width, height: frame.height / size.height), in: atlas)
         let image = texture.cgImage()
-        images[index] = image
+        images[activity.movement] = image
+        return image
+    }
+    private static func individual(_ name: String, movement: ActivityMovement) -> CGImage {
+        let image = SKTexture(imageNamed: name).cgImage()
+        images[movement] = image
         return image
     }
 }

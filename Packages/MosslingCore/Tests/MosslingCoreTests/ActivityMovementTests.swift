@@ -5,7 +5,7 @@ import Testing
 @Suite("Activity illustration identity")
 struct ActivityMovementTests {
     @Test func savedCopyDoesNotSelectTheNeutralPose() throws {
-        for starter in ActivityDefinition.starters {
+        for starter in ActivityDefinition.catalog {
             var json = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(starter)) as? [String: Any])
             json.removeValue(forKey: "movement")
             json["title"] = "Earlier name"
@@ -14,6 +14,40 @@ struct ActivityMovementTests {
             #expect(saved.movement == starter.movement)
             #expect(saved.movement != .custom)
         }
+    }
+
+    @Test func catalogHasDistinctValidatedMovementsAndSurvivesTransport() throws {
+        let catalog = ActivityDefinition.catalog
+        #expect(catalog.count >= ActivityDefinition.starters.count + 12)
+        #expect(Set(catalog.map(\.id)).count == catalog.count)
+        #expect(Set(catalog.map(\.movement)) == Set(ActivityMovement.allCases.filter { $0 != .custom }))
+        #expect(Set(catalog.map(\.movement)).count == catalog.count)
+        let configuration = AppConfiguration(activities: catalog)
+        try configuration.validate()
+        let snapshot = ConfigurationSnapshot(configuration: configuration, authorityID: UUID())
+        #expect(try ConfigurationSnapshot.decode(snapshot.encoded()) == snapshot)
+        let document = AppDocument(configuration: configuration)
+        #expect(try AppDocument.decode(document.encoded()) == document)
+        for activity in catalog {
+            let opportunity = sampleOpportunity()
+            let event = CompletionEvent(sessionID: UUID(), opportunityID: opportunity.id,
+                rewardKey: opportunity.rewardKey, scheduledAt: opportunity.scheduledAt,
+                completedAt: opportunity.scheduledAt.addingTimeInterval(120), activity: activity, sourceDeviceID: UUID())
+            let packet = SyncPacket.events([event])
+            #expect(try SyncPacket.decode(packet.encoded()).events == [event])
+        }
+    }
+
+    @Test func versionFourUpgradePreservesChosenRotationAndGeneratedTerrain() throws {
+        var configuration = AppConfiguration(world: try .generated(seed: 123))
+        configuration.activities[0].title = "My walking route"
+        configuration.activities[1].isEnabled = false
+        let document = AppDocument(configuration: configuration)
+        var fields = try #require(JSONSerialization.jsonObject(with: document.encoded()) as? [String: Any])
+        fields["schemaVersion"] = 4
+        let restored = try AppDocument.decode(JSONSerialization.data(withJSONObject: fields))
+        #expect(restored == document)
+        #expect(restored.configuration.activities == configuration.activities)
     }
 
     @Test func customMovementChoiceRoundTripsAndUnknownValuesFail() throws {
@@ -29,8 +63,8 @@ struct ActivityMovementTests {
     @Test func eventTransportRejectsAnOlderInventoryFormatAndReplayStaysIdempotent() throws {
         let event = sampleEvent(sampleOpportunity())
         var json = try #require(JSONSerialization.jsonObject(with: SyncPacket.events([event]).encoded()) as? [String: Any])
-        json["version"] = 1
-        #expect(throws: SyncProtocolError.unsupportedVersion(1)) { try SyncPacket.decode(JSONSerialization.data(withJSONObject: json)) }
+        json["version"] = 2
+        #expect(throws: SyncProtocolError.unsupportedVersion(2)) { try SyncPacket.decode(JSONSerialization.data(withJSONObject: json)) }
         var document = AppDocument()
         let packet = try SyncPacket.decode(SyncPacket.events([event]).encoded())
         try DocumentSync.receive(packet, into: &document)

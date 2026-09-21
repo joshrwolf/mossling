@@ -44,7 +44,10 @@ struct WatchForestView: View {
                     } else if let session = store.session {
                         Button("Continue snack") { showingSession = true }
                             .buttonStyle(.borderedProminent)
-                        Text(session.activity.title).font(.headline).multilineTextAlignment(.center)
+                        HStack(spacing: 8) {
+                        ActivityIllustration(activity: session.activity).frame(width: 60, height: 64)
+                        Text(session.activity.title).font(.headline).multilineTextAlignment(.leading)
+                    }
                     } else if store.isPausedToday {
                         Text("Paused for today").font(.headline)
                         Text("Your schedule resumes tomorrow. Resume today on your iPhone.")
@@ -87,9 +90,12 @@ struct WatchForestView: View {
                     Button {
                         if store.start(activity: activity) { showingActivities = false }
                     } label: {
-                        VStack(alignment: .leading) {
-                            Text(activity.title).font(.headline)
-                            Text(activity.targetSummary).font(.caption).foregroundStyle(MossPalette.mint)
+                        HStack(spacing: 8) {
+                            ActivityIllustration(activity: activity).frame(width: 40, height: 44)
+                            VStack(alignment: .leading) {
+                                Text(activity.title).font(.headline)
+                                Text(activity.targetSummary).font(.caption).foregroundStyle(MossPalette.mint)
+                            }
                         }
                     }
                 }.navigationTitle("Choose an activity")
@@ -126,7 +132,10 @@ struct WatchSnackSessionView: View {
         ScrollView {
             if let session = store.session {
                 VStack(spacing: 14) {
-                    Text(session.activity.title).font(.headline).multilineTextAlignment(.center)
+                    HStack(spacing: 8) {
+                        ActivityIllustration(activity: session.activity).frame(width: 60, height: 64)
+                        Text(session.activity.title).font(.headline).multilineTextAlignment(.leading)
+                    }
                     Text(session.activity.instructions).font(.caption).multilineTextAlignment(.center)
                     if let error = store.error { Text(error).font(.caption).foregroundStyle(Color.orange) }
                     TimelineView(.periodic(from: .now, by: isLuminanceReduced ? 60 : 1)) { context in
