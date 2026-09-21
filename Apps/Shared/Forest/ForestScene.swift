@@ -118,12 +118,13 @@ final class ForestScene: SKScene {
         for (from, to) in zip(route, route.dropFirst()) {
             actions.append(.run { [weak self] in self?.creature.face(from: from, to: to); self?.creature.hop() })
             actions.append(.group([.move(to: point(to), duration: 0.45), .sequence([
-                .wait(forDuration: 0.225), .run { [weak self] in self?.creature.zPosition = ForestProjection.depth(to) + 3 }
+                .wait(forDuration: 0.225), .run { [weak self] in self?.creature.zPosition = ForestProjection.depth(to) + 3; self?.updateCanopies() }
             ])]))
         }
         actions += [.run { [weak self] in
             guard let self else { return }
             self.residentCell = destination
+            self.updateCanopies()
             self.creature.face(from: destination, to: object.cell)
             self.creature.look()
             self.motes(at: self.point(object.cell))
@@ -145,6 +146,7 @@ final class ForestScene: SKScene {
         }
         let preview = habitatNode(kind)
         preview.position = point(cell)
+        if kind == .pond { preview.position.y -= 20 }
         preview.alpha = 0.6
         selection.addChild(preview)
     }
@@ -153,57 +155,129 @@ final class ForestScene: SKScene {
         let open = Set(snapshot.world.cells)
         let columns = ((mapCells.map(\.x).min() ?? 0) - 2)...((mapCells.map(\.x).max() ?? 0) + 2)
         let rows = ((mapCells.map(\.y).min() ?? 0) - 2)...((mapCells.map(\.y).max() ?? 0) + 2)
-        for y in rows {
-            for x in columns {
-                let cell = ForestCell(x, y)
-                let available = open.contains(cell)
-                let surface = ForestWorld.terrain(at: cell)
-                let variation = CGFloat(abs(x * 17 + y * 31) % 5) * 0.015
-                let color: SKColor
-                switch surface {
-                case .path, .stairs: color = SKColor(red: 0.57 + variation, green: 0.49 + variation, blue: 0.30, alpha: 1)
-                case .water: color = SKColor(red: 0.22, green: 0.46 + variation, blue: 0.49, alpha: 1)
-                default: color = SKColor(red: 0.28 + variation, green: 0.43 + variation, blue: 0.20, alpha: 1)
-                }
-                let tile = diamond(color: color)
-                tile.position = point(cell)
-                tile.alpha = available ? 1 : 0.23
-                tile.zPosition = ForestProjection.depth(cell)
-                terrain.addChild(tile)
-                if x == 6 {
-                    let wall = polygon([CGPoint(x: -40, y: 0), CGPoint(x: 0, y: -20), CGPoint(x: 0, y: -38), CGPoint(x: -40, y: -18)],
-                                       color: SKColor(red: 0.25, green: 0.28, blue: 0.20, alpha: 1))
-                    wall.position = tile.position
-                    wall.zPosition = tile.zPosition - 1
-                    wall.alpha = tile.alpha
-                    terrain.addChild(wall)
-                }
-                if surface == .stairs {
-                    for index in 0..<4 {
-                        let step = SKShapeNode(rectOf: CGSize(width: 42, height: 3), cornerRadius: 1)
-                        step.fillColor = SKColor(white: 0.7, alpha: 1); step.strokeColor = .clear
-                        step.position = CGPoint(x: tile.position.x, y: tile.position.y - CGFloat(index) * 4)
-                        step.zPosition = tile.zPosition + 1; step.alpha = tile.alpha
-                        terrain.addChild(step)
-                    }
-                }
-                if surface == .tree || (!available && (x + y).isMultiple(of: 3)) {
-                    let tree = treeNode(shade: available ? 1 : 0.55)
-                    tree.position = point(cell)
-                    tree.zPosition = ForestProjection.depth(cell) + 2
-                    tree.alpha = 1
-                    objects.addChild(tree)
+        let surroundings = rows.flatMap { y in columns.map { ForestCell($0, y) } }
+        paintGround(surroundings, material: .grass, shade: 0.48)
+        paintGround(snapshot.world.cells, material: .grass)
+        paintGround(snapshot.world.cells.filter { ForestWorld.terrain(at: $0) == .path || ForestWorld.terrain(at: $0) == .stairs }, material: .soil)
+        paintGround(snapshot.world.cells.filter { ForestWorld.terrain(at: $0) == .water }, material: .water)
+
+        let cliff = CGMutablePath()
+        for cell in surroundings {
+            let available = open.contains(cell)
+            let surface = ForestWorld.terrain(at: cell)
+            let location = point(cell)
+            if cell.x == 6 {
+                cliff.addLines(between: [CGPoint(x: location.x, y: location.y + 20),
+                                         CGPoint(x: location.x - 40, y: location.y),
+                                         CGPoint(x: location.x - 40, y: location.y - 18),
+                                         CGPoint(x: location.x, y: location.y + 2)])
+                cliff.closeSubpath()
+            }
+            if available && surface == .stairs {
+                let stairs = ForestArt.sprite(.stairs)
+                stairs.position = location
+                stairs.zPosition = 6
+                terrain.addChild(stairs)
+            }
+            if surface == .tree || (!available && (cell.x + cell.y).isMultiple(of: 3)) {
+                // Keep the front edge open; tall canopy belongs behind the playable clearing.
+                let foreground = cell.x + cell.y > 10
+                let prop: ForestArt.Prop = foreground ? .rock : (cell.x.isMultiple(of: 2) ? .oak : .birch)
+                let tree = ForestArt.sprite(prop)
+                tree.name = foreground ? nil : "canopy"
+                tree.position = location
+                tree.zPosition = ForestProjection.depth(cell) + 2
+                tree.color = SKColor(red: 0.10, green: 0.20, blue: 0.15, alpha: 1)
+                tree.colorBlendFactor = available ? 0 : 0.38
+                objects.addChild(tree)
+            } else if !available && (cell.x * 7 + cell.y * 3).isMultiple(of: 5) {
+                let brush = ForestArt.sprite(cell.x.isMultiple(of: 2) ? .fern : .branch)
+                brush.position = location
+                brush.zPosition = ForestProjection.depth(cell) + 1
+                brush.color = SKColor(red: 0.10, green: 0.20, blue: 0.15, alpha: 1)
+                brush.colorBlendFactor = 0.4
+                objects.addChild(brush)
+            }
+            if available && surface == .water {
+                for (index, neighbor) in cell.neighbors.enumerated() where ForestWorld.terrain(at: neighbor) != .water {
+                    let rock = ForestArt.sprite(.rock)
+                    rock.setScale(0.35)
+                    let edge = point(neighbor)
+                    rock.position = CGPoint(x: (location.x + edge.x) / 2, y: (location.y + edge.y) / 2)
+                    rock.zPosition = ForestProjection.depth(cell) + CGFloat(index) * 0.01
+                    objects.addChild(rock)
                 }
             }
         }
+        paintSurface(cliff, material: .stone, shade: 0.8)
         for object in snapshot.world.placements {
             let node = habitatNode(object.kind)
             node.position = point(object.cell)
+            if object.kind == .pond { node.position.y -= 20 }
             node.zPosition = ForestProjection.depth(object.cell) + 2
             objects.addChild(node)
         }
-        world.alpha = snapshot.affinity == .moonlit ? 0.72 : 1
+        updateCanopies()
+        world.alpha = snapshot.affinity == .moonlit ? 0.82 : 1
     }
+
+    /// A shared material spans the mask, so adjacent cells never become a checkerboard.
+    private func paintGround(_ cells: [ForestCell], material: ForestArt.Ground, shade: CGFloat = 1) {
+        guard !cells.isEmpty else { return }
+        let path = CGMutablePath()
+        let land = Set(cells)
+        for cell in cells {
+            let p = point(cell)
+            let corners = [CGPoint(x: p.x, y: p.y + 20), CGPoint(x: p.x + 40, y: p.y),
+                           CGPoint(x: p.x, y: p.y - 20), CGPoint(x: p.x - 40, y: p.y)]
+            var outline: [CGPoint] = []
+            for edge in 0..<4 {
+                let a = corners[edge], b = corners[(edge + 1) % 4]
+                outline.append(a)
+                if material == .soil || material == .water, !land.contains(cell.neighbors[edge]) {
+                    for step in 1..<5 {
+                        let fraction = CGFloat(step) / 5
+                        let roughness = CGFloat(abs(cell.x * 17 + cell.y * 31 + edge * 11 + step * 7) % 5 - 2)
+                        outline.append(CGPoint(x: a.x + (b.x - a.x) * fraction + roughness,
+                                               y: a.y + (b.y - a.y) * fraction + roughness * 0.5))
+                    }
+                }
+            }
+            path.addLines(between: outline)
+            path.closeSubpath()
+        }
+        paintSurface(path, material: material, shade: shade)
+    }
+
+    private func paintSurface(_ path: CGPath, material: ForestArt.Ground, shade: CGFloat) {
+        let mask = SKShapeNode(path: path)
+        mask.fillColor = .white; mask.strokeColor = .white; mask.lineWidth = 0.6
+        let layer = SKCropNode()
+        layer.maskNode = mask
+        layer.zPosition = material == .stone ? 5 : (material == .grass ? (shade < 1 ? 0 : 1) : (material == .soil ? 2 : 3))
+        let bounds = path.boundingBoxOfPath
+        let tileSize: CGFloat = 240
+        for y in Int(floor(bounds.minY / tileSize))...Int(ceil(bounds.maxY / tileSize)) {
+            for x in Int(floor(bounds.minX / tileSize))...Int(ceil(bounds.maxX / tileSize)) {
+                let tile = SKSpriteNode(texture: ForestArt.material(material))
+                tile.size = CGSize(width: tileSize + 0.5, height: tileSize + 0.5)
+                tile.anchorPoint = .zero
+                tile.position = CGPoint(x: CGFloat(x) * tileSize, y: CGFloat(y) * tileSize)
+                tile.color = SKColor(red: 0.08, green: 0.16, blue: 0.12, alpha: 1)
+                tile.colorBlendFactor = 1 - shade
+                layer.addChild(tile)
+            }
+        }
+        terrain.addChild(layer)
+    }
+
+    private func updateCanopies() {
+        for case let tree as SKSpriteNode in objects.children where tree.name == "canopy" {
+            let bounds = tree.frame.insetBy(dx: tree.size.width * 0.12, dy: 0)
+            tree.alpha = tree.zPosition > creature.zPosition && bounds.contains(creature.position) ? 0.35 : 1
+        }
+    }
+
     private func diamond(color: SKColor) -> SKShapeNode {
         polygon([CGPoint(x: 0, y: 20), CGPoint(x: 40, y: 0), CGPoint(x: 0, y: -20), CGPoint(x: -40, y: 0)], color: color)
     }
@@ -213,54 +287,18 @@ final class ForestScene: SKScene {
         node.fillColor = color; node.strokeColor = color; node.lineWidth = 0.5
         return node
     }
-    private func treeNode(shade: CGFloat) -> SKNode {
-        let node = SKNode()
-        let trunk = SKShapeNode(rectOf: CGSize(width: 12, height: 42), cornerRadius: 3)
-        trunk.position.y = 20; trunk.fillColor = SKColor(red: 0.25, green: 0.20, blue: 0.12, alpha: 1); trunk.strokeColor = .clear
-        node.addChild(trunk)
-        for index in 0..<3 {
-            let width = CGFloat(42 - index * 8)
-            let crown = polygon([CGPoint(x: -width, y: 0), CGPoint(x: width, y: 0), CGPoint(x: 0, y: 55)],
-                                color: SKColor(red: (0.14 + CGFloat(index) * 0.025) * shade, green: (0.31 + CGFloat(index) * 0.025) * shade, blue: 0.18 * shade, alpha: 1))
-            crown.position.y = CGFloat(18 + index * 23)
-            node.addChild(crown)
-        }
-        return node
-    }
-    private func habitatNode(_ kind: HabitatKind) -> SKNode {
-        if kind == .fern {
-            let fern = SKSpriteNode(imageNamed: "ForestFern")
-            fern.size = CGSize(width: 65, height: 65); fern.anchorPoint = CGPoint(x: 0.5, y: 0.08)
-            return fern
-        }
-        let node = SKNode()
+    private func habitatNode(_ kind: HabitatKind) -> SKSpriteNode {
+        let prop: ForestArt.Prop
         switch kind {
-        case .stump:
-            let stump = SKShapeNode(rectOf: CGSize(width: 46, height: 46), cornerRadius: 9)
-            stump.position.y = 20; stump.fillColor = SKColor(red: 0.44, green: 0.29, blue: 0.16, alpha: 1)
-            stump.strokeColor = SKColor(red: 0.64, green: 0.45, blue: 0.25, alpha: 1); stump.lineWidth = 3
-            let top = SKShapeNode(ellipseOf: CGSize(width: 46, height: 20))
-            top.position.y = 43; top.fillColor = SKColor(red: 0.68, green: 0.51, blue: 0.30, alpha: 1); top.strokeColor = .brown
-            let door = SKShapeNode(rectOf: CGSize(width: 17, height: 25), cornerRadius: 8)
-            door.position.y = 11; door.fillColor = SKColor(white: 0.08, alpha: 1); door.strokeColor = .clear
-            [stump, top, door].forEach { node.addChild($0) }
-        case .pond:
-            let pond = SKShapeNode(ellipseOf: CGSize(width: 100, height: 42))
-            pond.position.y = -15; pond.fillColor = SKColor(red: 0.25, green: 0.59, blue: 0.63, alpha: 1)
-            pond.strokeColor = .lightGray; pond.lineWidth = 4; node.addChild(pond)
-        case .lanterns:
-            let lamp = SKShapeNode(rectOf: CGSize(width: 15, height: 30), cornerRadius: 4)
-            lamp.position.y = 25; lamp.fillColor = .yellow; lamp.strokeColor = .brown; node.addChild(lamp)
-        case .mushrooms, .wildflowers, .steppingStones:
-            for index in 0..<4 {
-                let prop = SKShapeNode(ellipseOf: CGSize(width: kind == .steppingStones ? 17 : 10, height: 7))
-                prop.position = CGPoint(x: index * 9 - 14, y: index % 2 * 9)
-                prop.fillColor = kind == .mushrooms ? .orange : kind == .wildflowers ? .white : .gray
-                prop.strokeColor = .clear; node.addChild(prop)
-            }
-        case .fern: break
+        case .stump: prop = .stump
+        case .fern: prop = .fern
+        case .mushrooms: prop = .mushrooms
+        case .pond: prop = .pond
+        case .wildflowers: prop = .flowers
+        case .steppingStones: prop = .stones
+        case .lanterns: prop = .lantern
         }
-        return node
+        return ForestArt.sprite(prop)
     }
     private func motes(at point: CGPoint) {
         for index in 0..<5 {

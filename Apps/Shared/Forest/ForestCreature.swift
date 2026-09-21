@@ -5,7 +5,7 @@ import MosslingCore
 final class ForestCreature: SKNode {
     private var facing: CGFloat = 1
     private let bodySprite = SKSpriteNode()
-    private let shadow = SKShapeNode(ellipseOf: CGSize(width: 82, height: 16))
+    private let shadow = SKShapeNode(ellipseOf: CGSize(width: 48, height: 13))
     private(set) var stage: CompanionStage = .seedling
 
     init(stage: CompanionStage) {
@@ -24,11 +24,11 @@ final class ForestCreature: SKNode {
     func configure(stage: CompanionStage) {
         self.stage = stage
         let height = CGFloat(stage.sceneHeight)
-        let texture = SKTexture(imageNamed: stage.artwork)
+        let texture = ForestArt.character(stage)
         bodySprite.texture = texture
         let size = texture.size()
         bodySprite.size = CGSize(width: height * size.width / max(1, size.height), height: height)
-        bodySprite.position.y = -height * 0.08
+        bodySprite.position.y = -height * 0.012
         bodySprite.setScale(1)
         bodySprite.zRotation = 0
         bodySprite.alpha = 1
@@ -63,14 +63,14 @@ final class ForestCreature: SKNode {
         bodySprite.removeAllActions()
         bodySprite.setScale(1)
         bodySprite.xScale = facing
-        bodySprite.position.y = -bodySprite.size.height * 0.08
+        bodySprite.position.y = -bodySprite.size.height * 0.012
         bodySprite.zRotation = 0
     }
 
     func face(from: ForestCell, to: ForestCell) {
         let rear = to.x + to.y < from.x + from.y
         bodySprite.color = SKColor(red: 0.24, green: 0.38, blue: 0.17, alpha: 1)
-        bodySprite.colorBlendFactor = rear ? 1 : 0
+        bodySprite.colorBlendFactor = rear ? 0.15 : 0
         facing = to.x > from.x || to.y < from.y ? 1 : -1
     }
 
@@ -85,7 +85,7 @@ final class ForestCreature: SKNode {
 
     func hop() {
         resetPose()
-        let base = -bodySprite.size.height * 0.08
+        let base = -bodySprite.size.height * 0.012
         bodySprite.run(.sequence([
             .group([.scaleX(to: facing * 1.07, duration: 0.12), .scaleY(to: 0.90, duration: 0.12)]),
             .group([.moveTo(y: base + 19, duration: 0.18), .scaleX(to: facing * 0.96, duration: 0.18), .scaleY(to: 1.04, duration: 0.18)]),
