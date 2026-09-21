@@ -5,7 +5,7 @@ public struct ConfigurationSnapshot: Codable, Equatable, Sendable {
     public let configuration: AppConfiguration
     public let authorityID: UUID
     public init(configuration: AppConfiguration, authorityID: UUID) {
-        version = 2; self.configuration = configuration; self.authorityID = authorityID
+        version = 3; self.configuration = configuration; self.authorityID = authorityID
     }
     public func encoded() throws -> Data {
         try configuration.validate()
@@ -17,8 +17,10 @@ public struct ConfigurationSnapshot: Codable, Equatable, Sendable {
     }
     public static func decode(_ data: Data) throws -> Self {
         guard data.count <= SyncPacket.maximumEncodedBytes else { throw SyncProtocolError.payloadTooLarge(data.count) }
+        struct Header: Decodable { let version: Int }
+        let header = try JSONDecoder().decode(Header.self, from: data)
+        guard header.version == 3 else { throw SyncProtocolError.unsupportedVersion(header.version) }
         let value = try JSONDecoder().decode(Self.self, from: data)
-        guard value.version == 2 else { throw SyncProtocolError.unsupportedVersion(value.version) }
         try value.configuration.validate()
         return value
     }
@@ -62,10 +64,7 @@ public enum DocumentSync {
         _ = try snapshot.encoded()
         guard !document.retiredConfigurationAuthorities.contains(snapshot.authorityID) else { return }
         if document.configurationAuthorityID == snapshot.authorityID && document.hasReceivedPhoneConfiguration {
-            // The phone is the sole configuration writer and increments revision for
-            // every content change, including content-changing migrations. Replaying
-            // its equal-revision full snapshot repairs fields an older Watch decoder
-            // discarded from its cache without accepting an older configuration.
+            // Equal revisions may replay the current authoritative snapshot.
             guard snapshot.configuration.revision >= document.configuration.revision else { return }
         } else if let previous = document.configurationAuthorityID, previous != snapshot.authorityID {
             document.retiredConfigurationAuthorities.append(previous)

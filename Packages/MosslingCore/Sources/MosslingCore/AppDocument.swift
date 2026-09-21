@@ -2,7 +2,7 @@ import Foundation
 
 /// A single atomic unit: an earned event and its delivery obligation cannot diverge.
 public struct AppDocument: Codable, Equatable, Sendable {
-    public static let currentSchemaVersion = 2
+    public static let currentSchemaVersion = 3
     public var schemaVersion: Int
     public var deviceID: UUID
     public var configuration: AppConfiguration
@@ -68,15 +68,18 @@ public struct AppDocument: Codable, Equatable, Sendable {
         guard (1...currentSchemaVersion).contains(header.schemaVersion) else {
             throw DocumentError.unsupportedVersion(header.schemaVersion)
         }
-        var document = try decoder.decode(AppDocument.self, from: data)
-        // Schema 1 did not record explicit session starts or temporary routine changes.
-        // Optional fields decode absent; never infer a start from a timer's resume date.
-        if document.schemaVersion == 1 {
-            document.schemaVersion = 2
-            // A watch upgraded from v1 must accept an equal-revision v2 snapshot:
-            // its old decoder could have discarded unknown temporary routine fields.
-            document.hasReceivedPhoneConfiguration = false
+        var payload = data
+        if header.schemaVersion < currentSchemaVersion {
+            guard var fields = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw DocumentError.invalidDocument }
+            if var configuration = fields["configuration"] as? [String: Any] {
+                configuration["world"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(ForestWorld()))
+                fields["configuration"] = configuration
+            }
+            fields["schemaVersion"] = currentSchemaVersion
+            fields["hasReceivedPhoneConfiguration"] = false
+            payload = try JSONSerialization.data(withJSONObject: fields)
         }
+        let document = try decoder.decode(AppDocument.self, from: payload)
         try document.validate()
         return document
     }

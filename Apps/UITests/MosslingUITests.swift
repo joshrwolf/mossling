@@ -196,7 +196,7 @@ final class MosslingUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["companionStage"].label, "Sprout")
         let forest = app.buttons["forestScene"]
         XCTAssertTrue(forest.waitForExistence(timeout: 5))
-        XCTAssertEqual(forest.value as? String, "Sprout, Little fern")
+        XCTAssertEqual(forest.value as? String, "Sprout; Home clearing; Stump home")
         assertForestRendered(forest)
         if app.buttons["skipForestAnimation"].exists { app.buttons["skipForestAnimation"].tap() }
         forest.tap()
@@ -207,7 +207,7 @@ final class MosslingUITests: XCTestCase {
 
         relaunch(app)
         XCTAssertEqual(app.staticTexts["companionStage"].label, "Sprout")
-        XCTAssertEqual(app.buttons["forestScene"].value as? String, "Sprout, Little fern")
+        XCTAssertEqual(app.buttons["forestScene"].value as? String, "Sprout; Home clearing; Stump home")
         XCTAssertFalse(app.buttons["skipForestAnimation"].exists, "Opening saved progress must not replay evolution")
         assertGrowth(30, in: app)
     }
@@ -218,14 +218,48 @@ final class MosslingUITests: XCTestCase {
         let forest = app.staticTexts["forestScene"]
         XCTAssertTrue(forest.waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["forestScene"].exists, "A still scene must not advertise an unavailable action")
-        XCTAssertEqual(forest.value as? String, "Seedling, Little fern")
+        XCTAssertEqual(forest.value as? String, "Seedling; Home clearing; Stump home")
         assertForestRendered(forest)
         completeRepetitionSnack(in: app)
         assertGrowth(30, in: app)
-        XCTAssertEqual(forest.value as? String, "Sprout, Little fern")
+        XCTAssertEqual(forest.value as? String, "Sprout; Home clearing; Stump home")
         assertForestRendered(forest)
         XCTAssertFalse(app.buttons["skipForestAnimation"].exists)
         capture("Forest with large text and reduced motion", app: app)
+    }
+
+    func testHabitatPlacementMovementAndExpansionSurviveRelaunch() throws {
+        let app = launchFresh(document: try earnedAffinityDocument())
+        app.buttons["buildForest"].tap()
+        app.buttons["habitatKind"].tap()
+        app.buttons["Little fern"].tap()
+        let save = app.buttons["saveHabitat"]
+        reveal(save, in: app)
+        XCTAssertTrue(save.isEnabled)
+        save.tap()
+        XCTAssertEqual(app.staticTexts["habitatSaveStatus"].label, "Saved Little fern at column 5, row 4.")
+        let row = app.buttons["habitatRow"]
+        reveal(row, in: app)
+        row.tap()
+        app.buttons["Row 5"].tap()
+        reveal(save, in: app)
+        save.tap()
+        XCTAssertEqual(app.staticTexts["habitatSaveStatus"].label, "Saved Little fern at column 5, row 5.")
+        let expand = app.buttons["expandGrove"]
+        reveal(expand, in: app)
+        XCTAssertTrue(expand.isEnabled)
+        expand.tap()
+        XCTAssertTrue(app.staticTexts["groveOpen"].waitForExistence(timeout: 5))
+        capture("Expanded habitat with moved fern", app: app)
+        app.buttons["Done"].tap()
+        assertGrowth(30, in: app)
+        relaunch(app)
+        app.buttons["buildForest"].tap()
+        let fern = app.staticTexts["placement_fern"]
+        reveal(fern, in: app)
+        XCTAssertEqual(fern.label, "Little fern: Column 5, row 5")
+        XCTAssertTrue(app.staticTexts["groveOpen"].exists)
+        capture("Saved habitat after relaunch", app: app)
     }
 
     private func earnedAffinityDocument(snacks: Int = 3) throws -> AppDocument {
@@ -364,8 +398,10 @@ final class MosslingUITests: XCTestCase {
             // then back across the initial position. All scrolling is bounded.
             let startY: CGFloat = scrollTowardEarlierContent ? 0.38 : 0.62
             let endY: CGFloat = scrollTowardEarlierContent ? 0.62 : 0.38
-            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: startY))
-            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: endY))
+            let controls = app.collectionViews["habitatControls"]
+            let scrollSurface = controls.exists ? controls : app
+            let start = scrollSurface.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: startY))
+            let end = scrollSurface.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: endY))
             start.press(forDuration: 0.05, thenDragTo: end)
         }
         XCTAssertTrue(element.exists && element.isHittable,

@@ -7,6 +7,53 @@ import MosslingCore
 @Suite("Application workflows", .timeLimit(.minutes(1)))
 @MainActor
 struct StoreTests {
+    @Test func habitatEditsPersistAndStaleSettingsCannotReplaceThem() async throws {
+        let h = try Harness(), store = try h.open()
+        let draft = store.configuration
+        #expect(!store.placeHabitat(.fern, at: ForestCell(4, 3)))
+        #expect(!store.expandForest(.grove))
+        #expect(store.placeHabitat(.stump, at: ForestCell(4, 3)))
+        let world = store.configuration.world
+        #expect(await store.saveConfig(draft))
+        #expect(store.configuration.world == world)
+        #expect(try h.open().configuration.world == world)
+        #expect(store.progress.growth == 0)
+        h.repository.failWrites = true
+        h.connection.snapshots.removeAll()
+        let before = store.configuration
+        #expect(!store.placeHabitat(.stump, at: ForestCell(4, 4)))
+        #expect(store.configuration == before)
+        #expect(h.connection.snapshots.isEmpty)
+        #expect(try h.saved().configuration == before)
+    }
+
+    @Test func habitatRestoreIsExplicitAtomicAndEntitlementChecked() async throws {
+        let source = try Harness(), producer = try source.open()
+        #expect(producer.placeHabitat(.stump, at: ForestCell(4, 4)))
+        let data = try producer.exportData()
+        let destination = try Harness(), receiver = try destination.open()
+        #expect(await receiver.importData(data))
+        #expect(receiver.configuration.world == ForestWorld())
+        #expect(await receiver.importData(data, restoreHabitat: true))
+        #expect(try destination.open().configuration.world == producer.configuration.world)
+        var invalid = try AppDocument.decode(data)
+        try invalid.configuration.world.expand(.grove, growth: 30)
+        let before = try destination.saved()
+        #expect(!(await receiver.importData(try invalid.encoded(), restoreHabitat: true)))
+        #expect(try destination.saved() == before)
+        destination.repository.failWrites = true
+        #expect(!(await receiver.importData(try AppDocument().encoded(), restoreHabitat: true)))
+        #expect(receiver.configuration == before.configuration)
+    }
+
+    @Test func watchCannotEditHabitat() throws {
+        let h = try Harness(), watch = try h.open(role: .watch)
+        #expect(!watch.placeHabitat(.stump, at: ForestCell(4, 3)))
+        #expect(!watch.removeHabitat(.stump))
+        #expect(!watch.expandForest(.grove))
+        #expect(try h.saved().configuration.world == ForestWorld())
+    }
+
     @Test func createdAndEditedActivityReopensWithoutDuplication() async throws {
         let h = try Harness()
         let store = try h.open()

@@ -22,7 +22,7 @@ struct WatchForestView: View {
                     }.multilineTextAlignment(.center)
                 } else {
                 VStack(spacing: 12) {
-                    ForestCanvas(snapshot: ForestSnapshot(progress: store.progress, affinity: store.configuration.companionAffinity),
+                    ForestCanvas(snapshot: ForestSnapshot(progress: store.progress, affinity: store.configuration.companionAffinity, world: store.configuration.world),
                                  active: !showingSession && !showingActivities)
                         .frame(height: 116)
                         .overlay(alignment: .topLeading) {

@@ -27,7 +27,7 @@ private final class ForestDirector {
         let transition = playback.receive(snapshot, active: active, reduceMotion: reduceMotion)
         switch transition.moment {
         case .evolution: momentTitle = snapshot.stage.title
-        case .discovery: momentTitle = transition.discoveries.first?.title
+        case .discovery: momentTitle = transition.discoveries.first.map { $0.title + " unlocked" }
         case .none, .snack: momentTitle = nil
         }
         scene.present(transition, motion: motion)
@@ -42,6 +42,9 @@ private final class ForestDirector {
 struct ForestCanvas: View {
     let snapshot: ForestSnapshot
     var active = true
+    var draftKind: HabitatKind?
+    var selectedCell: ForestCell?
+    var onSelectCell: ((ForestCell) -> Void)?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     #if os(watchOS)
@@ -79,13 +82,33 @@ struct ForestCanvas: View {
                             Text("Woodland clearing")
                         } else {
                             Button("Woodland clearing") { director.scene.react() }
-                                .accessibilityHint("Greet your Mossling")
+                                .accessibilityHint("Visit a habitat object")
                         }
                     }
-                    .accessibilityValue(([snapshot.stage.title] + snapshot.unlocks.map(\.title)).joined(separator: ", "))
+                    .accessibilityValue(([snapshot.stage.title] + ForestRegion.allCases.filter { snapshot.world.regions.contains($0) }.map(\.title) + snapshot.world.placements.map { $0.kind.title }).joined(separator: "; "))
                     .accessibilityIdentifier("forestScene")
                 }
-                .onTapGesture { director.scene.react() }
+                .onTapGesture { location in
+                    if let onSelectCell, let cell = director.scene.cell(at: location) { onSelectCell(cell) }
+                    else { director.scene.react() }
+                }
+                #if os(iOS)
+                .gesture(DragGesture(minimumDistance: 12)
+                    .onChanged { director.scene.moveCamera(by: $0.translation, ended: false) }
+                    .onEnded { director.scene.moveCamera(by: $0.translation, ended: true) })
+                #endif
+                .overlay(alignment: .bottomTrailing) {
+                    #if os(iOS)
+                    HStack(spacing: 16) {
+                        Button("Zoom out", systemImage: "minus.magnifyingglass") { director.scene.magnify(by: 0.8) }
+                        Button("Center habitat", systemImage: "scope") { director.scene.centerCamera() }
+                        Button("Zoom in", systemImage: "plus.magnifyingglass") { director.scene.magnify(by: 1.25) }
+                    }
+                    .labelStyle(.iconOnly).font(.body).padding(12)
+                    .background(MossPalette.ink.opacity(0.9), in: Capsule())
+                    .foregroundStyle(MossPalette.cream).padding(12)
+                    #endif
+                }
                 .overlay(alignment: .top) {
                     if let title = director.momentTitle {
                         VStack(spacing: 6) {
@@ -106,12 +129,17 @@ struct ForestCanvas: View {
                 .onChange(of: snapshot) { _, _ in update() }
                 .onChange(of: running) { _, _ in update() }
                 .onChange(of: reduceMotion) { _, _ in update() }
+                .onChange(of: selectedCell) { _, _ in showDraft() }
+                .onChange(of: draftKind) { _, _ in showDraft() }
         }
     }
 
     private func update() {
         director.update(snapshot, active: running, reduceMotion: reduceMotion)
+        showDraft()
     }
+
+    private func showDraft() { director.scene.showPlacement(draftKind, at: selectedCell) }
 }
 
 #if os(iOS)

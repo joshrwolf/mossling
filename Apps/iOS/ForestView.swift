@@ -9,10 +9,11 @@ struct ForestView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var showingSession = false
     @State private var showingDetails = false
+    @State private var showingBuilder = false
     @State private var celebrating = false
 
     private var snapshot: ForestSnapshot {
-        ForestSnapshot(progress: store.progress, affinity: store.configuration.companionAffinity)
+        ForestSnapshot(progress: store.progress, affinity: store.configuration.companionAffinity, world: store.configuration.world)
     }
 
     var body: some View {
@@ -35,10 +36,11 @@ struct ForestView: View {
             .background(MossPalette.ink)
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showingSession) { SnackSessionView().preferredColorScheme(.light) }
+            .sheet(isPresented: $showingBuilder) { ForestBuilderView().preferredColorScheme(.dark) }
             .sheet(isPresented: $showingDetails) { ForestDetailsView().preferredColorScheme(.light) }
             .sensoryFeedback(.success, trigger: store.celebrationID)
             .onChange(of: store.celebrationID) { _, _ in celebrating = true }
-            .onChange(of: store.navigationRequest) { _, _ in showingSession = false; showingDetails = false }
+            .onChange(of: store.navigationRequest) { _, _ in showingSession = false; showingDetails = false; showingBuilder = false }
             .task(id: isSelected) {
                 guard isSelected else { return }
                 while !Task.isCancelled {
@@ -50,7 +52,7 @@ struct ForestView: View {
     }
 
     private var forest: some View {
-        ForestCanvas(snapshot: snapshot, active: isSelected && !showingSession && !showingDetails)
+        ForestCanvas(snapshot: snapshot, active: isSelected && !showingSession && !showingDetails && !showingBuilder)
             .frame(maxWidth: .infinity)
             .clipped()
     }
@@ -88,6 +90,11 @@ struct ForestView: View {
 
     private var snackDock: some View {
         VStack(alignment: .leading, spacing: 12) {
+            Button("Build forest", systemImage: "square.grid.3x3") { showingBuilder = true }
+                .font(.subheadline.weight(.semibold)).accessibilityIdentifier("buildForest")
+            if store.progress.growth >= ForestRegion.grove.requiredGrowth && !store.configuration.world.regions.contains(.grove) {
+                Text("Upper grove ready to open").font(.caption).foregroundStyle(MossPalette.mint)
+            }
             if celebrating {
                 HStack {
                     Label("+\(ProgressionCatalog.growthPerSnack) growth", systemImage: "leaf.fill")

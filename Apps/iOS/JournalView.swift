@@ -10,6 +10,19 @@ struct JournalView: View {
     @State private var importMessage: String?
     @State private var importing = false
 
+    private func importBackup(restoreHabitat: Bool) {
+        guard let data = pendingImport else { return }
+        pendingImport = nil
+        importing = true
+        Task {
+            let saved = await store.importData(data, restoreHabitat: restoreHabitat)
+            importing = false
+            importMessage = saved
+                ? (restoreHabitat ? "Habitat restored and completed snacks merged." : "Completed snacks merged. Your habitat is unchanged.")
+                : store.error
+        }
+    }
+
     /// A reward is one moment, even when both devices recorded it offline.
     /// Keep all source events in the ledger; this is a presentation projection.
     private var moments: [CompletionEvent] {
@@ -100,19 +113,11 @@ struct JournalView: View {
             .confirmationDialog("Merge this forest backup?", isPresented: Binding(
                 get: { pendingImport != nil }, set: { if !$0 { pendingImport = nil } }
             ), titleVisibility: .visible) {
-                Button("Merge backup") {
-                    guard let data = pendingImport else { return }
-                    pendingImport = nil
-                    importing = true
-                    Task {
-                        let saved = await store.importData(data)
-                        importing = false
-                        if saved { importMessage = "Backup merged. Your current schedule and activities are unchanged." }
-                    }
-                }
+                Button("Merge completed snacks") { importBackup(restoreHabitat: false) }
+                Button("Merge and restore habitat") { importBackup(restoreHabitat: true) }
                 Button("Cancel", role: .cancel) { pendingImport = nil }
             } message: {
-                Text("Merge completed snacks into your journal. Existing snacks are kept, and your schedule and activities stay unchanged. Duplicate snacks won’t earn growth twice.")
+                Text("Merge completed snacks, or also replace your habitat layout with the backup. Your schedule and activities stay unchanged. Duplicate snacks won’t earn growth twice.")
             }
             .alert("Forest backup", isPresented: Binding(get: { importMessage != nil }, set: { if !$0 { importMessage = nil } })) {
                 Button("OK") { importMessage = nil }
