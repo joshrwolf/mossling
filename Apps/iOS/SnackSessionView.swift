@@ -13,7 +13,7 @@ struct SnackSessionView: View {
             ScrollView {
                 if let session = store.session {
                     VStack(spacing: 26) {
-                        MosslingCharacter(mood: .curious)
+                        CompanionPortrait(stage: store.progress.stage)
                             .frame(width: 170, height: 160)
                             .accessibilityHidden(true)
                         Text(session.activity.title)
@@ -113,42 +113,6 @@ struct SnackSessionView: View {
     }
 }
 
-struct CharacterPlayground: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var mood: MosslingCharacter.Mood = .cozy
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 26) {
-                    Text("Meet your Mossling")
-                        .font(.system(.largeTitle, design: .serif, weight: .medium))
-                        .multilineTextAlignment(.center)
-                    ForestHabitat(mood: mood).frame(height: 320).id(mood)
-                    VStack(spacing: 12) {
-                        ForEach(MosslingCharacter.Mood.allCases, id: \.self) { candidate in
-                            Button {
-                                mood = candidate
-                            } label: {
-                                HStack {
-                                    Text(candidate.rawValue.capitalized)
-                                    Spacer()
-                                    if mood == candidate { Image(systemName: "checkmark") }
-                                }
-                                .font(.headline).padding(18)
-                                .background(Color.white.opacity(0.8), in: RoundedRectangle(cornerRadius: 18))
-                            }
-                        }
-                    }
-                    Text("Your woodland companion grows with every snack you complete.")
-                        .font(.body).multilineTextAlignment(.center).foregroundStyle(MossPalette.moss)
-                }.padding(24)
-            }
-            .background(MossPalette.cream).foregroundStyle(MossPalette.ink)
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } } }
-        }
-    }
-}
-
 struct WelcomeView: View {
     @Environment(MosslingStore.self) private var store
     var onFinish: () -> Void
@@ -156,7 +120,7 @@ struct WelcomeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                ForestHabitat().frame(height: 260)
+                CompanionPortrait().frame(maxWidth: .infinity).frame(height: 220)
                 Text("Movement snacks.\nWoodland magic.")
                     .font(.system(.largeTitle, design: .serif, weight: .medium))
                 Text("Fit short exercises into your day and grow your Mossling, one snack at a time.")

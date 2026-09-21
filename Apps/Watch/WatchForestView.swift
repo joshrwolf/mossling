@@ -6,13 +6,9 @@ import WatchKit
 struct WatchForestView: View {
     @Environment(MosslingStore.self) private var store
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.isLuminanceReduced) private var isLuminanceReduced
     @State private var showingSession = false
     @State private var showingActivities = false
     @State private var celebrating = false
-
-    private var stageNumber: Int { store.progress.stage.visualLevel }
-
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -26,10 +22,17 @@ struct WatchForestView: View {
                     }.multilineTextAlignment(.center)
                 } else {
                 VStack(spacing: 12) {
-                    MosslingCharacter(mood: celebrating ? .celebrating : .cozy, stage: stageNumber, affinity: store.configuration.companionAffinity, animate: scenePhase == .active && !isLuminanceReduced)
+                    ForestCanvas(snapshot: ForestSnapshot(progress: store.progress, affinity: store.configuration.companionAffinity),
+                                 active: !showingSession && !showingActivities)
                         .frame(height: 116)
-                    Text(store.configuration.companionName)
-                        .font(.system(.title3, design: .rounded, weight: .semibold))
+                        .overlay(alignment: .topLeading) {
+                            Text(store.configuration.companionName)
+                                .font(.caption2.weight(.semibold))
+                                .padding(6)
+                                .background(MossPalette.ink.opacity(0.9), in: Capsule())
+                                .padding(6)
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
                     if celebrating {
                         Text("Snack complete\n+\(ProgressionCatalog.growthPerSnack) growth")
                             .font(.headline).multilineTextAlignment(.center).foregroundStyle(MossPalette.mint)
@@ -39,19 +42,19 @@ struct WatchForestView: View {
                         }
                         Button("Done") { celebrating = false }
                     } else if let session = store.session {
-                        Text(session.activity.title).font(.headline).multilineTextAlignment(.center)
                         Button("Continue snack") { showingSession = true }
                             .buttonStyle(.borderedProminent)
+                        Text(session.activity.title).font(.headline).multilineTextAlignment(.center)
                     } else if store.isPausedToday {
                         Text("Paused for today").font(.headline)
                         Text("Your schedule resumes tomorrow. Resume today on your iPhone.")
                             .font(.caption).multilineTextAlignment(.center)
                     } else if let opportunity = store.currentOpportunity {
-                        Text(opportunity.activity.title).font(.headline).multilineTextAlignment(.center)
-                        Text(opportunity.activity.targetSummary).font(.caption).foregroundStyle(MossPalette.mint)
                         Button("Start snack") { begin(opportunity.activity) }
                             .buttonStyle(.borderedProminent)
                             .accessibilityIdentifier("watchStartSnack")
+                        Text(opportunity.activity.title).font(.headline).multilineTextAlignment(.center)
+                        Text(opportunity.activity.targetSummary).font(.caption).foregroundStyle(MossPalette.mint)
                         Button("Choose another") { showingActivities = true }.font(.caption)
                     } else {
                         Text("No snack available now").font(.headline)

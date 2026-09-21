@@ -125,9 +125,6 @@ public enum CompanionStage: String, Codable, CaseIterable, Sendable {
     public var minimumGrowth: Int {
         switch self { case .seedling: 0; case .sprout: 30; case .guardian: 150; case .groveKeeper: 1_200 }
     }
-    public var visualLevel: Int {
-        switch self { case .seedling: 0; case .sprout: 1; case .guardian: 2; case .groveKeeper: 3 }
-    }
 }
 public enum ForestUnlock: String, Codable, CaseIterable, Sendable {
     case fern, mushrooms, pond, wildflowers, steppingStones, lanterns

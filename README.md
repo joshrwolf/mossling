@@ -27,4 +27,4 @@ mise run test:ui          # Full UI suite on a fresh simulator
 
 The Tuist manifests own the project graph; generated Xcode snapshots are tracked for Cloud discovery. GitHub verifies changes and Xcode Cloud handles signed archives and distribution.
 
-Bundled character and icon artwork was generated for this project. Expressions, foliage and animation are native SwiftUI layers.
+Bundled woodland, character and icon artwork was generated for this project. SpriteKit animates the forest; SwiftUI owns the app controls and accessibility.
