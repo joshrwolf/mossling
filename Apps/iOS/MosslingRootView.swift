@@ -32,7 +32,7 @@ struct MosslingRootView: View {
                 }.background(MossPalette.cream)
             }
         }
-        .preferredColorScheme(selectedTab == 0 ? .dark : .light)
+        .preferredColorScheme(selectedTab == 0 || selectedTab == 1 ? .dark : .light)
         .onAppear { showingWelcome = store.isReady && !hasSeenWelcome }
         .onChange(of: store.navigationRequest) { _, _ in
             showingWelcome = false
