@@ -67,10 +67,12 @@ struct StoreTests {
         #expect(reopened.configuration.revision == config.revision + 1)
         var edit = reopened.configuration
         edit.activities[edit.activities.count - 1].targetValue = 30
+        edit.activities[edit.activities.count - 1].movement = .shoulderMobility
         #expect(await reopened.saveConfig(edit))
         let saved = try h.open().configuration
         #expect(saved.activities.filter { $0.id == activity.id }.count == 1)
         #expect(saved.activities.last?.targetValue == 30)
+        #expect(saved.activities.last?.movement == .shoulderMobility)
         #expect(saved.activities.last?.instructions == activity.instructions)
         #expect(saved.revision == config.revision + 2)
     }

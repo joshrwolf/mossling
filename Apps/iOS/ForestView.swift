@@ -26,10 +26,10 @@ struct ForestView: View {
                     ScrollView {
                         VStack(spacing: 0) {
                             forestHeader
-                            snackDock
+                            if needsSnackDock { snackDock }
                         }
                     }
-                } else {
+                } else if needsSnackDock {
                     snackDock
                 }
             }
@@ -55,6 +55,26 @@ struct ForestView: View {
         ForestCanvas(snapshot: snapshot, active: isSelected && !showingSession && !showingDetails && !showingBuilder)
             .frame(maxWidth: .infinity)
             .clipped()
+            .overlay(alignment: .bottomLeading) {
+                Button { showingBuilder = true } label: {
+                    Image(systemName: "hammer.fill").font(.body)
+                        .frame(width: 44, height: 44)
+                        .background(MossPalette.ink.opacity(0.9), in: Circle())
+                        .overlay(alignment: .topTrailing) {
+                            if groveReady { Circle().fill(MossPalette.mint).frame(width: 9, height: 9) }
+                        }
+                }
+                .buttonStyle(.plain).foregroundStyle(MossPalette.cream).padding(12)
+                .accessibilityLabel("Build forest").accessibilityIdentifier("buildForest")
+                .accessibilityHint(groveReady ? "Arrange your habitat. Upper grove ready to open" : "Arrange your habitat")
+            }
+    }
+
+    private var groveReady: Bool {
+        store.progress.growth >= ForestRegion.grove.requiredGrowth && !store.configuration.world.regions.contains(.grove)
+    }
+    private var needsSnackDock: Bool {
+        store.session != nil || store.isPausedToday || store.currentOpportunity != nil || celebrating
     }
 
     private var forestHeader: some View {
@@ -66,6 +86,11 @@ struct ForestView: View {
                 Text(store.configuration.companionName).font(.system(.title, design: .rounded, weight: .bold))
                 Text(store.progress.stage.title).font(.subheadline.weight(.medium))
                     .accessibilityIdentifier("companionStage")
+                scheduleStatus.font(.caption).foregroundStyle(MossPalette.mint)
+                if let status = store.status {
+                    Text(status).font(.caption).foregroundStyle(MossPalette.mint)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             if !typeSize.isAccessibilitySize { Spacer() }
             Button { showingDetails = true } label: {
@@ -90,11 +115,6 @@ struct ForestView: View {
 
     private var snackDock: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Button("Build forest", systemImage: "square.grid.3x3") { showingBuilder = true }
-                .font(.subheadline.weight(.semibold)).accessibilityIdentifier("buildForest")
-            if store.progress.growth >= ForestRegion.grove.requiredGrowth && !store.configuration.world.regions.contains(.grove) {
-                Text("Upper grove ready to open").font(.caption).foregroundStyle(MossPalette.mint)
-            }
             if celebrating {
                 HStack {
                     Label("+\(ProgressionCatalog.growthPerSnack) growth", systemImage: "leaf.fill")
@@ -112,8 +132,7 @@ struct ForestView: View {
             } else if store.isPausedToday {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Paused for today").font(.headline).accessibilityIdentifier("pausedDayState")
-                        Text("Your schedule resumes tomorrow.").font(.caption)
+                        Text("Your schedule resumes tomorrow.").font(.subheadline)
                     }
                     Spacer()
                     dockButton("Resume", id: "resumeToday") { Task { await store.resumeToday() } }
@@ -143,26 +162,32 @@ struct ForestView: View {
                         Button("Pause for today") { Task { await store.pauseToday() } }.accessibilityIdentifier("pauseToday")
                     }
                 }.font(.subheadline.weight(.medium)).foregroundStyle(MossPalette.mint)
-            } else {
-                Text(store.isCurrentCompleted ? "Snack complete" : store.isCurrentSkipped ? "Snack skipped" : "No snack scheduled now")
-                    .font(.headline)
-                    .accessibilityIdentifier(store.isCurrentCompleted ? "completedSnackState" : store.isCurrentSkipped ? "skippedSnackState" : "restingSnackState")
-                if let next = store.nextOpportunity {
-                    Text("Next snack: \(next.scheduledAt.formatted(.dateTime.weekday(.abbreviated).hour().minute())).")
-                        .font(.subheadline).foregroundStyle(MossPalette.mint)
-                } else {
-                    Text("Set your snack schedule in Rhythm.").font(.subheadline)
-                }
-            }
-            if let status = store.status {
-                Text(status).font(.caption).foregroundStyle(MossPalette.mint)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(20)
         .foregroundStyle(MossPalette.cream)
         .tint(MossPalette.cream)
-        .background(MossPalette.ink)
+        .background(MossPalette.mint.opacity(0.08), in: RoundedRectangle(cornerRadius: 24))
+        .padding(.horizontal, 12).padding(.bottom, 8)
+    }
+
+    @ViewBuilder
+    private var scheduleStatus: some View {
+        if store.session != nil {
+            Text("Snack in progress")
+        } else if store.isPausedToday {
+            Text("Paused for today").accessibilityIdentifier("pausedDayState")
+        } else if store.currentOpportunity != nil {
+            Label("Snack ready", systemImage: "clock")
+        } else {
+            Text(store.isCurrentCompleted ? "Snack complete" : store.isCurrentSkipped ? "Snack skipped" : "No snack scheduled now")
+                .accessibilityIdentifier(store.isCurrentCompleted ? "completedSnackState" : store.isCurrentSkipped ? "skippedSnackState" : "restingSnackState")
+            if let next = store.nextOpportunity {
+                Text("Next: \(next.scheduledAt.formatted(.dateTime.weekday(.abbreviated).hour().minute()))")
+            } else {
+                Text("Set your schedule in Rhythm.")
+            }
+        }
     }
 
     private func activityLabel(_ activity: ActivityDefinition) -> some View {

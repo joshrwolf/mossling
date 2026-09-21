@@ -60,27 +60,23 @@ public enum ForestWorldError: Error, LocalizedError, Equatable {
 public struct ForestWorld: Codable, Equatable, Sendable {
     public private(set) var regions: Set<ForestRegion>
     public private(set) var placements: [HabitatPlacement]
+    public let landscape: ForestLandscape
     public static let home = ForestCell(2, 2)
-    public init() {
+    public init(landscape: ForestLandscape = .standard, stump: ForestCell = ForestCell(1, 1)) {
         regions = [.clearing]
-        placements = [.init(kind: .stump, cell: ForestCell(1, 1))]
+        placements = [.init(kind: .stump, cell: stump)]
+        self.landscape = landscape
     }
     public var cells: [ForestCell] { ForestRegion.allCases.filter { regions.contains($0) }.flatMap(\.cells) }
     public static func elevation(at cell: ForestCell) -> Int { cell.x >= 6 ? 1 : 0 }
-    public static func terrain(at cell: ForestCell) -> ForestTerrain {
-        if [ForestCell(0, 0), ForestCell(5, 0), ForestCell(0, 5), ForestCell(9, 0), ForestCell(9, 5)].contains(cell) { return .tree }
-        if [ForestCell(1, 4), ForestCell(1, 5), ForestCell(2, 5)].contains(cell) { return .water }
-        if cell.x == 6 && cell.y == 2 { return .stairs }
-        if cell.y == 2 || (cell.x == 3 && cell.y > 2) { return .path }
-        return .grass
-    }
+    public func terrain(at cell: ForestCell) -> ForestTerrain { landscape.terrain(at: cell) }
     public var walkable: Set<ForestCell> {
         let occupied = Set(placements.filter { $0.kind.blocksWalking }.flatMap(\.footprint))
-        return Set(cells.filter { Self.terrain(at: $0) != .tree && Self.terrain(at: $0) != .water && !occupied.contains($0) })
+        return Set(cells.filter { terrain(at: $0) != .tree && terrain(at: $0) != .water && !occupied.contains($0) })
     }
     public func canStep(from: ForestCell, to: ForestCell) -> Bool {
         guard from.neighbors.contains(to), walkable.contains(from), walkable.contains(to) else { return false }
-        return Self.elevation(at: from) == Self.elevation(at: to) || Self.terrain(at: from) == .stairs || Self.terrain(at: to) == .stairs
+        return Self.elevation(at: from) == Self.elevation(at: to) || terrain(at: from) == .stairs || terrain(at: to) == .stairs
     }
     public func path(from start: ForestCell, to end: ForestCell) -> [ForestCell]? {
         let open = walkable
@@ -95,7 +91,7 @@ public struct ForestWorld: Codable, Equatable, Sendable {
                 return route.reversed()
             }
             for next in current.neighbors where open.contains(next) && !seen.contains(next) {
-                guard Self.elevation(at: current) == Self.elevation(at: next) || Self.terrain(at: current) == .stairs || Self.terrain(at: next) == .stairs else { continue }
+                guard Self.elevation(at: current) == Self.elevation(at: next) || terrain(at: current) == .stairs || terrain(at: next) == .stairs else { continue }
                 seen.insert(next); parents[next] = current; queue.append(next)
             }
         }
@@ -113,13 +109,14 @@ public struct ForestWorld: Codable, Equatable, Sendable {
         }.first?.cell
     }
     public func validate() throws {
+        try landscape.validate()
         guard regions.contains(.clearing), placements.count <= HabitatKind.allCases.count,
               Set(placements.map(\.kind)).count == placements.count else { throw ForestWorldError.invalidWorld }
         let land = Set(cells)
         var occupied = Set<ForestCell>()
         for object in placements {
             guard land.contains(object.cell), object.footprint.isSubset(of: land) else { throw ForestWorldError.outsideHabitat }
-            guard !object.footprint.contains(Self.home), object.footprint.allSatisfy({ Self.terrain(at: $0) == .grass }),
+            guard !object.footprint.contains(Self.home), object.footprint.allSatisfy({ terrain(at: $0) == .grass }),
                   occupied.isDisjoint(with: object.footprint) else { throw ForestWorldError.occupied }
             occupied.formUnion(object.footprint)
         }

@@ -5,8 +5,12 @@ import Testing
 private final class MemoryRepository: DocumentRepository {
     var value: AppDocument?
     var shouldFail = false
+    var failLoad = false
     enum Failure: Error { case diskFull }
-    func load() throws -> AppDocument? { value }
+    func load() throws -> AppDocument? {
+        if failLoad { throw Failure.diskFull }
+        return value
+    }
     func save(_ document: AppDocument) throws {
         if shouldFail { throw Failure.diskFull }
         value = document
@@ -15,6 +19,27 @@ private final class MemoryRepository: DocumentRepository {
 
 @Suite("Atomic document persistence")
 struct PersistenceTests {
+    @Test @MainActor func generationRunsOnlyForAbsentStorageAndCommitsBeforePublishing() throws {
+        let repository = MemoryRepository()
+        var generations = 0
+        func fresh() throws -> AppDocument {
+            generations += 1
+            return AppDocument(configuration: AppConfiguration(world: try .generated(seed: 88)))
+        }
+        let first = try DocumentController(repository: repository, initial: try fresh())
+        #expect(generations == 1)
+        #expect(repository.value == first.document)
+        #expect(try DocumentController(repository: repository, initial: try fresh()).document == first.document)
+        #expect(generations == 1)
+        repository.failLoad = true
+        #expect(throws: MemoryRepository.Failure.self) { try DocumentController(repository: repository, initial: try fresh()) }
+        #expect(generations == 1)
+        #expect(repository.value == first.document)
+        repository.failLoad = false; repository.value = nil; repository.shouldFail = true
+        #expect(throws: MemoryRepository.Failure.self) { try DocumentController(repository: repository, initial: try fresh()) }
+        #expect(repository.value == nil)
+    }
+
     @Test @MainActor func failedWriteDoesNotPublishMutation() throws {
         let repository = MemoryRepository()
         let controller = try DocumentController(repository: repository)

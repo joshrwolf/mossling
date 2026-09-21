@@ -5,7 +5,7 @@ public struct ConfigurationSnapshot: Codable, Equatable, Sendable {
     public let configuration: AppConfiguration
     public let authorityID: UUID
     public init(configuration: AppConfiguration, authorityID: UUID) {
-        version = 3; self.configuration = configuration; self.authorityID = authorityID
+        version = 4; self.configuration = configuration; self.authorityID = authorityID
     }
     public func encoded() throws -> Data {
         try configuration.validate()
@@ -19,7 +19,7 @@ public struct ConfigurationSnapshot: Codable, Equatable, Sendable {
         guard data.count <= SyncPacket.maximumEncodedBytes else { throw SyncProtocolError.payloadTooLarge(data.count) }
         struct Header: Decodable { let version: Int }
         let header = try JSONDecoder().decode(Header.self, from: data)
-        guard header.version == 3 else { throw SyncProtocolError.unsupportedVersion(header.version) }
+        guard header.version == 4 else { throw SyncProtocolError.unsupportedVersion(header.version) }
         let value = try JSONDecoder().decode(Self.self, from: data)
         try value.configuration.validate()
         return value

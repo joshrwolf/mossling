@@ -61,7 +61,7 @@ struct SyncTests {
     @Test func corruptUnsupportedAndInvalidPacketsFailClosed() throws {
         let valid = try SyncPacket.events([event(1)]).encoded()
         let text = String(decoding: valid, as: UTF8.self)
-        let future = Data(text.replacingOccurrences(of: "\"version\":1", with: "\"version\":99").utf8)
+        let future = Data(text.replacingOccurrences(of: "\"version\":\(SyncPacket.protocolVersion)", with: "\"version\":99").utf8)
         #expect(throws: SyncProtocolError.unsupportedVersion(99)) { try SyncPacket.decode(future) }
         #expect(throws: (any Error).self) { try SyncPacket.decode(Data("not json".utf8)) }
         let invalidEvent = Data(text.replacingOccurrences(of: "2026-09-02-h09", with: "invalid-reward").utf8)

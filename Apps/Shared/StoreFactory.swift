@@ -29,7 +29,7 @@ extension MosslingStore {
                 try repository.save(AppDocument.decode(data))
             }
             #endif
-            let controller = try DocumentController(repository: repository)
+            let controller = try DocumentController(repository: repository, initial: try freshDocument())
             var clock: () -> Date = Date.init
             #if DEBUG && targetEnvironment(simulator)
             let arguments = ProcessInfo.processInfo.arguments
@@ -51,6 +51,13 @@ extension MosslingStore {
 
     static func preview() -> MosslingStore {
         MosslingStore(role: .phone, controller: try? DocumentController(repository: PreviewRepository()))
+    }
+
+    private static func freshDocument() throws -> AppDocument {
+        #if DEBUG && targetEnvironment(simulator)
+        if ProcessInfo.processInfo.arguments.contains("--ui-testing") { return AppDocument() }
+        #endif
+        return AppDocument(configuration: AppConfiguration(world: try .generated(seed: UInt64.random(in: 0...UInt64.max))))
     }
 
     private static func reminders(for role: DeviceRole) -> (any ReminderService)? {

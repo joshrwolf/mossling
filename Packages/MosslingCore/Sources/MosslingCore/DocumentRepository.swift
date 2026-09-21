@@ -38,14 +38,16 @@ public final class DocumentController {
     public private(set) var document: AppDocument
     private let repository: any DocumentRepository
 
-    public init(repository: any DocumentRepository, initial: AppDocument = AppDocument()) throws {
+    public init(repository: any DocumentRepository, initial: @autoclosure () throws -> AppDocument = AppDocument()) throws {
         self.repository = repository
         if let existing = try repository.load() {
             try existing.validate()
             document = existing
         } else {
-            try repository.save(initial)
-            document = initial
+            let created = try initial()
+            try created.validate()
+            try repository.save(created)
+            document = created
         }
     }
 

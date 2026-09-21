@@ -30,7 +30,7 @@ struct ActivitiesView: View {
                             .font(.headline).frame(maxWidth: .infinity).padding(16)
                             .background(MossPalette.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 18))
                     }.accessibilityIdentifier("createActivity")
-                    Text("Keep at least one activity in your rotation.")
+                    Text("Use the checkmarks to choose your rotation. Tap a card to edit.")
                         .font(.footnote).foregroundStyle(MossPalette.mint)
                 }.padding(20)
             }
@@ -49,7 +49,8 @@ struct ActivitiesView: View {
                     ActivityIllustration(activity: activity)
                         .frame(height: typeSize.isAccessibilitySize ? 110 : 88)
                         .frame(maxWidth: .infinity)
-                        .background(RadialGradient(colors: [MossPalette.mint.opacity(0.16), .clear],
+                        .saturation(activity.isEnabled ? 1 : 0).opacity(activity.isEnabled ? 1 : 0.55)
+                        .background(RadialGradient(colors: [MossPalette.mint.opacity(activity.isEnabled ? 0.16 : 0.04), .clear],
                                                    center: .center, startRadius: 8, endRadius: 85))
                     Text(activity.title).font(.subheadline.weight(.bold))
                         .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
@@ -60,15 +61,25 @@ struct ActivitiesView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Edit \(activity.title), \(activity.targetSummary)")
             .accessibilityHint("Change the target, instructions or remove this activity")
-            Divider().overlay(MossPalette.mint.opacity(0.16)).padding(.horizontal, 12)
-            Toggle("In rotation", isOn: Binding(get: { activity.isEnabled }, set: { include(activity, enabled: $0) }))
-                .font(.caption.weight(.medium)).tint(MossPalette.fern)
-                .accessibilityLabel("Include \(activity.title)")
-                .disabled(changingRotation)
-                .padding(.horizontal, 12).padding(.vertical, 8)
+
         }
         .background(MossPalette.mint.opacity(activity.isEnabled ? 0.10 : 0.04), in: RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(MossPalette.mint.opacity(0.16)))
+        .overlay(RoundedRectangle(cornerRadius: 20)
+            .strokeBorder(activity.isEnabled ? MossPalette.mint.opacity(0.45) : .gray.opacity(0.3)))
+        .overlay(alignment: .topTrailing) {
+            Button { include(activity, enabled: !activity.isEnabled) } label: {
+                Image(systemName: activity.isEnabled ? "checkmark.circle.fill" : "circle")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(activity.isEnabled ? MossPalette.mint : .gray)
+                    .frame(width: 44, height: 44)
+                    .background(MossPalette.ink.opacity(0.85), in: Circle())
+            }
+            .buttonStyle(.plain).padding(4).disabled(changingRotation)
+            .accessibilityLabel("Include \(activity.title)")
+            .accessibilityValue(activity.isEnabled ? "In rotation" : "Not in rotation")
+            .accessibilityHint("Toggle this activity in your snack rotation")
+            .accessibilityIdentifier("rotation_\(activity.id)")
+        }
     }
 
     private func include(_ activity: ActivityDefinition, enabled: Bool) {
@@ -88,6 +99,7 @@ struct ActivityEditor: View {
     @State private var instructions: String
     @State private var kind: ActivityTargetKind
     @State private var target: Int
+    @State private var movement: ActivityMovement
     @State private var enabled: Bool
     @State private var saving = false
     @State private var validationMessage: String?
@@ -100,6 +112,7 @@ struct ActivityEditor: View {
         _kind = State(initialValue: activity?.targetKind ?? .duration)
         _target = State(initialValue: activity?.targetValue ?? 120)
         _enabled = State(initialValue: activity?.isEnabled ?? true)
+        _movement = State(initialValue: activity?.movement ?? .custom)
     }
 
     var body: some View {
@@ -112,6 +125,11 @@ struct ActivityEditor: View {
                     TextField("Instructions", text: $instructions, axis: .vertical)
                         .lineLimit(3...6)
                         .accessibilityIdentifier("activityInstructions")
+                }
+                Section("Illustration") {
+                    Picker("Movement", selection: $movement) {
+                        ForEach(ActivityMovement.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }.accessibilityIdentifier("activityMovement")
                 }
                 Section("Your target") {
                     Picker("Measure by", selection: $kind) {
@@ -193,7 +211,7 @@ struct ActivityEditor: View {
             id: activity?.id ?? UUID().uuidString,
             title: title.trimmingCharacters(in: .whitespacesAndNewlines),
             instructions: instructions.trimmingCharacters(in: .whitespacesAndNewlines),
-            targetKind: kind, targetValue: target, isEnabled: enabled
+            targetKind: kind, targetValue: target, isEnabled: enabled, movement: movement
         )
         do { try value.validate() } catch { validationMessage = error.localizedDescription; return }
         var config = store.configuration

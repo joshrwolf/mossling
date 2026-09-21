@@ -15,6 +15,7 @@ final class ForestScene: SKScene {
     private var permitsMotion = false
     private var visitIndex = 0
     private var cameraState = ForestCamera()
+    private var cameraFrameTime: TimeInterval?
     var cameraChanged: ((Int) -> Void)?
     private let mapCells = ForestRegion.allCases.flatMap(\.cells)
     var momentFinished: (() -> Void)?
@@ -35,6 +36,7 @@ final class ForestScene: SKScene {
 
     func resize(to size: CGSize) {
         guard size.width > 0, size.height > 0 else { return }
+        stopCameraMotion()
         self.size = size
         layoutCamera()
     }
@@ -54,6 +56,7 @@ final class ForestScene: SKScene {
                                  y: size.height * 0.48 - center.y * world.yScale + cameraState.offset.y)
     }
     func magnify(by factor: CGFloat, from start: CGPoint, to end: CGPoint) {
+        stopCameraMotion()
         cameraState.magnify(by: factor,
                             from: .init(x: start.x, y: size.height - start.y),
                             to: .init(x: end.x, y: size.height - end.y),
@@ -66,8 +69,23 @@ final class ForestScene: SKScene {
         finishCameraInteraction()
     }
     func moveCamera(by delta: CGPoint) {
+        stopCameraMotion()
         cameraState.pan(by: .init(x: delta.x, y: -delta.y), viewport: .init(x: size.width, y: size.height))
         layoutCamera()
+    }
+    func stopCameraMotion() { cameraState.stop(); cameraFrameTime = nil }
+    func endCameraDrag(velocity: CGPoint) {
+        if permitsMotion { cameraState.coast(with: .init(x: velocity.x, y: -velocity.y)) }
+        else { stopCameraMotion() }
+        finishCameraInteraction()
+    }
+    func advanceCamera(to currentTime: TimeInterval) -> Bool {
+        guard cameraState.isCoasting else { cameraFrameTime = nil; return false }
+        defer { cameraFrameTime = currentTime }
+        guard let previous = cameraFrameTime else { return true }
+        cameraState.advance(by: currentTime - previous, viewport: .init(x: size.width, y: size.height))
+        layoutCamera()
+        return cameraState.isCoasting
     }
     func finishCameraInteraction() { cameraChanged?(Int((cameraState.zoom * 100).rounded())) }
     func centerCamera() { cameraState.reset(); layoutCamera(); finishCameraInteraction() }
@@ -98,6 +116,7 @@ final class ForestScene: SKScene {
         }
     }
     func settle(_ snapshot: ForestSnapshot, motion: Bool) {
+        stopCameraMotion()
         removeAllActions()
         creature.settle()
         effects.removeAllChildren()
@@ -167,13 +186,13 @@ final class ForestScene: SKScene {
         let surroundings = rows.flatMap { y in columns.map { ForestCell($0, y) } }
         paintGround(surroundings, material: .grass, shade: 0.48)
         paintGround(snapshot.world.cells, material: .grass)
-        paintGround(snapshot.world.cells.filter { ForestWorld.terrain(at: $0) == .path || ForestWorld.terrain(at: $0) == .stairs }, material: .soil)
-        paintGround(snapshot.world.cells.filter { ForestWorld.terrain(at: $0) == .water }, material: .water)
+        paintGround(snapshot.world.cells.filter { snapshot.world.terrain(at: $0) == .path || snapshot.world.terrain(at: $0) == .stairs }, material: .soil)
+        paintGround(snapshot.world.cells.filter { snapshot.world.terrain(at: $0) == .water }, material: .water)
 
         let cliff = CGMutablePath()
         for cell in surroundings {
             let available = open.contains(cell)
-            let surface = ForestWorld.terrain(at: cell)
+            let surface = snapshot.world.terrain(at: cell)
             let location = point(cell)
             if cell.x == 6 {
                 cliff.addLines(between: [CGPoint(x: location.x, y: location.y + 20),
@@ -188,19 +207,25 @@ final class ForestScene: SKScene {
                 stairs.zPosition = 6
                 terrain.addChild(stairs)
             }
-            if surface == .tree || (!available && (cell.x + cell.y).isMultiple(of: 3)) {
+            let variation = snapshot.world.landscape.variation(at: cell)
+            if surface == .tree || (!available && variation % 5 < 2) {
                 // Keep the front edge open; tall canopy belongs behind the playable clearing.
                 let foreground = cell.x + cell.y > 10
-                let prop: ForestArt.Prop = foreground ? .rock : (cell.x.isMultiple(of: 2) ? .oak : .birch)
+                let prop: ForestArt.Prop = foreground ? .rock : (variation % 2 == 0 ? .oak : .birch)
                 let tree = ForestArt.sprite(prop)
                 tree.name = foreground ? nil : "canopy"
                 tree.position = location
+                tree.setScale(0.88 + CGFloat(variation % 25) / 100)
+                if !available {
+                    tree.position.x += CGFloat(Int(variation % 15) - 7)
+                    tree.position.y += CGFloat(Int((variation >> 8) % 9) - 4)
+                }
                 tree.zPosition = ForestProjection.depth(cell) + 2
                 tree.color = SKColor(red: 0.10, green: 0.20, blue: 0.15, alpha: 1)
                 tree.colorBlendFactor = available ? 0 : 0.38
                 objects.addChild(tree)
-            } else if !available && (cell.x * 7 + cell.y * 3).isMultiple(of: 5) {
-                let brush = ForestArt.sprite(cell.x.isMultiple(of: 2) ? .fern : .branch)
+            } else if !available && variation % 5 == 2 {
+                let brush = ForestArt.sprite(variation % 2 == 0 ? .fern : .branch)
                 brush.position = location
                 brush.zPosition = ForestProjection.depth(cell) + 1
                 brush.color = SKColor(red: 0.10, green: 0.20, blue: 0.15, alpha: 1)
@@ -208,7 +233,7 @@ final class ForestScene: SKScene {
                 objects.addChild(brush)
             }
             if available && surface == .water {
-                for (index, neighbor) in cell.neighbors.enumerated() where ForestWorld.terrain(at: neighbor) != .water {
+                for (index, neighbor) in cell.neighbors.enumerated() where snapshot.world.terrain(at: neighbor) != .water {
                     let rock = ForestArt.sprite(.rock)
                     rock.setScale(0.35)
                     let edge = point(neighbor)
