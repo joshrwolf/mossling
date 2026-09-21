@@ -31,7 +31,7 @@ struct ActivitiesView: View {
                             .font(.headline).frame(maxWidth: .infinity).padding(16)
                             .background(MossPalette.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 18))
                     }.accessibilityIdentifier("createActivity")
-                    Text("Use the checkmarks to choose your rotation. Tap a card to edit.")
+                    Text("Use the checkmarks to choose your rotation. Tap a card to explore its variations.")
                         .font(.footnote).foregroundStyle(MossPalette.mint)
                 }.padding(20)
             }
@@ -44,7 +44,7 @@ struct ActivitiesView: View {
                 }
             }
             .sheet(isPresented: $browsing) { ActivityLibrary() }
-            .sheet(item: $editing) { ActivityEditor(activity: $0) }
+            .sheet(item: $editing) { ActivityDetailView(activity: $0) }
             .sheet(isPresented: $adding) { ActivityEditor(activity: nil) }
             .onChange(of: store.navigationRequest) { _, _ in editing = nil; adding = false; browsing = false }
         }.tint(MossPalette.mint)
@@ -60,15 +60,18 @@ struct ActivitiesView: View {
                         .saturation(activity.isEnabled ? 1 : 0).opacity(activity.isEnabled ? 1 : 0.55)
                         .background(RadialGradient(colors: [MossPalette.mint.opacity(activity.isEnabled ? 0.16 : 0.04), .clear],
                                                    center: .center, startRadius: 8, endRadius: 85))
-                    Text(activity.title).font(.subheadline.weight(.bold))
+                    Text(activity.family?.title ?? activity.title).font(.subheadline.weight(.bold))
                         .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                         .frame(minHeight: typeSize.isAccessibilitySize ? 0 : 36)
+                    if let variation = activity.variation {
+                        Text(variation.label).font(.caption).foregroundStyle(MossPalette.mint)
+                    }
                     Text(activity.targetSummary).font(.caption.weight(.semibold)).foregroundStyle(MossPalette.mint)
                 }.padding(12).frame(maxWidth: .infinity)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Edit \(activity.title), \(activity.targetSummary)")
-            .accessibilityHint("Change the target, instructions or remove this activity")
+            .accessibilityLabel("View \(activity.title), \(activity.targetSummary)")
+            .accessibilityHint("View the movement and choose a variation")
 
         }
         .background(MossPalette.mint.opacity(activity.isEnabled ? 0.10 : 0.04), in: RoundedRectangle(cornerRadius: 20))
@@ -137,7 +140,7 @@ struct ActivityEditor: View {
                 Section("Illustration") {
                     Picker("Movement", selection: $movement) {
                         ForEach(ActivityMovement.allCases, id: \.self) { Text($0.title).tag($0) }
-                    }.accessibilityIdentifier("activityMovement")
+                    }.pickerStyle(.navigationLink).accessibilityIdentifier("activityMovement")
                 }
                 Section("Your target") {
                     Picker("Measure by", selection: $kind) {
@@ -219,7 +222,7 @@ struct ActivityEditor: View {
             id: activity?.id ?? UUID().uuidString,
             title: title.trimmingCharacters(in: .whitespacesAndNewlines),
             instructions: instructions.trimmingCharacters(in: .whitespacesAndNewlines),
-            targetKind: kind, targetValue: target, isEnabled: enabled, movement: movement
+            targetKind: kind, targetValue: target, isEnabled: enabled, movement: movement, catalogVariationID: activity?.catalogVariationID
         )
         do { try value.validate() } catch { validationMessage = error.localizedDescription; return }
         var config = store.configuration

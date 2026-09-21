@@ -15,6 +15,7 @@ Native iPhone and Apple Watch apps using Swift 6 strict concurrency, SwiftUI and
 - Persist validated document mutations atomically before publishing state, celebrating completion or acknowledging received events. Preserve corrupt and unsupported saves; schema changes need migrations and fixtures.
 - Habitat edits are phone-owned configuration transactions. Validate geometry on every device, but earned placement/expansion eligibility at the phone mutation boundary; configuration can arrive before completion history.
 - Phone configuration is authoritative. Completion events and the durable outbox must survive offline use; retain pending events until the peer acknowledges a successful save. Keep duplicate/reordered delivery idempotent and rewards derived from the ledger.
+- Activities use movement families with user-selected variations; support, impact and equipment can form branches. Keep targets separate from variations, reward every completed snack equally and preserve session/history snapshots when the rotation changes.
 - Keep clocks and calendars explicit in domain logic. Timers must survive suspension and relaunch; animation must never award growth or drive durable state.
 - Phone reminders have a finite horizon replenished on foreground. Preserve explicit permission opt-in, serialized notification mutations and visible scheduling failures. Watch delivery follows system routing.
 - Honor Reduce Motion, scene activity and reduced Watch luminance in presentation.
