@@ -35,7 +35,7 @@ struct ForestView: View {
             }
             .background(MossPalette.ink)
             .toolbar(.hidden, for: .navigationBar)
-            .sheet(isPresented: $showingSession) { SnackSessionView().preferredColorScheme(.light) }
+            .sheet(isPresented: $showingSession) { SnackSessionView().preferredColorScheme(.dark) }
             .sheet(isPresented: $showingBuilder) { ForestBuilderView().preferredColorScheme(.dark) }
             .sheet(isPresented: $showingDetails) { ForestDetailsView().preferredColorScheme(.light) }
             .sensoryFeedback(.success, trigger: store.celebrationID)

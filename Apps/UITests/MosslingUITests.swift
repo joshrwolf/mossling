@@ -38,6 +38,16 @@ final class MosslingUITests: XCTestCase {
     func testActivityEditorCreatesAndUpdatesSnack() {
         let app = launchFresh()
         app.tabBars.buttons["Snacks"].tap()
+        let walk = app.switches["Include Walk"]
+        XCTAssertTrue(walk.waitForExistence(timeout: 5))
+        XCTAssertEqual(walk.value as? String, "1")
+        walk.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        let walkTurnedOff = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "value == %@", "0"), object: walk
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [walkTurnedOff], timeout: 5), .completed,
+                       "Toggling the card must save the updated rotation")
+        capture("Bracken snack rotation", app: app)
         reveal(app.buttons["createActivity"], in: app)
         app.buttons["createActivity"].tap()
 
@@ -71,6 +81,13 @@ final class MosslingUITests: XCTestCase {
         XCTAssertTrue(edited.waitForExistence(timeout: 5), "The saved editor must display the changed target")
         XCTAssertFalse(original.exists, "Editing must update the existing snack instead of duplicating it")
         capture("Edited custom snack", app: app)
+        edited.tap()
+        let delete = app.buttons["deleteActivity"]
+        reveal(delete, in: app)
+        delete.tap()
+        app.sheets.buttons["Delete activity"].tap()
+        XCTAssertTrue(edited.waitForNonExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["createActivity"].exists)
     }
 
     func testScheduleEditorUpdatesDaysAndInterval() {
@@ -226,6 +243,13 @@ final class MosslingUITests: XCTestCase {
         assertForestRendered(forest)
         XCTAssertFalse(app.buttons["skipForestAnimation"].exists)
         capture("Forest with large text and reduced motion", app: app)
+        app.tabBars.buttons["Snacks"].tap()
+        let edit = app.buttons["Edit Wall push-ups, 8 reps"]
+        reveal(edit, in: app)
+        XCTAssertTrue(edit.isHittable)
+        capture("Snack cards with large text", app: app)
+        edit.tap()
+        XCTAssertTrue(app.textFields["activityTitle"].waitForExistence(timeout: 5))
     }
 
     func testHabitatPlacementMovementAndExpansionSurviveRelaunch() throws {
@@ -260,6 +284,28 @@ final class MosslingUITests: XCTestCase {
         XCTAssertEqual(fern.label, "Little fern: Column 5, row 5")
         XCTAssertTrue(app.staticTexts["groveOpen"].exists)
         capture("Saved habitat after relaunch", app: app)
+    }
+
+    func testForestPinchZoomAndRecenter() {
+        let app = launchFresh(options: ["--ui-testing-reduce-motion"])
+        let forest = app.staticTexts["forestScene"]
+        let center = app.buttons["centerHabitat"]
+        XCTAssertTrue(forest.waitForExistence(timeout: 5))
+        XCTAssertEqual(center.value as? String, "100% zoom")
+        XCTAssertFalse(app.buttons["Zoom in"].exists)
+        XCTAssertFalse(app.buttons["Zoom out"].exists)
+        forest.pinch(withScale: 1.7, velocity: 1)
+        let zoomed = Int((center.value as? String ?? "").split(separator: "%").first ?? "") ?? 0
+        XCTAssertGreaterThan(zoomed, 120)
+        XCTAssertLessThanOrEqual(zoomed, 300)
+        capture("Forest pinch zoom", app: app)
+        forest.pinch(withScale: 0.8, velocity: -1)
+        let reduced = Int((center.value as? String ?? "").split(separator: "%").first ?? "") ?? 0
+        XCTAssertLessThan(reduced, zoomed)
+        XCTAssertGreaterThanOrEqual(reduced, 85)
+        center.tap()
+        XCTAssertEqual(center.value as? String, "100% zoom")
+        assertGrowth(0, in: app)
     }
 
     private func earnedAffinityDocument(snacks: Int = 3) throws -> AppDocument {
@@ -335,6 +381,7 @@ final class MosslingUITests: XCTestCase {
         XCTAssertTrue(complete.waitForExistence(timeout: 5), file: file, line: line)
         reveal(complete, in: app, file: file, line: line)
         XCTAssertTrue(complete.isEnabled, file: file, line: line)
+        capture("Bracken wall push-up snack", app: app)
         complete.tap()
         XCTAssertTrue(app.staticTexts["completedSnackState"].waitForExistence(timeout: 10),
                       file: file, line: line)

@@ -14,9 +14,8 @@ final class ForestScene: SKScene {
     private var residentCell = ForestWorld.home
     private var permitsMotion = false
     private var visitIndex = 0
-    private var zoom: CGFloat = 1
-    private var pan = CGPoint.zero
-    private var dragOrigin = CGPoint.zero
+    private var cameraState = ForestCamera()
+    var cameraChanged: ((Int) -> Void)?
     private let mapCells = ForestRegion.allCases.flatMap(\.cells)
     var momentFinished: (() -> Void)?
 
@@ -50,18 +49,28 @@ final class ForestScene: SKScene {
         let scale = min(size.width / (right - left + 100), size.height / (top - bottom + 180))
         let center = CGPoint(x: (left + right) / 2, y: (bottom + top) / 2)
         #endif
-        world.setScale(scale * zoom)
-        world.position = CGPoint(x: size.width / 2 - center.x * world.xScale + pan.x,
-                                 y: size.height * 0.48 - center.y * world.yScale + pan.y)
+        world.setScale(scale * cameraState.zoom)
+        world.position = CGPoint(x: size.width / 2 - center.x * world.xScale + cameraState.offset.x,
+                                 y: size.height * 0.48 - center.y * world.yScale + cameraState.offset.y)
     }
-    func magnify(by factor: CGFloat) { zoom = min(2.5, max(0.85, zoom * factor)); layoutCamera() }
-    func moveCamera(by translation: CGSize, ended: Bool) {
-        pan = CGPoint(x: min(size.width * 0.65, max(-size.width * 0.65, dragOrigin.x + translation.width)),
-                      y: min(size.height * 0.4, max(-size.height * 0.4, dragOrigin.y - translation.height)))
-        if ended { dragOrigin = pan }
+    func magnify(by factor: CGFloat, from start: CGPoint, to end: CGPoint) {
+        cameraState.magnify(by: factor,
+                            from: .init(x: start.x, y: size.height - start.y),
+                            to: .init(x: end.x, y: size.height - end.y),
+                            viewport: .init(x: size.width, y: size.height))
         layoutCamera()
     }
-    func centerCamera() { zoom = 1; pan = .zero; dragOrigin = .zero; layoutCamera() }
+    func magnify(by factor: CGFloat) {
+        let center = CGPoint(x: size.width / 2, y: size.height * 0.52)
+        magnify(by: factor, from: center, to: center)
+        finishCameraInteraction()
+    }
+    func moveCamera(by delta: CGPoint) {
+        cameraState.pan(by: .init(x: delta.x, y: -delta.y), viewport: .init(x: size.width, y: size.height))
+        layoutCamera()
+    }
+    func finishCameraInteraction() { cameraChanged?(Int((cameraState.zoom * 100).rounded())) }
+    func centerCamera() { cameraState.reset(); layoutCamera(); finishCameraInteraction() }
     func cell(at location: CGPoint) -> ForestCell? {
         let local = world.convert(CGPoint(x: location.x, y: size.height - location.y), from: self)
         return ForestProjection.cell(at: .init(x: local.x, y: local.y), among: snapshot?.world.cells ?? [])

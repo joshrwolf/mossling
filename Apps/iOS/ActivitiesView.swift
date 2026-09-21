@@ -4,63 +4,79 @@ import MosslingCore
 
 struct ActivitiesView: View {
     @Environment(MosslingStore.self) private var store
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var editing: ActivityDefinition?
     @State private var adding = false
+    @State private var changingRotation = false
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    Text("Snacks cycle through your enabled activities each day. Choose another activity whenever a snack is available.")
-                        .font(.body).foregroundStyle(MossPalette.moss)
-                        .listRowBackground(Color.clear)
-                }
-                Section("Your rotation") {
-                    ForEach(store.configuration.activities) { activity in
-                        HStack(alignment: .center, spacing: 14) {
-                            Button { editing = activity } label: {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text(activity.title).font(.headline).foregroundStyle(MossPalette.ink)
-                                    Text(activity.targetSummary).font(.subheadline).foregroundStyle(MossPalette.moss)
-                                    Text(activity.instructions).font(.caption).foregroundStyle(MossPalette.moss)
-                                        .lineLimit(2)
-                                }.frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Edit \(activity.title), \(activity.targetSummary)")
-                            Toggle("Include \(activity.title)", isOn: Binding(
-                                get: { activity.isEnabled },
-                                set: { value in
-                                    var config = store.configuration
-                                    if let index = config.activities.firstIndex(where: { $0.id == activity.id }) {
-                                        config.activities[index].isEnabled = value
-                                        Task { _ = await store.saveConfig(config) }
-                                    }
-                                }
-                            )).labelsHidden().fixedSize()
-                        }.padding(.vertical, 7)
-                    }.onDelete(perform: delete)
-                }
-                Section {
-                    Button { adding = true } label: { Label("Create activity", systemImage: "plus.circle") }
-                        .accessibilityIdentifier("createActivity")
-                } footer: {
-                    Text("Keep at least one activity enabled. Confirm completion after your reps or when the timer finishes.")
-                }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Your rotation").font(.title2.weight(.bold))
+                        Spacer()
+                        Text("\(store.configuration.activities.filter(\.isEnabled).count) active")
+                            .font(.subheadline).foregroundStyle(MossPalette.mint)
+                    }
+                    Text("Pick the activities that come up in your snacks.")
+                        .font(.subheadline).foregroundStyle(MossPalette.mint)
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12),
+                                             count: typeSize.isAccessibilitySize ? 1 : 2), spacing: 12) {
+                        ForEach(store.configuration.activities) { activity in card(activity) }
+                    }
+                    Button { adding = true } label: {
+                        Label("Create activity", systemImage: "plus")
+                            .font(.headline).frame(maxWidth: .infinity).padding(16)
+                            .background(MossPalette.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 18))
+                    }.accessibilityIdentifier("createActivity")
+                    Text("Keep at least one activity in your rotation.")
+                        .font(.footnote).foregroundStyle(MossPalette.mint)
+                }.padding(20)
             }
-            .scrollContentBackground(.hidden).background(MossPalette.cream)
-            .navigationTitle("Your snacks")
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { EditButton() } }
+            .background(MossPalette.ink).foregroundStyle(MossPalette.cream)
+            .navigationTitle("Snacks")
             .sheet(item: $editing) { ActivityEditor(activity: $0) }
             .sheet(isPresented: $adding) { ActivityEditor(activity: nil) }
             .onChange(of: store.navigationRequest) { _, _ in editing = nil; adding = false }
-        }
+        }.tint(MossPalette.mint)
     }
 
-    private func delete(at offsets: IndexSet) {
+    private func card(_ activity: ActivityDefinition) -> some View {
+        VStack(spacing: 0) {
+            Button { editing = activity } label: {
+                VStack(spacing: 6) {
+                    ActivityIllustration(activity: activity)
+                        .frame(height: typeSize.isAccessibilitySize ? 110 : 88)
+                        .frame(maxWidth: .infinity)
+                        .background(RadialGradient(colors: [MossPalette.mint.opacity(0.16), .clear],
+                                                   center: .center, startRadius: 8, endRadius: 85))
+                    Text(activity.title).font(.subheadline.weight(.bold))
+                        .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                        .frame(minHeight: typeSize.isAccessibilitySize ? 0 : 36)
+                    Text(activity.targetSummary).font(.caption.weight(.semibold)).foregroundStyle(MossPalette.mint)
+                }.padding(12).frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Edit \(activity.title), \(activity.targetSummary)")
+            .accessibilityHint("Change the target, instructions or remove this activity")
+            Divider().overlay(MossPalette.mint.opacity(0.16)).padding(.horizontal, 12)
+            Toggle("In rotation", isOn: Binding(get: { activity.isEnabled }, set: { include(activity, enabled: $0) }))
+                .font(.caption.weight(.medium)).tint(MossPalette.fern)
+                .accessibilityLabel("Include \(activity.title)")
+                .disabled(changingRotation)
+                .padding(.horizontal, 12).padding(.vertical, 8)
+        }
+        .background(MossPalette.mint.opacity(activity.isEnabled ? 0.10 : 0.04), in: RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(MossPalette.mint.opacity(0.16)))
+    }
+
+    private func include(_ activity: ActivityDefinition, enabled: Bool) {
         var config = store.configuration
-        config.activities.remove(atOffsets: offsets)
-        Task { _ = await store.saveConfig(config) }
+        guard let index = config.activities.firstIndex(where: { $0.id == activity.id }) else { return }
+        config.activities[index].isEnabled = enabled
+        changingRotation = true
+        Task { _ = await store.saveConfig(config); changingRotation = false }
     }
 }
 
@@ -75,6 +91,7 @@ struct ActivityEditor: View {
     @State private var enabled: Bool
     @State private var saving = false
     @State private var validationMessage: String?
+    @State private var confirmDelete = false
 
     init(activity: ActivityDefinition?) {
         self.activity = activity
@@ -123,11 +140,17 @@ struct ActivityEditor: View {
                 } footer: {
                     Text("Every completed snack earns the same growth, regardless of duration or repetitions.")
                 }
+                if activity != nil {
+                    Section {
+                        Button("Delete activity", role: .destructive) { confirmDelete = true }
+                            .disabled(saving).accessibilityIdentifier("deleteActivity")
+                    }
+                }
                 if let validationMessage {
                     Section { Text(validationMessage).foregroundStyle(Color.red).font(.subheadline) }
                 }
             }
-            .scrollContentBackground(.hidden).background(MossPalette.cream)
+            .scrollContentBackground(.hidden).background(MossPalette.ink).foregroundStyle(MossPalette.cream)
             .navigationTitle(activity == nil ? "Create activity" : "Edit activity")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -137,7 +160,22 @@ struct ActivityEditor: View {
                         .accessibilityIdentifier("saveActivity")
                 }
             }
+            .confirmationDialog("Delete this activity?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                Button("Delete activity", role: .destructive) { delete() }
+            } message: { Text("Completed snacks stay in your journal.") }
             .onChange(of: kind) { _, kind in target = kind == .duration ? 120 : 10 }
+        }.tint(MossPalette.mint)
+    }
+
+    private func delete() {
+        guard let activity else { return }
+        var config = store.configuration
+        config.activities.removeAll { $0.id == activity.id }
+        saving = true
+        Task {
+            let saved = await store.saveConfig(config)
+            saving = false
+            if saved { dismiss() } else { validationMessage = store.error }
         }
     }
 

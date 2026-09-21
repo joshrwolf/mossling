@@ -13,9 +13,11 @@ private final class ForestDirector {
     @ObservationIgnored private var lastActive: Bool?
     @ObservationIgnored private var lastReduceMotion: Bool?
     var momentTitle: String?
+    var zoomPercent = 100
 
     init() {
         scene.momentFinished = { [weak self] in self?.momentTitle = nil }
+        scene.cameraChanged = { [weak self] in self?.zoomPercent = $0 }
     }
 
     func update(_ snapshot: ForestSnapshot, active: Bool, reduceMotion: Bool) {
@@ -72,10 +74,15 @@ struct ForestCanvas: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
+                #if os(iOS)
+                ForestSurface(scene: director.scene, paused: !running, framesPerSecond: 60, onTap: select)
+                #else
                 ForestSurface(scene: director.scene, paused: !running, framesPerSecond: reduceMotion ? 15 : 30)
                     .allowsHitTesting(false)
-                Color.clear.contentShape(Rectangle())
+                Color.clear.contentShape(Rectangle()).onTapGesture(perform: select)
+                #endif
             }
+                .frame(width: geometry.size.width, height: geometry.size.height)
                 .accessibilityRepresentation {
                     Group {
                         if reduceMotion {
@@ -85,28 +92,23 @@ struct ForestCanvas: View {
                                 .accessibilityHint("Visit a habitat object")
                         }
                     }
+                    .frame(width: geometry.size.width, height: geometry.size.height)
                     .accessibilityValue(([snapshot.stage.title] + ForestRegion.allCases.filter { snapshot.world.regions.contains($0) }.map(\.title) + snapshot.world.placements.map { $0.kind.title }).joined(separator: "; "))
                     .accessibilityIdentifier("forestScene")
+                    #if os(iOS)
+                    .accessibilityAction(named: "Zoom in") { director.scene.magnify(by: 1.25) }
+                    .accessibilityAction(named: "Zoom out") { director.scene.magnify(by: 0.8) }
+                    .accessibilityAction(named: "Center habitat") { director.scene.centerCamera() }
+                    #endif
                 }
-                .onTapGesture { location in
-                    if let onSelectCell, let cell = director.scene.cell(at: location) { onSelectCell(cell) }
-                    else { director.scene.react() }
-                }
-                #if os(iOS)
-                .gesture(DragGesture(minimumDistance: 12)
-                    .onChanged { director.scene.moveCamera(by: $0.translation, ended: false) }
-                    .onEnded { director.scene.moveCamera(by: $0.translation, ended: true) })
-                #endif
                 .overlay(alignment: .bottomTrailing) {
                     #if os(iOS)
-                    HStack(spacing: 16) {
-                        Button("Zoom out", systemImage: "minus.magnifyingglass") { director.scene.magnify(by: 0.8) }
-                        Button("Center habitat", systemImage: "scope") { director.scene.centerCamera() }
-                        Button("Zoom in", systemImage: "plus.magnifyingglass") { director.scene.magnify(by: 1.25) }
-                    }
-                    .labelStyle(.iconOnly).font(.body).padding(12)
-                    .background(MossPalette.ink.opacity(0.9), in: Capsule())
-                    .foregroundStyle(MossPalette.cream).padding(12)
+                    Button("Center habitat", systemImage: "scope") { director.scene.centerCamera() }
+                        .labelStyle(.iconOnly).font(.body).padding(12)
+                        .background(MossPalette.ink.opacity(0.9), in: Circle())
+                        .foregroundStyle(MossPalette.cream).padding(12)
+                        .accessibilityIdentifier("centerHabitat")
+                        .accessibilityValue("\(director.zoomPercent)% zoom")
                     #endif
                 }
                 .overlay(alignment: .top) {
@@ -134,6 +136,11 @@ struct ForestCanvas: View {
         }
     }
 
+    private func select(_ location: CGPoint) {
+        if let onSelectCell, let cell = director.scene.cell(at: location) { onSelectCell(cell) }
+        else { director.scene.react() }
+    }
+
     private func update() {
         director.update(snapshot, active: running, reduceMotion: reduceMotion)
         showDraft()
@@ -147,22 +154,77 @@ private struct ForestSurface: UIViewRepresentable {
     let scene: ForestScene
     let paused: Bool
     let framesPerSecond: Int
+    let onTap: (CGPoint) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(scene: scene, onTap: onTap) }
 
     func makeUIView(context: Context) -> SKView {
         let view = SKView()
-        view.isUserInteractionEnabled = false
         view.ignoresSiblingOrder = true
+        context.coordinator.install(on: view)
         return view
     }
 
     func updateUIView(_ view: SKView, context: Context) {
+        context.coordinator.onTap = onTap
         if view.scene !== scene { view.presentScene(scene) }
         view.preferredFramesPerSecond = framesPerSecond
         view.isPaused = paused
     }
 
-    static func dismantleUIView(_ view: SKView, coordinator: ()) {
+    static func dismantleUIView(_ view: SKView, coordinator: Coordinator) {
+        view.gestureRecognizers?.forEach(view.removeGestureRecognizer)
         view.presentScene(nil)
+    }
+
+    @MainActor
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        let scene: ForestScene
+        var onTap: (CGPoint) -> Void
+        private var pinch: UIPinchGestureRecognizer!
+        private var previousAnchor: CGPoint?
+
+        init(scene: ForestScene, onTap: @escaping (CGPoint) -> Void) {
+            self.scene = scene; self.onTap = onTap
+        }
+        func install(on view: UIView) {
+            let pan = UIPanGestureRecognizer(target: self, action: #selector(drag(_:)))
+            pan.maximumNumberOfTouches = 2
+            pinch = UIPinchGestureRecognizer(target: self, action: #selector(zoom(_:)))
+            let tap = UITapGestureRecognizer(target: self, action: #selector(tap(_:)))
+            pan.delegate = self; pinch.delegate = self
+            tap.require(toFail: pan); tap.require(toFail: pinch)
+            [pan, pinch, tap].forEach(view.addGestureRecognizer)
+        }
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                               shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+            (gestureRecognizer is UIPanGestureRecognizer && other is UIPinchGestureRecognizer) ||
+            (gestureRecognizer is UIPinchGestureRecognizer && other is UIPanGestureRecognizer)
+        }
+        @objc private func drag(_ gesture: UIPanGestureRecognizer) {
+            let delta = gesture.translation(in: gesture.view)
+            gesture.setTranslation(.zero, in: gesture.view)
+            guard pinch.state != .began, pinch.state != .changed else { return }
+            if gesture.state == .changed, gesture.numberOfTouches == 1 { scene.moveCamera(by: delta) }
+            if gesture.state == .ended || gesture.state == .cancelled { scene.finishCameraInteraction() }
+        }
+        @objc private func zoom(_ gesture: UIPinchGestureRecognizer) {
+            switch gesture.state {
+            case .began:
+                previousAnchor = gesture.location(in: gesture.view)
+                gesture.scale = 1
+            case .changed:
+                let anchor = gesture.location(in: gesture.view)
+                scene.magnify(by: gesture.scale, from: previousAnchor ?? anchor, to: anchor)
+                previousAnchor = anchor
+                gesture.scale = 1
+            case .ended, .cancelled, .failed:
+                previousAnchor = nil
+                scene.finishCameraInteraction()
+            default: break
+            }
+        }
+        @objc private func tap(_ gesture: UITapGestureRecognizer) { onTap(gesture.location(in: gesture.view)) }
     }
 }
 #else
