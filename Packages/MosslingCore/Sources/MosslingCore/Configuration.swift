@@ -131,11 +131,13 @@ public struct AppConfiguration: Codable, Equatable, Sendable {
     public var activities: [ActivityDefinition]
     public var dailyOverride: DailyRoutineOverride?
     public var companionAffinity: CompanionAffinity?
+    public var world: ForestWorld
     public static let standard = Self()
 
-    public init(revision: Int = 0, companionName: String = "Moss", schedule: ScheduleConfiguration = .standard, activities: [ActivityDefinition] = ActivityDefinition.starters, dailyOverride: DailyRoutineOverride? = nil, companionAffinity: CompanionAffinity? = nil) {
+    public init(revision: Int = 0, companionName: String = "Moss", schedule: ScheduleConfiguration = .standard, activities: [ActivityDefinition] = ActivityDefinition.starters, dailyOverride: DailyRoutineOverride? = nil, companionAffinity: CompanionAffinity? = nil, world: ForestWorld = ForestWorld()) {
         self.revision = revision; self.companionName = companionName; self.schedule = schedule; self.activities = activities; self.dailyOverride = dailyOverride
         self.companionAffinity = companionAffinity
+        self.world = world
     }
 
     public func isPaused(at date: Date) -> Bool {
@@ -184,6 +186,7 @@ public struct AppConfiguration: Codable, Equatable, Sendable {
         guard revision >= 0 else { throw ConfigurationError.invalidRevision }
         let name = companionName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty, name.count <= 40 else { throw ConfigurationError.invalidCompanionName }
+        try world.validate()
         try schedule.validate()
         try dailyOverride?.validate()
         guard Set(activities.map(\.id)).count == activities.count else { throw ConfigurationError.duplicateActivityIDs }

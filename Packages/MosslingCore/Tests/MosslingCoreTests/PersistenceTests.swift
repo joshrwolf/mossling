@@ -113,7 +113,7 @@ struct MigrationTests {
         let migrated = try AppDocument.decode(JSONSerialization.data(withJSONObject: legacy))
         original.hasReceivedPhoneConfiguration = false
         #expect(migrated == original)
-        #expect(migrated.schemaVersion == 2)
+        #expect(migrated.schemaVersion == AppDocument.currentSchemaVersion)
         #expect(migrated.session?.completionDeadline == opportunity.expiresAt)
         #expect(migrated.configuration.dailyOverride == nil)
         #expect(try AppDocument.decode(migrated.encoded()) == migrated)
@@ -125,8 +125,8 @@ struct MigrationTests {
         try document.configuration.skip(sampleOpportunity(), at: now, calendar: testCalendar())
         try document.configuration.pauseForToday(at: now, calendar: testCalendar())
         #expect(try AppDocument.decode(document.encoded()) == document)
-        #expect(throws: DocumentError.unsupportedVersion(3)) {
-            try AppDocument.decode(Data("{\"schemaVersion\":3}".utf8))
+        #expect(throws: DocumentError.unsupportedVersion(999)) {
+            try AppDocument.decode(Data("{\"schemaVersion\":999}".utf8))
         }
     }
 }

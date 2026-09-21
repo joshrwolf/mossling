@@ -21,6 +21,14 @@ struct ForestPresentationTests {
         return ForestSnapshot(progress: CompletionLedger(events: document.events).progress, affinity: affinity)
     }
 
+    @Test func projectionRoundTripsEveryCellIncludingRaisedTerrain() {
+        let cells = ForestRegion.allCases.flatMap(\.cells)
+        for cell in cells {
+            #expect(ForestProjection.cell(at: ForestProjection.point(for: cell), among: cells) == cell)
+        }
+        #expect(ForestProjection.cell(at: .init(x: 10000, y: 10000), among: cells) == nil)
+    }
+
     @Test func openingAnEarnedForestDoesNotReplayRewards() throws {
         var playback = ForestPlayback()
         let state = try snapshot(3)

@@ -102,6 +102,7 @@ public final class MosslingStore {
     public func saveConfig(_ proposed: AppConfiguration) async -> Bool {
         guard role == .phone else { error = "Change activities and reminders on your iPhone."; return false }
         var next = proposed
+        next.world = configuration.world
         next.revision = configuration.revision + 1
         do { _ = try ConfigurationSnapshot(configuration: next, authorityID: document.deviceID).encoded() }
         catch { self.error = error.localizedDescription; return false }
@@ -110,6 +111,32 @@ public final class MosslingStore {
         // The durable save is complete. A slow system notification service must not
         // hold the editor open; scheduling errors remain visible and retry on reopen.
         _ = enqueueNotificationReconciliation()
+        return true
+    }
+
+    @discardableResult
+    public func placeHabitat(_ kind: HabitatKind, at cell: ForestCell) -> Bool {
+        editWorld { try $0.place(kind, at: cell, growth: progress.growth) }
+    }
+
+    @discardableResult
+    public func removeHabitat(_ kind: HabitatKind) -> Bool {
+        editWorld { $0.remove(kind) }
+    }
+
+    @discardableResult
+    public func expandForest(_ region: ForestRegion) -> Bool {
+        editWorld { try $0.expand(region, growth: progress.growth) }
+    }
+
+    private func editWorld(_ edit: (inout ForestWorld) throws -> Void) -> Bool {
+        guard role == .phone else { error = "Build your forest on iPhone."; return false }
+        guard commit({ document in
+            try edit(&document.configuration.world)
+            document.configuration.revision += 1
+            _ = try ConfigurationSnapshot(configuration: document.configuration, authorityID: document.deviceID).encoded()
+        }) else { return false }
+        synchronize(includeInventory: false)
         return true
     }
 
@@ -229,7 +256,7 @@ public final class MosslingStore {
 
     /// Recovery is a merge, never a replacement of this installation's identity/settings.
     @discardableResult
-    public func importData(_ data: Data) async -> Bool {
+    public func importData(_ data: Data, restoreHabitat: Bool = false) async -> Bool {
         guard role == .phone else { return false }
         do {
             guard data.count <= 20 * 1_024 * 1_024 else {
@@ -237,7 +264,15 @@ public final class MosslingStore {
                 return false
             }
             let backup = try AppDocument.decode(data)
-            guard commit({ try DocumentSync.mergeBackup(backup, into: &$0) }) else { return false }
+            guard commit({ document in
+                try DocumentSync.mergeBackup(backup, into: &document)
+                if restoreHabitat {
+                    try backup.configuration.world.validateEntitlements(growth: CompletionLedger(events: document.events).progress.growth)
+                    document.configuration.world = backup.configuration.world
+                    document.configuration.revision += 1
+                    _ = try ConfigurationSnapshot(configuration: document.configuration, authorityID: document.deviceID).encoded()
+                }
+            }) else { return false }
             synchronize(includeInventory: true)
             _ = enqueueNotificationReconciliation()
             status = "Backup merged. Your current schedule and activities are unchanged."

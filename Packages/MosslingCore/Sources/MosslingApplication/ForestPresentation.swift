@@ -1,12 +1,14 @@
 import MosslingCore
 
 public struct ForestSnapshot: Equatable, Sendable {
+    public let world: ForestWorld
     public let growth: Int
     public let stage: CompanionStage
     public let unlocks: [ForestUnlock]
     public let affinity: CompanionAffinity?
 
-    public init(progress: CompanionProgress, affinity: CompanionAffinity?) {
+    public init(progress: CompanionProgress, affinity: CompanionAffinity?, world: ForestWorld = ForestWorld()) {
+        self.world = world
         growth = progress.growth
         stage = progress.stage
         unlocks = progress.forestUnlocks

@@ -6,13 +6,14 @@ Native iPhone and Apple Watch apps using Swift 6 strict concurrency, SwiftUI and
 
 - `Packages/MosslingCore`: portable `MosslingCore` domain/persistence/sync and `MosslingApplication` Store targets with Swift Testing. Keep Apple UI/platform frameworks out.
 - `Apps/Shared/StoreFactory.swift` wires live Store dependencies; Apple adapters live in `Apps/Shared/Platform`, shared presentation in `Apps/Shared/UI`.
-- `Apps/Shared/Forest`: SpriteKit scene, creature actions and SwiftUI presentation. `ForestPlayback` in `MosslingApplication` plans visual transitions from saved progress; scene actions never mutate the Store.
+- `Apps/Shared/Forest`: SpriteKit scene, creature actions and SwiftUI presentation. `ForestWorld` owns layout, placement and navigation rules; `ForestProjection` and `ForestPlayback` translate saved state for presentation. Scene actions never mutate the Store.
 - `Apps/iOS`, `Apps/Watch`, `Apps/UITests`: platform views and XCTest UI scenarios.
 - `Project.swift`, `Tuist.swift`, `Config`: project graph, toolchain compatibility and product configuration. `mise.toml` owns development commands.
 
 ## Invariants
 
 - Persist validated document mutations atomically before publishing state, celebrating completion or acknowledging received events. Preserve corrupt and unsupported saves; schema changes need migrations and fixtures.
+- Habitat edits are phone-owned configuration transactions. Validate geometry on every device, but earned placement/expansion eligibility at the phone mutation boundary; configuration can arrive before completion history.
 - Phone configuration is authoritative. Completion events and the durable outbox must survive offline use; retain pending events until the peer acknowledges a successful save. Keep duplicate/reordered delivery idempotent and rewards derived from the ledger.
 - Keep clocks and calendars explicit in domain logic. Timers must survive suspension and relaunch; animation must never award growth or drive durable state.
 - Phone reminders have a finite horizon replenished on foreground. Preserve explicit permission opt-in, serialized notification mutations and visible scheduling failures. Watch delivery follows system routing.
