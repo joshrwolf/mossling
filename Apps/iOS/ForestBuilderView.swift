@@ -72,11 +72,11 @@ struct ForestBuilderView: View {
                 }.accessibilityIdentifier("habitatControls")
             }
             .background(MossPalette.ink)
-            .tint(MossPalette.mint)
             .navigationTitle("Build forest").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .onChange(of: kind) { _, _ in message = nil }
             .onChange(of: cell) { _, _ in message = nil }
         }
+        .tint(MossPalette.mint)
     }
 }

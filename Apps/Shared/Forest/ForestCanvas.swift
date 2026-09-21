@@ -180,7 +180,7 @@ private struct ForestSurface: View {
 struct CompanionPortrait: View {
     var stage: CompanionStage = .seedling
     var body: some View {
-        Image(stage.artwork).resizable().scaledToFit()
+        Image(decorative: ForestArt.character(stage).cgImage(), scale: 1).resizable().scaledToFit()
             .accessibilityLabel(stage.title)
     }
 }

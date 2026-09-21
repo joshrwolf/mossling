@@ -41,3 +41,7 @@ If Xcode rewrites a generated scheme during regeneration, quit Xcode, regenerate
 ## Device testing
 
 Copy `Config/Local.xcconfig.example` to the ignored `Config/Local.xcconfig`, set your Apple team, and select a connected device in Xcode. Use the Mossling or MosslingWatch scheme. Paired-device checks are described in [Release](Release.md).
+
+## Artwork
+
+`WoodlandGround`, `WoodlandProps` and `BrackenSprites` in the shared asset catalog supply the painted scene. `ForestArt.swift` owns source-pixel frames, ground-contact anchors and rendered sizes; update these together when replacing an atlas. Preserve transparent gutters around sprites and check both scene and portrait crops. Review an empty clearing, a furnished expanded habitat, placement previews and the small Watch display at native scale; concept boards alone do not verify integration.
