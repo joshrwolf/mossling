@@ -2,7 +2,7 @@ import Foundation
 
 /// A single atomic unit: an earned event and its delivery obligation cannot diverge.
 public struct AppDocument: Codable, Equatable, Sendable {
-    public static let currentSchemaVersion = 5
+    public static let currentSchemaVersion = 6
     public var schemaVersion: Int
     public var deviceID: UUID
     public var configuration: AppConfiguration
@@ -84,7 +84,10 @@ public struct AppDocument: Codable, Equatable, Sendable {
             if header.schemaVersion < 3 { fields["hasReceivedPhoneConfiguration"] = false }
             payload = try JSONSerialization.data(withJSONObject: fields)
         }
-        let document = try decoder.decode(AppDocument.self, from: payload)
+        var document = try decoder.decode(AppDocument.self, from: payload)
+        if header.schemaVersion < 6 {
+            document.configuration.activities = ActivityCatalog.migratedRotation(document.configuration.activities)
+        }
         try document.validate()
         return document
     }

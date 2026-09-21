@@ -21,14 +21,14 @@ struct ActivityMovementTests {
         #expect(catalog.count >= ActivityDefinition.starters.count + 12)
         #expect(Set(catalog.map(\.id)).count == catalog.count)
         #expect(Set(catalog.map(\.movement)) == Set(ActivityMovement.allCases.filter { $0 != .custom }))
-        #expect(Set(catalog.map(\.movement)).count == catalog.count)
-        let configuration = AppConfiguration(activities: catalog)
-        try configuration.validate()
-        let snapshot = ConfigurationSnapshot(configuration: configuration, authorityID: UUID())
-        #expect(try ConfigurationSnapshot.decode(snapshot.encoded()) == snapshot)
-        let document = AppDocument(configuration: configuration)
-        #expect(try AppDocument.decode(document.encoded()) == document)
+        #expect(Set(catalog.compactMap(\.catalogVariationID)).count == catalog.count)
         for activity in catalog {
+            let configuration = AppConfiguration(activities: [activity])
+            try configuration.validate()
+            let snapshot = ConfigurationSnapshot(configuration: configuration, authorityID: UUID())
+            #expect(try ConfigurationSnapshot.decode(snapshot.encoded()) == snapshot)
+            let document = AppDocument(configuration: configuration)
+            #expect(try AppDocument.decode(document.encoded()) == document)
             let opportunity = sampleOpportunity()
             let event = CompletionEvent(sessionID: UUID(), opportunityID: opportunity.id,
                 rewardKey: opportunity.rewardKey, scheduledAt: opportunity.scheduledAt,

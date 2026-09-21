@@ -66,30 +66,36 @@ final class MosslingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["saveActivity"].waitForNonExistence(timeout: 10),
                       "A durable save must dismiss the editor without waiting for reminder delivery")
 
-        let original = app.buttons["Edit Kitchen wiggle, 2 min"]
+        let original = app.buttons["View Kitchen wiggle, 2 min"]
         reveal(original, in: app)
         XCTAssertTrue(original.waitForExistence(timeout: 5))
         capture("Custom snack in rotation", app: app)
 
         original.tap()
+        app.buttons["Activity options"].tap()
+        app.buttons["Edit activity"].tap()
         XCTAssertEqual(app.textFields["activityTitle"].value as? String, "Kitchen wiggle")
         XCTAssertEqual(app.textFields["activityInstructions"].value as? String,
                        "Move gently to a favorite song.")
         app.buttons["activityMovement"].tap()
-        app.buttons["Shoulder mobility"].tap()
+        reveal(app.buttons["Arm circles"], in: app)
+        app.buttons["Arm circles"].tap()
         app.buttons["30 sec"].tap()
         capture("Editing a custom snack", app: app)
         app.buttons["saveActivity"].tap()
         XCTAssertTrue(app.buttons["saveActivity"].waitForNonExistence(timeout: 10),
                       "A durable save must dismiss the editor without waiting for reminder delivery")
-        let edited = app.buttons["Edit Kitchen wiggle, 30 sec"]
+        app.buttons["Close"].tap()
+        let edited = app.buttons["View Kitchen wiggle, 30 sec"]
         reveal(edited, in: app)
         XCTAssertTrue(edited.waitForExistence(timeout: 5), "The saved editor must display the changed target")
         XCTAssertFalse(original.exists, "Editing must update the existing snack instead of duplicating it")
         capture("Edited custom snack", app: app)
         edited.tap()
+        app.buttons["Activity options"].tap()
+        app.buttons["Edit activity"].tap()
         let movement = app.buttons["activityMovement"]
-        XCTAssertTrue(movement.label.contains("Shoulder mobility"), "The saved illustration choice must reopen")
+        XCTAssertEqual(movement.value as? String, "Arm circles", "The saved illustration choice must reopen")
         let delete = app.buttons["deleteActivity"]
         reveal(delete, in: app)
         delete.tap()
@@ -106,32 +112,80 @@ final class MosslingUITests: XCTestCase {
         XCTAssertTrue(search.waitForExistence(timeout: 5))
         search.tap()
         search.typeText("Seated")
-        let add = app.buttons["add_seated-knee-extension"]
-        XCTAssertTrue(add.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["add_seated-march"].exists)
-        XCTAssertTrue(app.buttons["add_seated-toe-raise"].exists)
-        XCTAssertFalse(app.buttons["add_march"].exists)
-        capture("Seated activity library", app: app)
-        add.tap()
-        let saved = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == false"), object: add)
-        XCTAssertEqual(XCTWaiter.wait(for: [saved], timeout: 10), .completed)
+        let family = app.buttons["family_kneeExtensions"]
+        XCTAssertTrue(family.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["family_marching"].exists)
+        XCTAssertTrue(app.buttons["family_toeRaises"].exists)
+        XCTAssertFalse(app.buttons["family_pushUps"].exists)
+        capture("Activity families in library", app: app)
+        family.tap()
+        XCTAssertEqual(app.staticTexts["activityDetailTitle"].label, "Seated knee extensions")
+        let weighted = app.buttons["variation_weighted-knee-extension"]
+        reveal(weighted, in: app)
+        weighted.tap()
+        XCTAssertEqual(app.staticTexts["activityDetailTitle"].label, "Weighted knee extensions")
+        XCTAssertTrue(weighted.isSelected)
+        capture("Illustrated variation chooser", app: app)
+        app.buttons["useVariation"].tap()
+        XCTAssertTrue(app.buttons["useVariation"].waitForNonExistence(timeout: 10))
+        XCTAssertTrue(family.label.contains("in rotation"))
         app.buttons["Done"].tap()
         let rotation = app.buttons["rotation_seated-knee-extension"]
         reveal(rotation, in: app)
         XCTAssertEqual(rotation.value as? String, "In rotation")
-        capture("New snack in rotation", app: app)
         relaunch(app)
         app.tabBars.buttons["Snacks"].tap()
         reveal(rotation, in: app)
         XCTAssertEqual(rotation.value as? String, "In rotation")
-        app.buttons["Edit Seated knee extensions, 10 reps"].tap()
-        XCTAssertTrue(app.buttons["activityMovement"].label.contains("Seated knee extensions"))
-        app.buttons["Cancel"].tap()
+        app.buttons["View Weighted knee extensions, 8 reps"].tap()
+        reveal(weighted, in: app)
+        XCTAssertTrue(weighted.isSelected, "The chosen variation must survive relaunch")
+        app.buttons["Close"].tap()
         app.buttons["browseActivities"].tap()
         search.tap()
         search.typeText("Seated")
-        XCTAssertTrue(add.waitForExistence(timeout: 5))
-        XCTAssertFalse(add.isEnabled, "A saved catalog entry cannot be added twice")
+        XCTAssertTrue(family.waitForExistence(timeout: 5))
+        XCTAssertTrue(family.label.contains("in rotation"), "The family has one saved selection")
+        family.tap()
+        XCTAssertEqual(app.staticTexts["activityDetailTitle"].label, "Weighted knee extensions")
+    }
+
+    func testVariationPreviewCancelTargetAndSelectionPersist() {
+        let app = launchFresh()
+        app.tabBars.buttons["Snacks"].tap()
+        let wall = app.buttons["View Wall push-ups, 8 reps"]
+        reveal(wall, in: app)
+        wall.tap()
+        let floor = app.buttons["variation_floor-push"]
+        reveal(floor, in: app)
+        floor.tap()
+        XCTAssertEqual(app.staticTexts["activityDetailTitle"].label, "Floor push-ups")
+        XCTAssertTrue(app.staticTexts["activityDescription"].label.contains("head to heels"))
+        app.buttons["Close"].tap()
+        XCTAssertTrue(wall.exists, "Previewing must not save a different variation")
+        wall.tap()
+        reveal(floor, in: app)
+        floor.tap()
+        let target = app.textFields["variationTarget"]
+        reveal(target, in: app)
+        target.doubleTap()
+        target.typeText("7")
+        XCTAssertEqual(target.value as? String, "7")
+        app.buttons["useVariation"].tap()
+        XCTAssertTrue(app.buttons["useVariation"].waitForNonExistence(timeout: 10))
+        let selected = app.buttons["View Floor push-ups, 7 reps"]
+        XCTAssertTrue(selected.exists)
+        XCTAssertTrue(app.buttons["rotation_wall-push"].exists, "Changing a variation preserves the rotation ID")
+        XCTAssertFalse(wall.exists)
+        relaunch(app)
+        app.tabBars.buttons["Snacks"].tap()
+        reveal(selected, in: app)
+        selected.tap()
+        reveal(floor, in: app)
+        XCTAssertTrue(floor.isSelected)
+        reveal(target, in: app)
+        XCTAssertEqual(target.value as? String, "7")
+        capture("Saved floor push-up variation", app: app)
     }
 
     func testScheduleEditorUpdatesDaysAndInterval() {
@@ -288,12 +342,23 @@ final class MosslingUITests: XCTestCase {
         XCTAssertFalse(app.buttons["skipForestAnimation"].exists)
         capture("Forest with large text and reduced motion", app: app)
         app.tabBars.buttons["Snacks"].tap()
-        let edit = app.buttons["Edit Wall push-ups, 8 reps"]
+        let edit = app.buttons["View Wall push-ups, 8 reps"]
         reveal(edit, in: app)
         XCTAssertTrue(edit.isHittable)
         capture("Snack cards with large text", app: app)
         edit.tap()
-        XCTAssertTrue(app.textFields["activityTitle"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["activityDetailTitle"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["replayMovement"].exists)
+        let floor = app.buttons["variation_floor-push"]
+        reveal(floor, in: app)
+        XCTAssertGreaterThan(floor.frame.width, app.frame.width * 0.75,
+                             "Accessibility sizes must use a single-column variation layout, including sheets")
+        floor.tap()
+        XCTAssertTrue(floor.isSelected)
+        let target = app.textFields["variationTarget"]
+        reveal(target, in: app)
+        XCTAssertEqual(target.value as? String, "5")
+        capture("Variation sheet with large text and reduced motion", app: app)
     }
 
     func testHabitatPlacementMovementAndExpansionSurviveRelaunch() throws {
@@ -379,6 +444,9 @@ final class MosslingUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = arguments(now: activeWeekday) + ["--ui-testing-reset"] + options
+        if options.contains("--ui-testing-accessibility-size") {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        }
         if skipWelcome { app.launchArguments.append("--ui-testing-skip-welcome") }
         if let document {
             do { app.launchEnvironment["MOSSLING_UI_TEST_DOCUMENT"] = try document.encoded().base64EncodedString() }
@@ -485,7 +553,12 @@ final class MosslingUITests: XCTestCase {
         // its scroll position below the target. Use small drags in either
         // direction, checking the current accessibility frame after each one.
         for attempt in 0..<20 {
-            if element.exists && element.isHittable { return }
+            let pinnedAction = app.buttons["useVariation"]
+            if element.exists && element.isHittable {
+                let abovePinnedAction = !pinnedAction.exists || !pinnedAction.isHittable || element.identifier == "useVariation"
+                    || element.frame.maxY < pinnedAction.frame.minY - 8
+                if abovePinnedAction { return }
+            }
             let target = element.exists ? element.frame : .zero
             let hasPosition = !target.isEmpty && !target.isNull && !target.isInfinite
             let scrollTowardEarlierContent = hasPosition

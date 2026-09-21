@@ -7,12 +7,12 @@ struct ActivityLibrary: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var query = ""
-    @State private var saving = false
-    @State private var failure: String?
+    @State private var selected: ActivityDefinition?
 
-    private var results: [ActivityDefinition] {
-        ActivityDefinition.catalog.filter {
-            query.isEmpty || $0.title.localizedStandardContains(query)
+    private var results: [ActivityFamily] {
+        ActivityFamily.allCases.filter { family in
+            query.isEmpty || family.title.localizedStandardContains(query)
+                || family.variations.contains { $0.title.localizedStandardContains(query) || $0.label.localizedStandardContains(query) }
         }
     }
 
@@ -20,31 +20,26 @@ struct ActivityLibrary: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Add a movement to your rotation. You can edit its target and instructions afterward.")
+                    Text("Choose a movement, then pick your variation.")
                         .font(.subheadline).foregroundStyle(MossPalette.mint)
-                    if let failure { Text(failure).foregroundStyle(.red) }
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12),
                                              count: typeSize.isAccessibilitySize ? 1 : 2), spacing: 12) {
-                        ForEach(results) { activity in
-                            let added = store.configuration.activities.contains { $0.id == activity.id }
-                            VStack(spacing: 8) {
-                                ActivityIllustration(activity: activity).frame(height: 100)
-                                Text(activity.title).font(.subheadline.bold())
-                                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-                                    .frame(minHeight: typeSize.isAccessibilitySize ? 0 : 40)
-                                Text(activity.targetSummary).font(.caption).foregroundStyle(MossPalette.mint)
-                                Button {
-                                    add(activity)
-                                } label: {
-                                    Label(added ? "Added" : "Add", systemImage: added ? "checkmark" : "plus")
-                                        .font(.subheadline.bold()).frame(maxWidth: .infinity, minHeight: 44)
-                                }
-                                .buttonStyle(.bordered).disabled(added || saving)
-                                .accessibilityLabel(added ? "\(activity.title) added" : "Add \(activity.title)")
-                                .accessibilityIdentifier("add_\(activity.id)")
-                            }
-                            .padding(12).frame(maxWidth: .infinity)
-                            .background(MossPalette.mint.opacity(0.1), in: RoundedRectangle(cornerRadius: 20))
+                        ForEach(results) { family in
+                            let saved = store.configuration.activities.first { $0.family == family }
+                            let activity = store.configuration.activityDraft(for: family)
+                            Button { selected = activity } label: {
+                                VStack(spacing: 8) {
+                                    ActivityIllustration(activity: activity).frame(height: 100)
+                                    Text(family.title).font(.subheadline.bold())
+                                        .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                                    Text("\(family.variations.count) variations").font(.caption).foregroundStyle(MossPalette.mint)
+                                    Label(saved == nil ? "Choose" : "In rotation", systemImage: saved == nil ? "plus.circle" : "checkmark.circle.fill")
+                                        .font(.caption.weight(.semibold)).foregroundStyle(MossPalette.mint)
+                                }.padding(12).frame(maxWidth: .infinity)
+                                    .background(MossPalette.mint.opacity(0.1), in: RoundedRectangle(cornerRadius: 20))
+                            }.buttonStyle(.plain)
+                                .accessibilityLabel("\(family.title), \(family.variations.count) variations\(saved == nil ? "" : ", in rotation")")
+                                .accessibilityIdentifier("family_\(family.id)")
                         }
                     }
                     if results.isEmpty { ContentUnavailableView.search(text: query) }
@@ -55,18 +50,7 @@ struct ActivityLibrary: View {
             .searchable(text: $query, prompt: "Find a movement")
             .searchPresentationToolbarBehavior(.avoidHidingContent)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            .sheet(item: $selected) { ActivityDetailView(activity: $0) }
         }.tint(MossPalette.mint)
-    }
-
-    private func add(_ activity: ActivityDefinition) {
-        guard !saving, !store.configuration.activities.contains(where: { $0.id == activity.id }) else { return }
-        var configuration = store.configuration
-        configuration.activities.append(activity)
-        saving = true
-        failure = nil
-        Task {
-            if !(await store.saveConfig(configuration)) { failure = store.error }
-            saving = false
-        }
     }
 }

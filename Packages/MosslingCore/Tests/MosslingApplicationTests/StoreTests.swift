@@ -54,6 +54,35 @@ struct StoreTests {
         #expect(try h.saved().configuration.world == ForestWorld())
     }
 
+    @Test func variationChangesPersistWithoutRewritingAnActiveSnackAndRollbackOnFailure() async throws {
+        let h = try Harness(), store = try h.open()
+        let original = try #require(store.configuration.activities.first { $0.family == .pushUps })
+        #expect(store.start(activity: original))
+        let session = try #require(store.session)
+        var config = store.configuration
+        let index = try #require(config.activities.firstIndex { $0.id == original.id })
+        let floor = try #require(ActivityCatalog.variation(id: "floor-push"))
+        config.activities[index] = original.selecting(floor)
+        h.repository.failWrites = true
+        h.connection.snapshots.removeAll()
+        #expect(!(await store.saveConfig(config)))
+        #expect(store.configuration.activities[index] == original)
+        #expect(store.session == session)
+        #expect(h.connection.snapshots.isEmpty)
+        h.repository.failWrites = false
+        #expect(await store.saveConfig(config))
+        #expect(try h.open().configuration.activities[index] == config.activities[index])
+        #expect(store.session == session)
+        var watch = AppDocument()
+        let snapshot = ConfigurationSnapshot(configuration: store.configuration, authorityID: UUID())
+        try DocumentSync.receive(try ConfigurationSnapshot.decode(snapshot.encoded()), into: &watch)
+        #expect(watch.configuration.activities[index].catalogVariationID == floor.id)
+        #expect(await store.complete())
+        #expect(store.events.last?.activity == original)
+        #expect(try h.saved().pendingEventIDs == store.events.map(\.eventID))
+        #expect(store.progress.growth == 10)
+    }
+
     @Test func createdAndEditedActivityReopensWithoutDuplication() async throws {
         let h = try Harness()
         let store = try h.open()

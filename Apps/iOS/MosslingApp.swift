@@ -35,12 +35,6 @@ struct MosslingApp: App {
                 .defaultAppStorage(preferences)
                 .environment(store)
                 .tint(MossPalette.moss)
-                .transformEnvironment(\.dynamicTypeSize) { value in
-                    #if DEBUG && targetEnvironment(simulator)
-                    if ProcessInfo.processInfo.arguments.contains("--ui-testing"),
-                       ProcessInfo.processInfo.arguments.contains("--ui-testing-accessibility-size") { value = .accessibility5 }
-                    #endif
-                }
                 .task { await store.bootstrap() }
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active {
