@@ -10,15 +10,23 @@
 		00AF82B24D78C3D573D36E0F /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB2F40EF86672E4D5B010D34 /* NotificationService.swift */; };
 		022BB7323418857461AC7207 /* MosslingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 971DDC1DF94DE50C2906B55A /* MosslingUITests.swift */; };
 		0607FC925D202C5F523535DD /* RhythmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9623259E340A47FB8D996BE2 /* RhythmView.swift */; };
+		16FE6950BDFE92DC5B1842D2 /* ForestCreature.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8F2327811B74F5F45815D9A /* ForestCreature.swift */; };
+		182B585D74BB27EC84C0BF36 /* ForestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B4FC1C50C46F11FBAC3E35A /* ForestView.swift */; };
+		20037F91597E328A5EDF167B /* ForestScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 292E662FA50D90F90E9410A5 /* ForestScene.swift */; };
+		27BD5DF852F682B356CDD94C /* ForestCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8875F3C08108A8FA249D8B7D /* ForestCanvas.swift */; };
 		3384A528A07678DF66A3A8CA /* MosslingWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EFCC37F6FAC828A7B861562 /* MosslingWatchApp.swift */; };
 		3C670E2207DA584922C14B98 /* WatchConnectivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931F83F371CA0B4206B58937 /* WatchConnectivityService.swift */; };
 		442500C43F7119DB268E6913 /* MosslingCore in Frameworks */ = {isa = PBXBuildFile; productRef = 76D21AA70056166787610F21 /* MosslingCore */; };
+		45261EC492B1E687B39FDB21 /* ForestScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 292E662FA50D90F90E9410A5 /* ForestScene.swift */; };
 		4C49DFDF9787B7B8D8C787FA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F5A22668FEAEB5E5C6E12331 /* Assets.xcassets */; };
+		657230E203A0E9A7D0782D1D /* ForestDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 578F18DBB620D17BF8EE9CD5 /* ForestDetailsView.swift */; };
+		669316C56367200BAC2B889D /* ForestCreature.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8F2327811B74F5F45815D9A /* ForestCreature.swift */; };
 		6CCB145759346802F943B4A9 /* ActivitiesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11F019F67AA463BD9386335 /* ActivitiesView.swift */; };
 		7036D684FAA1575E42524E40 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB2F40EF86672E4D5B010D34 /* NotificationService.swift */; };
 		78E65A8CBE8FC84DF97B70A2 /* ActivityPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12BCCA0C52BECAB5A25FD649 /* ActivityPresentation.swift */; };
 		8A7B43D17AB67EA7E8D22B12 /* JournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51138135BCC962B2167D9E2A /* JournalView.swift */; };
-		8D5D2F47C2C74AAFC3B54A8F /* MosslingCharacter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6BF72A07804E2F59C11CCB1 /* MosslingCharacter.swift */; };
+		9084B6A0FC82C623A19DA47F /* ForestArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87D4CBC974391A0DC5082AC9 /* ForestArt.swift */; };
+		915B01041EB8CDE575A80220 /* MossPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1F90DE72010B04EFB6F5C6B /* MossPalette.swift */; };
 		92CD7E71450AC45E78297E79 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C67A9784F94DE1B4403A61E8 /* PrivacyInfo.xcprivacy */; };
 		93FCFB32AD2F542E18D1B3D7 /* MosslingCore in Frameworks */ = {isa = PBXBuildFile; productRef = 737BA3158F0605CBF0965BB3 /* MosslingCore */; };
 		97692D77C589A4173D328D89 /* StoreFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4AAAD96881717D131DA3AE3 /* StoreFactory.swift */; };
@@ -33,8 +41,10 @@
 		C5BE8AE9C91EF7274BE01DEA /* StoreFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4AAAD96881717D131DA3AE3 /* StoreFactory.swift */; };
 		CBC98C7C510F6CA0795ABF31 /* SnackSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9FD104D31925B021C72F128 /* SnackSessionView.swift */; };
 		D1FF4DAB983F32B2844CDDA3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F5A22668FEAEB5E5C6E12331 /* Assets.xcassets */; };
+		DD7A72BAE8661B498A649290 /* MossPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1F90DE72010B04EFB6F5C6B /* MossPalette.swift */; };
+		E40C18D68DCAE0EAA2F269ED /* ForestArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87D4CBC974391A0DC5082AC9 /* ForestArt.swift */; };
 		EA50523DAEA634D6E32B8DC4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C67A9784F94DE1B4403A61E8 /* PrivacyInfo.xcprivacy */; };
-		F0C0109451124AD7FD461A55 /* MosslingCharacter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6BF72A07804E2F59C11CCB1 /* MosslingCharacter.swift */; };
+		EFEF322E6EDB8478F2686ED6 /* ForestCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8875F3C08108A8FA249D8B7D /* ForestCanvas.swift */; };
 		FA09562206557BC3D1AED799 /* MosslingRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A01F375DF16171FA1F33DE3 /* MosslingRootView.swift */; };
 /* End PBXBuildFile section */
 
@@ -103,10 +113,12 @@
 		12BCCA0C52BECAB5A25FD649 /* ActivityPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityPresentation.swift; sourceTree = "<group>"; };
 		220E2B217B0954361A91CF7A /* WatchForestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchForestView.swift; sourceTree = "<group>"; };
 		279CB4458C9CC67AC7F8DC2F /* MosslingUITests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "MosslingUITests-Info.plist"; sourceTree = "<group>"; };
+		292E662FA50D90F90E9410A5 /* ForestScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForestScene.swift; sourceTree = "<group>"; };
 		3C5A30B533AD8CA2D638B32F /* iOS-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "iOS-Info.plist"; sourceTree = "<group>"; };
 		3FABA8FB8ACE22068F5ECFDE /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		43BC7578ACF1A877E10E6151 /* MosslingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MosslingApp.swift; sourceTree = "<group>"; };
 		51138135BCC962B2167D9E2A /* JournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalView.swift; sourceTree = "<group>"; };
+		578F18DBB620D17BF8EE9CD5 /* ForestDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForestDetailsView.swift; sourceTree = "<group>"; };
 		5C248DC1CB4E2E503E73C08B /* Mossling.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Mossling.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CCE4B0D96460F4D857546F8 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
 		6671534DB88FC4C0CA8FB5A2 /* MosslingCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = MosslingCore; path = Packages/MosslingCore; sourceTree = "<group>"; };
@@ -116,20 +128,24 @@
 		7A01F375DF16171FA1F33DE3 /* MosslingRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MosslingRootView.swift; sourceTree = "<group>"; };
 		7AB3F025E1FE089318A2A17B /* Release.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Release.md; sourceTree = "<group>"; };
 		8731C76CD9FB082729A93C7B /* MosslingUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MosslingUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		87D4CBC974391A0DC5082AC9 /* ForestArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForestArt.swift; sourceTree = "<group>"; };
+		8875F3C08108A8FA249D8B7D /* ForestCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForestCanvas.swift; sourceTree = "<group>"; };
 		8D095C671FF06FB3183EF85B /* Product.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = Product.json; sourceTree = "<group>"; };
 		8D3CB437DC9C7EC749091A20 /* watchOS-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "watchOS-Info.plist"; sourceTree = "<group>"; };
 		931F83F371CA0B4206B58937 /* WatchConnectivityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityService.swift; sourceTree = "<group>"; };
 		9623259E340A47FB8D996BE2 /* RhythmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RhythmView.swift; sourceTree = "<group>"; };
 		971DDC1DF94DE50C2906B55A /* MosslingUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MosslingUITests.swift; sourceTree = "<group>"; };
+		9B4FC1C50C46F11FBAC3E35A /* ForestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForestView.swift; sourceTree = "<group>"; };
 		9EFCC37F6FAC828A7B861562 /* MosslingWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MosslingWatchApp.swift; sourceTree = "<group>"; };
 		A11F019F67AA463BD9386335 /* ActivitiesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitiesView.swift; sourceTree = "<group>"; };
+		A8F2327811B74F5F45815D9A /* ForestCreature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForestCreature.swift; sourceTree = "<group>"; };
 		ACEBC599E644A20A7043344A /* MosslingWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MosslingWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1F90DE72010B04EFB6F5C6B /* MossPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MossPalette.swift; sourceTree = "<group>"; };
 		C67A9784F94DE1B4403A61E8 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		CB2F40EF86672E4D5B010D34 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		E9FD104D31925B021C72F128 /* SnackSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnackSessionView.swift; sourceTree = "<group>"; };
 		F4AAAD96881717D131DA3AE3 /* StoreFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreFactory.swift; sourceTree = "<group>"; };
 		F5A22668FEAEB5E5C6E12331 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		F6BF72A07804E2F59C11CCB1 /* MosslingCharacter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MosslingCharacter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -162,6 +178,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		073D5DCDBB97453BC754C594 /* Forest */ = {
+			isa = PBXGroup;
+			children = (
+				87D4CBC974391A0DC5082AC9 /* ForestArt.swift */,
+				8875F3C08108A8FA249D8B7D /* ForestCanvas.swift */,
+				A8F2327811B74F5F45815D9A /* ForestCreature.swift */,
+				292E662FA50D90F90E9410A5 /* ForestScene.swift */,
+			);
+			path = Forest;
+			sourceTree = "<group>";
+		};
 		1CE0B2E451E3227B425A9A64 /* InfoPlists */ = {
 			isa = PBXGroup;
 			children = (
@@ -183,7 +210,7 @@
 			isa = PBXGroup;
 			children = (
 				12BCCA0C52BECAB5A25FD649 /* ActivityPresentation.swift */,
-				F6BF72A07804E2F59C11CCB1 /* MosslingCharacter.swift */,
+				B1F90DE72010B04EFB6F5C6B /* MossPalette.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -200,6 +227,8 @@
 			isa = PBXGroup;
 			children = (
 				A11F019F67AA463BD9386335 /* ActivitiesView.swift */,
+				578F18DBB620D17BF8EE9CD5 /* ForestDetailsView.swift */,
+				9B4FC1C50C46F11FBAC3E35A /* ForestView.swift */,
 				51138135BCC962B2167D9E2A /* JournalView.swift */,
 				43BC7578ACF1A877E10E6151 /* MosslingApp.swift */,
 				7A01F375DF16171FA1F33DE3 /* MosslingRootView.swift */,
@@ -269,6 +298,7 @@
 		9BEABD2D6EBEBFA2EE5B8EEA /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				073D5DCDBB97453BC754C594 /* Forest */,
 				56A4D2F04477E917AFD8B87C /* Platform */,
 				2C80466E22D821517A0C7DD6 /* UI */,
 				F5A22668FEAEB5E5C6E12331 /* Assets.xcassets */,
@@ -450,12 +480,18 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9084B6A0FC82C623A19DA47F /* ForestArt.swift in Sources */,
+				EFEF322E6EDB8478F2686ED6 /* ForestCanvas.swift in Sources */,
+				16FE6950BDFE92DC5B1842D2 /* ForestCreature.swift in Sources */,
+				45261EC492B1E687B39FDB21 /* ForestScene.swift in Sources */,
 				7036D684FAA1575E42524E40 /* NotificationService.swift in Sources */,
 				9AFD693E6C15F0CB07F0ECB3 /* WatchConnectivityService.swift in Sources */,
 				C5BE8AE9C91EF7274BE01DEA /* StoreFactory.swift in Sources */,
 				78E65A8CBE8FC84DF97B70A2 /* ActivityPresentation.swift in Sources */,
-				8D5D2F47C2C74AAFC3B54A8F /* MosslingCharacter.swift in Sources */,
+				915B01041EB8CDE575A80220 /* MossPalette.swift in Sources */,
 				6CCB145759346802F943B4A9 /* ActivitiesView.swift in Sources */,
+				657230E203A0E9A7D0782D1D /* ForestDetailsView.swift in Sources */,
+				182B585D74BB27EC84C0BF36 /* ForestView.swift in Sources */,
 				8A7B43D17AB67EA7E8D22B12 /* JournalView.swift in Sources */,
 				C42E5D0EB08351CAC133B1AA /* MosslingApp.swift in Sources */,
 				FA09562206557BC3D1AED799 /* MosslingRootView.swift in Sources */,
@@ -476,11 +512,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E40C18D68DCAE0EAA2F269ED /* ForestArt.swift in Sources */,
+				27BD5DF852F682B356CDD94C /* ForestCanvas.swift in Sources */,
+				669316C56367200BAC2B889D /* ForestCreature.swift in Sources */,
+				20037F91597E328A5EDF167B /* ForestScene.swift in Sources */,
 				00AF82B24D78C3D573D36E0F /* NotificationService.swift in Sources */,
 				3C670E2207DA584922C14B98 /* WatchConnectivityService.swift in Sources */,
 				97692D77C589A4173D328D89 /* StoreFactory.swift in Sources */,
 				9FE2E729DFFA6B7ED9A240C4 /* ActivityPresentation.swift in Sources */,
-				F0C0109451124AD7FD461A55 /* MosslingCharacter.swift in Sources */,
+				DD7A72BAE8661B498A649290 /* MossPalette.swift in Sources */,
 				3384A528A07678DF66A3A8CA /* MosslingWatchApp.swift in Sources */,
 				B46D58F87B185AAE4AFAD136 /* WatchForestView.swift in Sources */,
 			);

@@ -1,4 +1,5 @@
 import XCTest
+import CoreGraphics
 import MosslingCore
 
 /// UI coverage owns control wiring, presentation, onboarding and one real process
@@ -104,8 +105,10 @@ final class MosslingUITests: XCTestCase {
 
     func testCompletedSnackEarnsGrowthOnceAndSurvivesRelaunch() {
         let app = launchFresh()
+        app.buttons["forestDetails"].tap()
         XCTAssertFalse(app.buttons["affinityMoonlit"].exists)
         XCTAssertFalse(app.buttons["affinitySunlit"].exists)
+        app.buttons["Done"].tap()
         completeRepetitionSnack(in: app)
 
         assertGrowth(10, in: app)
@@ -130,6 +133,7 @@ final class MosslingUITests: XCTestCase {
 
     func testSkipButtonShowsSkippedStateWithoutGrowth() {
         let app = launchFresh()
+        app.buttons["Snack options"].tap()
         let skip = app.buttons["skipSnack"]
         reveal(skip, in: app)
         skip.tap()
@@ -141,6 +145,7 @@ final class MosslingUITests: XCTestCase {
 
     func testPauseAndResumeButtonsUpdateAvailability() {
         let app = launchFresh()
+        app.buttons["Snack options"].tap()
         let pause = app.buttons["pauseToday"]
         reveal(pause, in: app)
         pause.tap()
@@ -166,9 +171,10 @@ final class MosslingUITests: XCTestCase {
         // Start from a validated earned document. Thresholds and durable choices
         // are covered through the real Store without repeating three UI breaks.
         let app = launchFresh(document: try earnedAffinityDocument())
+        app.buttons["forestDetails"].tap()
         let moonlit = app.buttons["affinityMoonlit"]
         let sunlit = app.buttons["affinitySunlit"]
-        assertGrowth(30, in: app)
+        assertGrowth(30, in: app, details: true)
         reveal(moonlit, in: app)
         moonlit.tap()
         assertSelectedAffinity(moonlit)
@@ -177,16 +183,57 @@ final class MosslingUITests: XCTestCase {
         sunlit.tap()
         assertSelectedAffinity(sunlit)
         XCTAssertEqual(moonlit.value as? String, "Not selected")
-        assertGrowth(30, in: app)
+        assertGrowth(30, in: app, details: true)
         capture("Changed earned affinity", app: app)
     }
 
-    private func earnedAffinityDocument() throws -> AppDocument {
+    func testThirdSnackEvolvesForestAndSurvivesRelaunch() throws {
+        let app = launchFresh(document: try earnedAffinityDocument(snacks: 2))
+        XCTAssertTrue(app.staticTexts["companionStage"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["companionStage"].label, "Seedling")
+        completeRepetitionSnack(in: app)
+        assertGrowth(30, in: app)
+        XCTAssertEqual(app.staticTexts["companionStage"].label, "Sprout")
+        let forest = app.buttons["forestScene"]
+        XCTAssertTrue(forest.waitForExistence(timeout: 5))
+        XCTAssertEqual(forest.value as? String, "Sprout, Little fern")
+        assertForestRendered(forest)
+        if app.buttons["skipForestAnimation"].exists { app.buttons["skipForestAnimation"].tap() }
+        forest.tap()
+        forest.tap()
+        forest.tap()
+        capture("Evolved forest after creature interactions", app: app)
+        assertGrowth(30, in: app)
+
+        relaunch(app)
+        XCTAssertEqual(app.staticTexts["companionStage"].label, "Sprout")
+        XCTAssertEqual(app.buttons["forestScene"].value as? String, "Sprout, Little fern")
+        XCTAssertFalse(app.buttons["skipForestAnimation"].exists, "Opening saved progress must not replay evolution")
+        assertGrowth(30, in: app)
+    }
+
+    func testForestSupportsLargeTextAndReducedMotion() throws {
+        let app = launchFresh(document: try earnedAffinityDocument(snacks: 2),
+                              options: ["--ui-testing-reduce-motion", "--ui-testing-accessibility-size"])
+        let forest = app.staticTexts["forestScene"]
+        XCTAssertTrue(forest.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["forestScene"].exists, "A still scene must not advertise an unavailable action")
+        XCTAssertEqual(forest.value as? String, "Seedling, Little fern")
+        assertForestRendered(forest)
+        completeRepetitionSnack(in: app)
+        assertGrowth(30, in: app)
+        XCTAssertEqual(forest.value as? String, "Sprout, Little fern")
+        assertForestRendered(forest)
+        XCTAssertFalse(app.buttons["skipForestAnimation"].exists)
+        capture("Forest with large text and reduced motion", app: app)
+    }
+
+    private func earnedAffinityDocument(snacks: Int = 3) throws -> AppDocument {
         var document = AppDocument()
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
         let activity = try XCTUnwrap(document.configuration.activities.first { $0.id == "wall-push" })
-        for hour in 0..<3 {
+        for hour in 0..<snacks {
             let date = Date(timeIntervalSince1970: activeWeekday - 3 * 24 * 3600 + Double(hour) * 3600)
             let opportunity = try XCTUnwrap(try ScheduleEngine(configuration: document.configuration)
                 .current(at: date, calendar: calendar))
@@ -198,10 +245,10 @@ final class MosslingUITests: XCTestCase {
         return document
     }
 
-    private func launchFresh(skipWelcome: Bool = true, document: AppDocument? = nil) -> XCUIApplication {
+    private func launchFresh(skipWelcome: Bool = true, document: AppDocument? = nil, options: [String] = []) -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
-        app.launchArguments = arguments(now: activeWeekday) + ["--ui-testing-reset"]
+        app.launchArguments = arguments(now: activeWeekday) + ["--ui-testing-reset"] + options
         if skipWelcome { app.launchArguments.append("--ui-testing-skip-welcome") }
         if let document {
             do { app.launchEnvironment["MOSSLING_UI_TEST_DOCUMENT"] = try document.encoded().base64EncodedString() }
@@ -260,9 +307,9 @@ final class MosslingUITests: XCTestCase {
         XCTAssertFalse(complete.exists, "Completion must dismiss the movement session", file: file, line: line)
     }
 
-    private func assertGrowth(_ expected: Int, in app: XCUIApplication,
+    private func assertGrowth(_ expected: Int, in app: XCUIApplication, details: Bool = false,
                               file: StaticString = #filePath, line: UInt = #line) {
-        let growth = app.staticTexts["earnedGrowthValue"]
+        let growth = details ? app.staticTexts["earnedGrowthValue"] : app.buttons["forestDetails"]
         reveal(growth, in: app, file: file, line: line)
         XCTAssertEqual(growth.label, "\(expected) growth", file: file, line: line)
     }
@@ -274,6 +321,31 @@ final class MosslingUITests: XCTestCase {
         )
         XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 5), .completed,
                        "The saved affinity must be selected", file: file, line: line)
+    }
+
+    private func assertForestRendered(_ forest: XCUIElement,
+                                      file: StaticString = #filePath, line: UInt = #line) {
+        guard let capture = forest.screenshot().image.cgImage,
+              let image = capture.cropping(to: CGRect(x: 0, y: Double(capture.height) * 0.45,
+                                                     width: Double(capture.width), height: Double(capture.height) * 0.55)) else {
+            XCTFail("The forest must produce a rendered image", file: file, line: line)
+            return
+        }
+        var pixels = [UInt8](repeating: 0, count: 16 * 16 * 4)
+        let rendered = pixels.withUnsafeMutableBytes { bytes -> Bool in
+            guard let context = CGContext(data: bytes.baseAddress, width: 16, height: 16,
+                                          bitsPerComponent: 8, bytesPerRow: 64,
+                                          space: CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            context.draw(image, in: CGRect(x: 0, y: 0, width: 16, height: 16))
+            return true
+        }
+        XCTAssertTrue(rendered, file: file, line: line)
+        let colors = Set(stride(from: 0, to: pixels.count, by: 4).map {
+            Int(pixels[$0] >> 4) << 8 | Int(pixels[$0 + 1] >> 4) << 4 | Int(pixels[$0 + 2] >> 4)
+        })
+        XCTAssertGreaterThan(colors.count, 16, "The forest must render its artwork, not a blank surface",
+                             file: file, line: line)
     }
 
     private func reveal(_ element: XCUIElement, in app: XCUIApplication,
