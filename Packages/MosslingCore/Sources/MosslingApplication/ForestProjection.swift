@@ -16,9 +16,12 @@ public enum ForestProjection {
                     y: -Double(cell.x + cell.y) * tileHeight / 2 + Double(ForestWorld.elevation(at: cell)) * rise)
     }
     public static func cell(at point: ForestPoint, among cells: [ForestCell]) -> ForestCell? {
-        cells.sorted { depth($0) > depth($1) }.first {
-            let center = self.point(for: $0)
-            return abs(point.x - center.x) / (tileWidth / 2) + abs(point.y - center.y) / (tileHeight / 2) <= 1
+        let frontToBack = cells.sorted { depth($0) > depth($1) }
+        return frontToBack.first { cell in
+            let center = self.point(for: cell)
+            let horizontalDistance = abs(point.x - center.x) / (tileWidth / 2)
+            let verticalDistance = abs(point.y - center.y) / (tileHeight / 2)
+            return horizontalDistance + verticalDistance <= 1
         }
     }
     public static func depth(_ cell: ForestCell) -> Double { Double(cell.x + cell.y) * 10 }

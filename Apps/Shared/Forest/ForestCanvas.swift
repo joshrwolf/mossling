@@ -92,9 +92,11 @@ struct ForestCanvas: View {
                     if let onSelectCell, let cell = director.scene.cell(at: location) { onSelectCell(cell) }
                     else { director.scene.react() }
                 }
+                #if os(iOS)
                 .gesture(DragGesture(minimumDistance: 12)
                     .onChanged { director.scene.moveCamera(by: $0.translation, ended: false) }
                     .onEnded { director.scene.moveCamera(by: $0.translation, ended: true) })
+                #endif
                 .overlay(alignment: .bottomTrailing) {
                     #if os(iOS)
                     HStack(spacing: 16) {
