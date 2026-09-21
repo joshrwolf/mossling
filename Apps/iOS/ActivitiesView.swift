@@ -7,6 +7,7 @@ struct ActivitiesView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var editing: ActivityDefinition?
     @State private var adding = false
+    @State private var browsing = false
     @State private var changingRotation = false
 
     var body: some View {
@@ -36,9 +37,16 @@ struct ActivitiesView: View {
             }
             .background(MossPalette.ink).foregroundStyle(MossPalette.cream)
             .navigationTitle("Snacks")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Browse activities", systemImage: "books.vertical") { browsing = true }
+                        .accessibilityIdentifier("browseActivities")
+                }
+            }
+            .sheet(isPresented: $browsing) { ActivityLibrary() }
             .sheet(item: $editing) { ActivityEditor(activity: $0) }
             .sheet(isPresented: $adding) { ActivityEditor(activity: nil) }
-            .onChange(of: store.navigationRequest) { _, _ in editing = nil; adding = false }
+            .onChange(of: store.navigationRequest) { _, _ in editing = nil; adding = false; browsing = false }
         }.tint(MossPalette.mint)
     }
 

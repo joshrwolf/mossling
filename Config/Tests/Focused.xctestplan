@@ -19,7 +19,8 @@
         "name": "MosslingUITests"
       },
       "selectedTests": [
-        "MosslingUITests/testEarnedAffinityCanBeSelectedAndChanged()"
+        "MosslingUITests/testEarnedAffinityCanBeSelectedAndChanged()",
+        "MosslingUITests/testActivityLibraryAddsDistinctSnackAndPersistsSelection()"
       ]
     }
   ],

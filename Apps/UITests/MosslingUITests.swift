@@ -98,6 +98,42 @@ final class MosslingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["createActivity"].exists)
     }
 
+    func testActivityLibraryAddsDistinctSnackAndPersistsSelection() {
+        let app = launchFresh()
+        app.tabBars.buttons["Snacks"].tap()
+        app.buttons["browseActivities"].tap()
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap()
+        search.typeText("Seated")
+        let add = app.buttons["add_seated-knee-extension"]
+        XCTAssertTrue(add.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["add_seated-march"].exists)
+        XCTAssertTrue(app.buttons["add_seated-toe-raise"].exists)
+        XCTAssertFalse(app.buttons["add_march"].exists)
+        capture("Seated activity library", app: app)
+        add.tap()
+        let saved = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == false"), object: add)
+        XCTAssertEqual(XCTWaiter.wait(for: [saved], timeout: 10), .completed)
+        app.buttons["Done"].tap()
+        let rotation = app.buttons["rotation_seated-knee-extension"]
+        reveal(rotation, in: app)
+        XCTAssertEqual(rotation.value as? String, "In rotation")
+        capture("New snack in rotation", app: app)
+        relaunch(app)
+        app.tabBars.buttons["Snacks"].tap()
+        reveal(rotation, in: app)
+        XCTAssertEqual(rotation.value as? String, "In rotation")
+        app.buttons["Edit Seated knee extensions, 10 reps"].tap()
+        XCTAssertTrue(app.buttons["activityMovement"].label.contains("Seated knee extensions"))
+        app.buttons["Cancel"].tap()
+        app.buttons["browseActivities"].tap()
+        search.tap()
+        search.typeText("Seated")
+        XCTAssertTrue(add.waitForExistence(timeout: 5))
+        XCTAssertFalse(add.isEnabled, "A saved catalog entry cannot be added twice")
+    }
+
     func testScheduleEditorUpdatesDaysAndInterval() {
         let app = launchFresh()
         app.tabBars.buttons["Rhythm"].tap()

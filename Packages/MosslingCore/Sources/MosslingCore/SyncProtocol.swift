@@ -38,7 +38,7 @@ public struct SyncInventory: Codable, Equatable, Sendable {
 /// Versioned transport data only. Receiving this value does not commit or acknowledge it.
 public struct SyncPacket: Codable, Equatable, Sendable {
     public enum Kind: String, Codable, Sendable { case events, acknowledgment, historyRequest }
-    public static let protocolVersion = 2
+    public static let protocolVersion = 3
     public static let maximumEncodedBytes = 48 * 1_024
     public static let maximumEvents = 25
 
